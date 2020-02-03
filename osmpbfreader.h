@@ -134,11 +134,13 @@ struct Parser {
                     else {
                         warn() << "  unknown blob type: " << header.type();
                     }
+#ifdef DEBUG
                     todo -= max_blob_header_size;
                     if ((todo+10000000) < last_todo) {
                         last_todo = todo;
                         info() << 100*(todo/(float)file_size) << " \% to do";
                     }
+#endif
                 }
             }
         }

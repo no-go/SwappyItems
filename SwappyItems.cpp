@@ -6,6 +6,7 @@
 #define __STDC_FORMAT_MACROS
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>    // sizeof
 #include <cstring>
 
 #include <inttypes.h>
@@ -18,16 +19,16 @@
 using namespace CanalTP;
 using namespace std;
 
-//#define MAX_NODES     2405814605.0 // EUROPE
-//#define MAX_NODES       67853945.0 // NRW (Node mit 18byte sollte dann 1,2 GB RAM brauchen)
+//#define MAX_NODES     2405 814 605.0 // EUROPE
+//#define MAX_NODES       67 853 945.0 // NRW (Node mit 18byte sollte dann 1,2 GB RAM brauchen)
 
 typedef uint64_t Key; // for the key-value tuple
 
 struct Value {
+    bool _town;    // 1byte
     uint8_t _uses; // 1byte
     double _lon;   // 8byte
     double _lat;   // 8byte
-    bool _town;    // 1byte
 };
 
 void ValueSet (Value & v, double lon = 0, double lat = 0, bool town = false, uint8_t uses = 0) {
@@ -37,7 +38,11 @@ void ValueSet (Value & v, double lon = 0, double lat = 0, bool town = false, uin
     v._town = town;
 }
 
-SwappyItems<Key,Value,(16*1024),4,4> nodes;
+#define FILE_ITEMS  16*1024
+#define FILE_MULTI        4
+#define RAM_MULTI         4
+
+SwappyItems<Key,Value,(FILE_ITEMS),FILE_MULTI,RAM_MULTI> nodes;
 
 // ---------------------------------------------------------------------
 
@@ -129,6 +134,12 @@ int main(int argc, char** argv) {
         return 1;
     }
     Routing routing;
+
+    printf("key size:   %10ld Bytes\n", sizeof(Key));
+    printf("value size: %10ld Bytes\n", sizeof(Value));
+    printf("RAM:        %10d items\n", (FILE_ITEMS*FILE_MULTI*RAM_MULTI) );
+    printf("each swap:  %10d files\n", FILE_MULTI );
+    printf("each file:  %10d items\n", FILE_ITEMS );
 
     printf(
         "a rangeFail = we search a key in a file, but it does not exists in that file.\n"

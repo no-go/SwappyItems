@@ -1,4 +1,4 @@
-## SwappyItems 03.02.2020 (v0.5)
+## SwappyItems
 
 - ein Key-Value Store
 - der Key muss eindeutig sein und darf nicht 0 sein

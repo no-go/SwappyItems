@@ -60,3 +60,5 @@ Das Testprogramm ließt eine pbf Datei (Open Street Map) und verarbeitet/ließt 
 - eine Directory (unordered map) merkt sich min/max jedes Buckets
 - alte Buckets werden in Dateien ausgelagert.
 
+Man könnte auch über mehrerer SwappyItems nachdenken, zwischen denen man je key "switcht", um einen größeren Teil im RAM abzulegen.
+

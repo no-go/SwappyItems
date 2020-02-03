@@ -1,4 +1,4 @@
-## SwappyItems
+# SwappyItems
 
 - ein Key-Value Store
 - der Key muss eindeutig sein und darf nicht 0 sein
@@ -19,7 +19,7 @@
 - es wird eine map beim auslagern genutzt, um sich das Sortieren zu ersparen
 - ein deque merkt sich, wie neu die daten sind bzw. deren zugriff ist
 - für einen schnellen speedup der deque, werden keys dort nicht gelöscht (bzw. ans ende verschoben), sondern mit key=0 als "gelöscht" markiert
-- durch das "gelöscht" markieren darf ein key nicht 0 sein !!!!
+- durch das "gelöscht" markieren darf ein **key nicht 0 sein** !!!!
 - im Template können 3 Werte angegeben werden:
   - Anzahl der Items in einer Datei
   - Menge der Dateien, die geschrieben werden sollen, wenn der RAM voll ist (Swap Event)

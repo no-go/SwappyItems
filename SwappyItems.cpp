@@ -38,6 +38,8 @@ void ValueSet (Value & v, double lon = 0, double lat = 0, bool town = false, uin
     v._town = town;
 }
 
+FILE * pFileLog;
+
 #define FILE_ITEMS  16*1024
 #define FILE_MULTI        4
 #define RAM_MULTI         4
@@ -80,7 +82,7 @@ void addNode(Key & osmid, const double & lon, const double & lat, bool town) {
 
     auto tipo1 = Clock::now();
     if (std::chrono::duration_cast<Millis>(tipo1 - tipo0).count() >= 2000) {
-        printf(
+        fprintf(pFileLog,
             "%10" PRId64 " %10" PRId64 " "
             "%10" PRId64 " "
             "%13" PRId64 " "
@@ -95,6 +97,7 @@ void addNode(Key & osmid, const double & lon, const double & lat, bool town) {
             nodes.rangeSaysNo, nodes.rangeFails, nodes.fileLoads,
             getUsedKB()
         );
+        fflush(pFileLog);
         tipo0 = tipo1;
     }
 
@@ -135,22 +138,30 @@ int main(int argc, char** argv) {
     }
     Routing routing;
 
-    printf("key size:   %10ld Bytes\n", sizeof(Key));
-    printf("value size: %10ld Bytes\n", sizeof(Value));
-    printf("RAM:        %10d items\n", (FILE_ITEMS*FILE_MULTI*RAM_MULTI) );
-    printf("each swap:  %10d files\n", FILE_MULTI );
-    printf("each file:  %10d items\n", FILE_ITEMS );
+    pFileLog = fopen("_logging.txt", "w");
 
-    printf(
-        "a rangeFail = we search a key in a file, but it does not exists in that file.\n"
+    fprintf(pFileLog, "file:       %s\n", argv[1]);
+    fprintf(pFileLog, "key size:   %10ld Bytes\n", sizeof(Key));
+    fprintf(pFileLog, "value size: %10ld Bytes\n", sizeof(Value));
+    fprintf(pFileLog, "RAM:        %10d items\n", (FILE_ITEMS*FILE_MULTI*RAM_MULTI) );
+    fprintf(pFileLog, "each swap:  %10d files\n", FILE_MULTI );
+    fprintf(pFileLog, "each file:  %10d items\n", FILE_ITEMS );
+
+    fprintf(pFileLog, "a rangeFail = we search a key in a file, but it does not exists in that file.\n");
+    fprintf(pFileLog,
         "     items,    in Ram,   updates, bloomSuccess, bloomFail, rangeSuccess, rangeFail, fileLoads,   used KB\n"
     );
 
     tipo0 = Clock::now();
+    auto clkStart = tipo0;
 
     //read_osm_pbf(argv[1], routing, false); // read nodes and relations
     read_osm_pbf(argv[1], routing, true); // read way only
 
+    auto clkEnd = Clock::now();
+    fprintf(pFileLog, "it tooks %lf seconds\n", std::chrono::duration_cast<std::chrono::duration<double>>(clkEnd - clkStart).count() );
+
+    fclose(pFileLog);
     return 0;
 }
 

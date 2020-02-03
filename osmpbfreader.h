@@ -76,11 +76,16 @@ struct warn {
 
 struct info {
     info() {
+#ifdef DEBUG
         std::cout << "\033[32m[INFO] ";
+#endif
     }
     template<typename T>info & operator<<(const T & t){ std::cout << t; return *this;}
     ~info() {
-        std::cout << "\033[0m" << std::endl;
+#ifdef DEBUG
+        std::cout << "\033[0m";
+#endif
+        std::cout << std::endl;
     }
 };
 

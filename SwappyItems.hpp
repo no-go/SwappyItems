@@ -357,7 +357,7 @@ private:
         for (pos = 0; pos < (OLDIES*EACHFILE); ) {
             TKEY key = _prios.front();
             _prios.pop_front();
-            if (key > 0) {
+            if (key > 0) { // HINT
                 temp[key] = _ramList[key];
                 _ramList.erase(key);
                 ++pos; // we only count undeleted stuff!
@@ -412,6 +412,7 @@ private:
 
         // because we do not write "deleted keys", this could happend.
         // sometimes files store less than EACHFILE items
+        // HINT: NO, because of "if (key > 0) {" these keyes are not in temp
         if ((written%(EACHFILE)) != 0) {
             // store range
             _ranges[pos] = std::make_pair(

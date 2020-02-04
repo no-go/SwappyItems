@@ -50,15 +50,14 @@ class SwappyItems {
     // for each filenr we store min/max value to filter
     Ranges _ranges;
 
-    // a priority queue for the keys
-    Order _prios;
-
     // Indicators to detect new keys
     Bloom  _indicator1;
     Blooms _indicator2;
 
-
 public:
+
+    // a priority queue for the keys
+    Order _prios;
 
     uint64_t updates = 0;
 
@@ -312,9 +311,7 @@ private:
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedVal, sizeof(TVALUE));
             if (loadedKey == key) result = true;
-            // do not load deleted stuff
-            if (loadedKey>0) temp[loadedKey] = loadedVal;
-            ++c;
+            temp[loadedKey] = loadedVal;
         }
         file.close();
 
@@ -408,18 +405,6 @@ private:
                 );
                 file.close();
             }
-        }
-
-        // because we do not write "deleted keys", this could happend.
-        // sometimes files store less than EACHFILE items
-        // HINT: NO, because of "if (key > 0) {" these keyes are not in temp
-        if ((written%(EACHFILE)) != 0) {
-            // store range
-            _ranges[pos] = std::make_pair(
-                smallest,
-                it->first
-            );
-            file.close();
         }
     }
 };

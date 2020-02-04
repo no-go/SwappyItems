@@ -11,7 +11,6 @@
 
 #include <inttypes.h>
 #include <vector>
-#include <chrono>
 
 #include "SwappyItems.hpp"
 #include "osmpbfreader.h"
@@ -48,10 +47,6 @@ SwappyItems<Key,Value,(FILE_ITEMS),FILE_MULTI,RAM_MULTI> nodes;
 
 // ---------------------------------------------------------------------
 
-typedef std::chrono::high_resolution_clock Clock;
-typedef std::chrono::milliseconds Millis;
-Clock::time_point tipo0;
-
 int parseLine(char* line) {
     // This assumes that a digit will be found and the line ends in " Kb".
     int i = strlen(line);
@@ -63,27 +58,28 @@ int parseLine(char* line) {
 }
 
 int getUsedKB() {
-    FILE* file = fopen("/proc/self/status", "r");
+    FILE* fi = fopen("/proc/self/status", "r");
     int result = -1;
     char line[128];
 
-    while (fgets(line, 128, file) != NULL){
+    while (fgets(line, 128, fi) != NULL){
         if (strncmp(line, "VmRSS:", 6) == 0){
             result = parseLine(line);
             break;
         }
     }
-    fclose(file);
+    fclose(fi);
     return result;
 }
 
 void addNode(Key & osmid, const double & lon, const double & lat, bool town) {
     Value * node = nodes.get(osmid);
 
-    auto tipo1 = Clock::now();
-    if (std::chrono::duration_cast<Millis>(tipo1 - tipo0).count() >= 2000) {
+    if (nodes.size()%2048 == 0) {
         fprintf(pFileLog,
             "%10" PRId64 " %10" PRId64 " "
+            "%10" PRId64 " "
+
             "%10" PRId64 " "
             "%13" PRId64 " "
             "%10" PRId64 " "
@@ -92,13 +88,15 @@ void addNode(Key & osmid, const double & lon, const double & lat, bool town) {
             "%10" PRId64 " "
             "%10d\n",
             nodes.size(), nodes.size(true),
+            nodes._prios.size(),
+
             nodes.updates,
-            nodes.bloomSaysFresh, nodes.bloomFails,
+            nodes.bloomSaysFresh,
+            nodes.bloomFails,
             nodes.rangeSaysNo, nodes.rangeFails, nodes.fileLoads,
             getUsedKB()
         );
         fflush(pFileLog);
-        tipo0 = tipo1;
     }
 
     if (node == nullptr) {
@@ -138,7 +136,7 @@ int main(int argc, char** argv) {
     }
     Routing routing;
 
-    pFileLog = fopen("_logging.txt", "w");
+    pFileLog = fopen("./filling.log", "w");
 
     fprintf(pFileLog, "file:       %s\n", argv[1]);
     fprintf(pFileLog, "key size:   %10ld Bytes\n", sizeof(Key));
@@ -149,17 +147,11 @@ int main(int argc, char** argv) {
 
     fprintf(pFileLog, "a rangeFail = we search a key in a file, but it does not exists in that file.\n");
     fprintf(pFileLog,
-        "     items,    in Ram,   updates, bloomSuccess, bloomFail, rangeSuccess, rangeFail, fileLoads,   used KB\n"
+        "     items,    in Ram,  in Deque,   updates, bloomSuccess, bloomFail, rangeSuccess, rangeFail, fileLoads,   used KB\n"
     );
-
-    tipo0 = Clock::now();
-    auto clkStart = tipo0;
 
     //read_osm_pbf(argv[1], routing, false); // read nodes and relations
     read_osm_pbf(argv[1], routing, true); // read way only
-
-    auto clkEnd = Clock::now();
-    fprintf(pFileLog, "it tooks %lf seconds\n", std::chrono::duration_cast<std::chrono::duration<double>>(clkEnd - clkStart).count() );
 
     fclose(pFileLog);
     return 0;

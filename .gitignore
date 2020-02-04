@@ -1,4 +1,4 @@
 *.o
 *.exe
 a.out
-temp/*.bin
+temp*/*.bin

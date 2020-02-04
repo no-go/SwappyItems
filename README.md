@@ -31,10 +31,11 @@ Beispiel: `SwappyItems<Key,Value,(16*1024),8,4> nodes;` bedeutet
 - 8x 16k Items werden bei einem Swap ausgelagert
 - Der Swap wird ausgelöst, wenn 4x 8x 16k Items im Speicher überschritten werden.
 
-Das Testprogramm `SwappyItems.cpp` gibt im 2sec tackt Auskunft:
+Das Testprogramm `SwappyItems.cpp` gibt alle 2048 neue Items Auskunft:
 
 - anzahl der hinzugefügten Items
 - anzahl der Items im RAM
+- anzahl der Key in der Prioity Deque (größer, da nur Löschmarkierung)
 - anzahl der Zugriffe, die kein "Hinzufügen" sind
 - wie oft der Bloomfilter sagen konnte, dass ein Key neu ist
 - wie oft der Bloomfilter falsch lag, wenn er meinte, der Key sei schon mal hinzugefügt worden

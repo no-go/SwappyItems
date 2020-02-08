@@ -1,0 +1,5 @@
+insgesamt 384K
+drwxrwxrwx 1 tux tux 128K  8. Feb 15:28 .
+drwxrwxrwx 1 tux tux 128K  8. Feb 15:27 ..
+-rwxrwxrwx 1 tux tux    0  8. Feb 15:28 dir.txt
+-rwxrwxrwx 1 tux tux 1023  8. Feb 15:27 filling3.log

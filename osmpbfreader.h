@@ -153,7 +153,7 @@ struct Parser {
 
     Parser(const std::string & filename, Visitor & visitor, bool _wayOnly) : visitor(visitor) {
 
-        _wayOnly = wayOnly;
+        wayOnly = _wayOnly;
         finished = false;
         file = std::ifstream(filename.c_str(), std::ios::binary );
         //file = std::ifstream("../krefeld_mg.pbf", std::ios::binary );

@@ -1,5 +1,6 @@
 # SwappyItems
 
+- c++17 nur für das initale anlegen von Orndern gebraucht (sonst c++11)
 - ein Key-Value Store
 - der Key muss eindeutig sein und darf nicht 0 sein
 - ein `get()` liefert nullptr, falls der Key nicht existiert
@@ -20,7 +21,7 @@
 - ein deque merkt sich, wie neu die daten sind bzw. deren zugriff ist
 - für einen schnellen speedup der deque, werden keys dort nicht gelöscht (bzw. ans ende verschoben), sondern mit key=0 als "gelöscht" markiert
 - durch das "gelöscht" markieren darf ein **key nicht 0 sein** !!!!
-- im Template können 3 Werte angegeben werden:
+- im Template können 3 Werte angegeben werden (neben den Typen):
   - Anzahl der Items in einer Datei
   - Menge der Dateien, die geschrieben werden sollen, wenn der RAM voll ist (Swap Event)
   - Um ein wieviel-faches der RAM größer sein soll als die Anzahl der Items, die bei einem Swap Event ausgelagert werden
@@ -30,9 +31,11 @@ Beispiel: `SwappyItems<Key,Value,(16*1024),8,4> nodes;` bedeutet
 - 16k Items sind in einer Datei
 - 8x 16k Items werden bei einem Swap ausgelagert
 - Der Swap wird ausgelöst, wenn 4x 8x 16k Items im Speicher überschritten werden.
+- vorsicht! new verwenden! der Constructor bekommt eine Nummer, die als prefix für ausgelagerte Dateien dient!
 
-Das Testprogramm `SwappyItems.cpp` gibt alle 2048 neue Items Auskunft:
+Das Testprogramm `SwappyItems.cpp` gibt alle 2048 neue Items in "ways" Auskunft:
 
+- zeitpunkt
 - anzahl der hinzugefügten Items
 - anzahl der Items im RAM
 - anzahl der Key in der Prioity Deque (größer, da nur Löschmarkierung)
@@ -56,10 +59,13 @@ Das Testprogramm ließt eine pbf Datei (Open Street Map) und verarbeitet/ließt 
 ## Hacks für die Zukunft
 
 - Prioritätsgruppen (nicht jeder Key, sondern ein "Bucket", was gefüllt wird)
-- Buckets sind sorted maps, die in einem Vektor abgelegt sind
+- Buckets als sorted maps, die in einem Vektor abgelegt sind
 - welche Prio ein Bucket hat, wird in einem array abgelegt. Ein Head-Pointer (id im Array) zeigt auf das Aktuellste Bucket.
 - eine Directory (unordered map) merkt sich min/max jedes Buckets
 - alte Buckets werden in Dateien ausgelagert.
 
-Man könnte auch über mehrerer SwappyItems nachdenken, zwischen denen man je key "switcht", um einen größeren Teil im RAM abzulegen.
+## Mehrere Swappy Items (Constructor Variable)
+
+- zwischen denen könnte man je key "switcht", um einen größeren Teil im RAM abzulegen.
+
 

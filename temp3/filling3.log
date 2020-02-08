@@ -1,0 +1,14 @@
+file:       ../krefeld_mg.pbf
+key size:            8 Bytes
+value size:         24 Bytes
+RAM:            262144 items
+each swap:           4 files
+each file:       32768 items
+a rangeFail = we search a key in a file, but it does not exists in that file.
+       now,     items,    in Ram,  in Deque,   updates, bloomSuccess, bloomFail, rangeSuccess, rangeFail, fileLoads,   used KB
+        26          0          0          0          0             1          0             0          0          0     406456
+        96       2048       2048       2538        245          4097          0             0          0          0     415960
+       193       4096       4096       4874        389          8193          0             0          0          0     420184
+       329       6144       6144       7317        586         12288          0             0          0          0     420976
+       329       6144       6144       7318        587         12289          0             0          0          0     420976
+// break

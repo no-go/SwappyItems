@@ -1,8 +1,6 @@
 #ifndef __SWAPPY_ITEMS_HPP__
 #define __SWAPPY_ITEMS_HPP__ 1
 
-/// @todo a 2nd thread to cleanup the deleted entries in _prios deque
-
 // we need it for PRId32 in snprintf
 #define __STDC_FORMAT_MACROS
 
@@ -13,7 +11,7 @@
 #include <algorithm>   // find
 #include <stdexcept>   // std::out_of_range
 
-#include <cstdlib>     // srand, rand
+#include <cstdlib>     // srand, rand, exit
 #include <tuple>       // to return some hash values
 
 #include <vector>         // store file information
@@ -23,12 +21,16 @@
 #include <deque>          // for key order (prio)
 #include <map>            // for store keys in a sorted way
 
+#include <filesystem>     // check and create directories
+
 /**
  * a 0 as Key means, that this key/value pair is deleted, thus
  * never use 0 as a key! this data may be ignored sometimes.
  */
-template <class TKEY, class TVALUE, int EACHFILE = 16384, int OLDIES = 4, int RAMSIZE = 3>
+template <class TKEY, class TVALUE, int EACHFILE = 16384, int OLDIES = 4, int RAMSIZE = 2>
 class SwappyItems {
+
+    const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
 
     typedef uint32_t                               Id;
     typedef uint32_t                              Fid; // File id
@@ -42,10 +44,11 @@ class SwappyItems {
     typedef std::vector<std::pair<TKEY,TKEY> > Ranges;
     typedef std::deque<TKEY>                    Order;
 
-    uint64_t _counting = 0;
-
     // the item store in RAM
     Ram _ramList;
+
+    // a priority queue for the keys
+    Order _prios;
 
     // for each filenr we store min/max value to filter
     Ranges _ranges;
@@ -54,60 +57,22 @@ class SwappyItems {
     Bloom  _indicator1;
     Blooms _indicator2;
 
+    uint64_t _counting = 0;
+    int _swappyId = 0;
+
 public:
 
-    // a priority queue for the keys
-    Order _prios;
+    struct {
+        uint64_t updates = 0;
 
-    uint64_t updates = 0;
+        uint64_t bloomSaysFresh = 0;
+        uint64_t bloomFails = 0;
 
-    uint64_t bloomSaysFresh = 0;
-    uint64_t bloomFails = 0;
+        uint64_t rangeSaysNo = 0;
+        uint64_t rangeFails = 0;
 
-    uint64_t rangeSaysNo = 0;
-    uint64_t rangeFails = 0;
-
-    uint64_t fileLoads = 0;
-
-    /**
-     * it is a quasi copy of set()
-     */
-    TVALUE & operator[] (TKEY key) {
-        // still exists?
-        bool isLoaded = false;
-        Fingerprint fp = getFingerprint(key);
-        bool maybe = mayExist(fp);
-        if (maybe) {
-            // key may exists, we try to load it
-            isLoaded = load(key);
-        } else {
-            ++bloomSaysFresh;
-        }
-
-        if (isLoaded) {
-            // just update
-            auto it = std::find(_prios.begin(), _prios.end(), key);
-            *it = 0; // overwrite the key with zero
-            _prios.push_back(key);
-            return _ramList[key];
-        } else {
-            // key is new
-            maySwap();
-            ++_counting;
-            _prios.push_back(key);
-            //_ramList[key] = value;
-
-            if (maybe == false) {
-                _indicator1.insert(std::get<0>(fp));
-                _indicator2[std::get<1>(fp)].insert(std::get<2>(fp));
-                _indicator2[std::get<1>(fp)].insert(std::get<3>(fp));
-            } else {
-                // bloom think, the key may exist, but the key does not exist
-                ++bloomFails;
-            }
-            return _ramList[key];
-        }
-    }
+        uint64_t fileLoads = 0;
+    } statistic;
 
     /**
      * set (create or update)
@@ -123,7 +88,7 @@ public:
             // key may exists, we try to load it
             isLoaded = load(key);
         } else {
-            ++bloomSaysFresh;
+            ++statistic.bloomSaysFresh;
         }
 
         if (isLoaded) {
@@ -132,7 +97,7 @@ public:
             *it = 0; // overwrite the key with zero
             _prios.push_back(key);
             _ramList[key] = value;
-            ++updates;
+            ++statistic.updates;
             return false;
         } else {
             // key is new
@@ -147,7 +112,7 @@ public:
                 _indicator2[std::get<1>(fp)].insert(std::get<3>(fp));
             } else {
                 // bloom think, the key may exist, but the key does not exist
-                ++bloomFails;
+                ++statistic.bloomFails;
             }
             return true;
         }
@@ -162,7 +127,7 @@ public:
     TVALUE * get (const TKEY & key) {
         Fingerprint fp = getFingerprint(key);
         if (mayExist(fp) == false) {
-            ++bloomSaysFresh;
+            ++statistic.bloomSaysFresh;
             return nullptr;
         }
         bool isLoaded = load(key);
@@ -181,17 +146,32 @@ public:
         return _counting;
     }
 
-    SwappyItems () {
+    uint64_t prioSize() {
+        return _prios.size();
+    }
+
+    SwappyItems (int swappyId) {
         _counting = 0;
-        updates = 0;
+        _swappyId = swappyId;
 
-        bloomSaysFresh = 0;
-        bloomFails = 0;
+        statistic.updates = 0;
 
-        rangeSaysNo = 0;
-        rangeFails = 0;
+        statistic.bloomSaysFresh = 0;
+        statistic.bloomFails = 0;
 
-        fileLoads = 0;
+        statistic.rangeSaysNo = 0;
+        statistic.rangeFails = 0;
+
+        statistic.fileLoads = 0;
+
+        char filename[120];
+        snprintf(filename, 120, "%s%d", _prefix, _swappyId);
+        if (std::filesystem::exists(filename)) {
+            fprintf(stderr, "folder %s still exists! Please delete or rename it!\n", filename);
+            exit(0);
+        } else {
+            std::filesystem::create_directory(filename);
+        }
     }
 
 private:
@@ -254,7 +234,7 @@ private:
         for (Fid fid = 0; fid < _ranges.size(); ++fid) {
             if ( (key < _ranges[fid].first) || (key > _ranges[fid].second) ) {
                 // key is smaller then the smallest or bigger than the biggest
-                ++rangeSaysNo;
+                ++statistic.rangeSaysNo;
             } else {
                 candidates.insert(fid);
             }
@@ -265,8 +245,8 @@ private:
             if (success) {
 #ifdef DEBUG
                 printf(
-                    "%" PRId64 " is in %" PRId32 ".bin\n",
-                    key, fid
+                    "%" PRId64 " is in %s%d/%" PRId32 ".bin",
+                    _prefix, key, _swappyId, fid
                 );
 #endif
                 break; // the key was loaded into ram, because the file has it
@@ -276,11 +256,11 @@ private:
         if (success == false) {
             if (candidates.size() > 0) {
                 // many candidates, but finaly not found in file
-                ++rangeFails;
+                ++statistic.rangeFails;
             }
             return false;
         } else {
-            ++fileLoads;
+            ++statistic.fileLoads;
             return true;
         }
     }
@@ -303,8 +283,8 @@ private:
         TVALUE loadedVal;
         bool result = false;
 
-        char filename[60];
-        snprintf(filename, 60, "./temp/%" PRId32 ".bin", fid);
+        char filename[120];
+        snprintf(filename, 120, "%s%d/%" PRId32 ".bin", _prefix, _swappyId, fid);
         std::ifstream file(filename, std::ios::in | std::ios::binary);
 
         for (Id c = 0; c < EACHFILE; ++c) {
@@ -385,8 +365,8 @@ private:
                     _ranges.push_back(std::make_pair(0,0)); // add an empty dummy Range
                 }
 
-                char filename[60];
-                snprintf(filename, 60, "./temp/%" PRId32 ".bin", pos);
+                char filename[120];
+                snprintf(filename, 120, "%s%d/%" PRId32 ".bin", _prefix, _swappyId, pos);
                 file.open(filename, std::ios::out | std::ios::binary);
                 smallest = it->first;
             }

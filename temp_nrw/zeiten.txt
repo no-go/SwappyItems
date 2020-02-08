@@ -1,4 +1,0 @@
-start   ca  2020-02-04 23:38:10
-abbruch ca  2020-02-06 08:35
-
-zuletzt: ca 8h für 600000 items

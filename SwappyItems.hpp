@@ -21,7 +21,8 @@
 #include <deque>          // for key order (prio)
 #include <map>            // for store keys in a sorted way
 
-#include <filesystem>     // check and create directories
+#include <experimental/filesystem>     // check and create directories
+namespace filesys = std::experimental::filesystem;
 
 /**
  * a 0 as Key means, that this key/value pair is deleted, thus
@@ -166,11 +167,11 @@ public:
 
         char filename[120];
         snprintf(filename, 120, "%s%d", _prefix, _swappyId);
-        if (std::filesystem::exists(filename)) {
+        if (filesys::exists(filename)) {
             fprintf(stderr, "folder %s still exists! Please delete or rename it!\n", filename);
             exit(0);
         } else {
-            std::filesystem::create_directory(filename);
+            filesys::create_directory(filename);
         }
     }
 

@@ -1,8 +1,12 @@
+CC = g++
+CPPFLAGS = -Wall -mtune=native -std=c++17
+LDFLAGS = -lstdc++fs -lz -losmpbf -lprotobuf
+
 all:
-	g++ SwappyItems.cpp -Wall -O2 -mtune=native -std=c++17 -lz -losmpbf -lprotobuf -o SwappyItems.exe
+	g++ SwappyItems.cpp -O2 $(CPPFLAGS) $(LDFLAGS) -o SwappyItems.exe
 
 debug:
-	g++ SwappyItems.cpp -Wall -O0 -DDEBUG -std=c++17 -lz -losmpbf -lprotobuf -o SwappyItems.exe
+	g++ SwappyItems.cpp -g -O0 -DDEBUG $(CPPFLAGS) $(LDFLAGS) -o SwappyItems.exe
 
 clean:
 	rm -rf *.exe *.o

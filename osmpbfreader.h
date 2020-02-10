@@ -122,9 +122,10 @@ template<typename Visitor>
 struct Parser {
 
     void parse(){
+#ifdef DEBUG
         std::streampos todo = file_size;
         std::streampos last_todo = file_size;
-
+#endif
 
         while(!this->file.eof() && !finished) {
             OSMPBF::BlobHeader header = this->read_header();

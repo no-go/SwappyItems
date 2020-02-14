@@ -20,6 +20,9 @@ images löschen:
    docker rmi imageBezeichnung
    docker rmi -f imageBezeichnung  (forciert löscht auch laufende container!)
 
+eine bash auf basis eines Images starten (erzeugt einen container):
+   docker run -ti IMAGEID bash
+
 welche container von welchem image laufen:
    docker ps
    docker ps -l (welche existieren?)
@@ -28,22 +31,22 @@ container löschen:
    docker rm containerId
 
 einen dieser container (z.B. 72d468f455ea) als image speichern/überschreiben:
-   docker commit 72d468f455ea benutzername/imageBezeichnung
+   docker commit 72d468f455ea imageBezeichnung
 
 einen container stoppen:
    docker stop 72d468f455ea
    
-einen container wieder starten:
+einen "Exited" container wieder starten:
    docker start 72d468f455ea
+
+eingabeaufforderung wieder erreichen eines laufenden containers:
+   docker attach 72d468f455ea
 
 eine bash in einem laufenden container starten:
    docker exec -ti 72d468f455ea bash
 
-alternativ:
-   docker run -ti 72d468f455ea bash
-
 ein image starten und port 41088 auf den port 22 im Container umleiten:
-   docker run -it -p 41088:22 benutzername/imageBezeichnung bash
+   docker run -it -p 41088:22 imageBezeichnung bash
      root@0e7c25e67738:/# /etc/init.d/ssh start
      [ ok ] Starting OpenBSD Secure Shell server: sshd.
      root@0e7c25e67738:/#

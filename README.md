@@ -1,4 +1,17 @@
-# SwappyItems
+# it is pre alpha!
+
+how to get, build and run v0.78 :
+
+    mkdir data
+    place a pbf file in that data directory
+    git clone https://github.com/no-go/SwappyItems.git app
+    cd app
+    docker build .
+    docker run -ti -v $(pwd)/../data:/data -v $(pwd):/app 0ba9a25c6d70 bash
+    make
+    ./SwappyItems.exe /data/krefeld_mg.pbf
+
+## SwappyItems
 
 - c++17 nur für das initale anlegen von Orndern gebraucht (sonst c++11)
 - ein Key-Value Store

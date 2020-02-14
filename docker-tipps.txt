@@ -10,6 +10,9 @@ debian aus docker-hub installieren (weil image noch nicht lokal bekannt):
 mit dem ./Dockerfile ein image erzeugen:
    docker build -t imageBezeichnung .
 
+alternativ:
+   docker build -t docker.pkg.github.com/OWNER/REPOSITORY/IMAGE_NAME:VERSION .
+
 alle images auflisten:
    docker images
 
@@ -47,3 +50,11 @@ mit ssh auf container einloggen:
      dummy@localhost's password: 
      dummy@0e7c25e67738:~$ xterm
      dummy@0e7c25e67738:~$ exit
+
+
+gitlab details:
+   https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages
+
+ablegen (push) oder holen:
+   docker pull docker.pkg.github.com/OWNER/REPOSITORY/IMAGE_NAME:TAG_NAME
+   

@@ -39,6 +39,9 @@ einen container wieder starten:
 eine bash in einem laufenden container starten:
    docker exec -ti 72d468f455ea bash
 
+alternativ:
+   docker run -ti 72d468f455ea bash
+
 ein image starten und port 41088 auf den port 22 im Container umleiten:
    docker run -it -p 41088:22 benutzername/imageBezeichnung bash
      root@0e7c25e67738:/# /etc/init.d/ssh start

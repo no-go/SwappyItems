@@ -7,7 +7,7 @@
 #include <inttypes.h>
 #include <vector>
 
-#include "SwappyItems.hpp"
+#include <stxxl/unordered_map>
 #include "osmpbfreader.h"
 
 using namespace CanalTP;
@@ -21,8 +21,8 @@ using namespace std;
 #define FILE_MULTI        4
 #define RAM_MULTI         2
 
-
-
+#define SUB_BLOCK_SIZE         32
+#define SUB_BLOCKS_PER_BLOCK  (1024 * FILE_MULTI * RAM_MULTI)
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
@@ -40,19 +40,19 @@ void ValueSet (Value & v, double lon = 0, double lat = 0, bool town = false, uin
     v._town = town;
 }
 
+struct HashFunctor {
+    size_t operator () (Key key) const {
+        return (size_t)(key * 2654435761u);
+    }
+};
+struct CompareLess {
+    bool operator () (const Key& a, const Key& b) const { return a < b; }
+    static Key min_value() { return numeric_limits<Key>::min(); }
+    static Key max_value() { return numeric_limits<Key>::max(); }
+};
 
-
-
-
-
-
-
-
-
-
-
-typedef SwappyItems<
- Key, Value, (FILE_ITEMS), FILE_MULTI, RAM_MULTI
+typedef stxxl::unordered_map<
+ Key, Value, HashFunctor, CompareLess, SUB_BLOCK_SIZE, SUB_BLOCKS_PER_BLOCK
 > KVstore;
 
 // ---------------------------------------------------------------------
@@ -67,32 +67,32 @@ struct Routing {
 
     void way_callback (uint64_t osmid, const Tags & tags, const vector<uint64_t> & refs) {
         if (tags.find("highway") != tags.end()) {
-            Value * wa;
+            KVstore::iterator wa;
             for (uint64_t ref : refs) {
 
-                wa = ways->get(ref);
+                wa = ways->find(ref);
 
                 if (ways->size()%2048 == 0) {
                     time_t now = time(nullptr);
                     seconds = difftime(now,start);
                     printf(
                         "%10.f "
-                        "%10ld "
-                        "%10ld items\n",
+                        "%10lld "
+                        "%10lld Byte\n",
                         seconds,
                         ways->size(),
-                        ways->prioSize()
+                        ways->buffer_size()
                     );
                 }
-                Value dummy;
-                if (wa == nullptr) {
-                    
+                
+                if (wa == ways->end()) {
+                    Value dummy;
                     ValueSet(dummy, 0.0, 0.0, false);
-                    
+                    ways->insert(make_pair(ref, dummy));
                 } else {
-                    ValueSet(dummy, wa->_lon, wa->_lat, wa->_town, wa->_uses+1);
+                    wa->second._uses++;
                 }
-                ways->set(ref, dummy);
+
             }
         }
     }
@@ -106,10 +106,10 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    stxxl::config * cfg = stxxl::config::get_instance();
+    cfg->add_disk( stxxl::disk_config("disk=/tmp/stxxl-SwappyItems.tmp, 4 GiB,memory") );
 
-
-
-    KVstore * ways = new KVstore(42);
+    KVstore * ways = new KVstore(1); // BOESE!!! der default wert 0 lässt stxxl bei empty() count() und find() abstürzen
     Routing routing;
     routing.ways = ways;
     

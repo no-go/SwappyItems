@@ -11,6 +11,9 @@ how to get, build and run v0.78 :
     make
     ./SwappyItems.exe /data/krefeld_mg.pbf
 
+vorsicht. Die SwappyItems.cpp ist ab dem 15.02.2020 verkleinert und angepasst worden, um sie
+mit STxxL besser vergleichen zu können.
+
 ## SwappyItems
 
 - c++17 nur für das initale anlegen von Orndern gebraucht (sonst c++11)

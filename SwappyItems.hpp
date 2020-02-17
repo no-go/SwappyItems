@@ -142,11 +142,18 @@ public:
         }
     }
 
+    /**
+     * with parameter true you get the number of items in ram
+     */
     uint64_t size(bool ramOnly = false) {
         if (ramOnly) return _ramList.size();
         return _counting;
     }
 
+    /**
+     * get the size of the priority queue, which may be bigger than
+     * the items in ram (items marked as deleted)
+     */
     uint64_t prioSize() {
         return _prios.size();
     }

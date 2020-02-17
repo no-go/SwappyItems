@@ -6,8 +6,8 @@ how to get, build and run v0.78 :
     place a pbf file in that data directory
     git clone https://github.com/no-go/SwappyItems.git app
     cd app
-    docker build .
-    docker run -ti -v $(pwd)/../data:/data -v $(pwd):/app 0ba9a25c6d70 bash
+    docker build -t swappyitems .
+    docker run -ti -v $(pwd)/../data:/data -v $(pwd):/app swappyitems bash
     make
     ./SwappyItems.exe /data/krefeld_mg.pbf
 
@@ -16,7 +16,7 @@ mit STxxL besser vergleichen zu können.
 
 ## SwappyItems
 
-- c++17 nur für das initale anlegen von Orndern gebraucht (sonst c++11)
+- c++17 nur für das initale anlegen von Ordern gebraucht (sonst c++11)
 - ein Key-Value Store
 - der Key muss eindeutig sein und darf nicht 0 sein
 - ein `get()` liefert nullptr, falls der Key nicht existiert
@@ -49,7 +49,7 @@ Beispiel: `SwappyItems<Key,Value,(16*1024),8,4> nodes;` bedeutet
 - Der Swap wird ausgelöst, wenn 4x 8x 16k Items im Speicher überschritten werden.
 - vorsicht! new verwenden! der Constructor bekommt eine Nummer, die als prefix für ausgelagerte Dateien dient!
 
-Das Testprogramm `SwappyItems.cpp` gibt alle 2048 neue Items in "ways" Auskunft:
+Das Testprogramm `SwappyItems.cpp` (v0.78) gibt folgende Auskunft, wenn die "size" durch 2048 teilbar ist:
 
 - zeitpunkt
 - anzahl der hinzugefügten Items
@@ -65,12 +65,48 @@ Das Testprogramm `SwappyItems.cpp` gibt alle 2048 neue Items in "ways" Auskunft:
 
 Das Testprogramm ließt eine pbf Datei (Open Street Map) und verarbeitet/ließt Knoten von Wegen.
 
+### Bloom filter und mehr
+
+Um initial mit vielen neu hinzugefügten Keys zurecht zu kommen, muss es schnell
+erkennbar sein, ob ein Key schon mal da war, aber evtl. durch das Auslagern in eine
+Datei nicht im RAM (*unordered_map*) zu finden ist. Mit einem Bloom Filter habe ich
+daher einen Fingerabdruck je Key in unterschiedlichen Datenstrukturen hinterlassen,
+um sicher sagen zu können, ob ein Key neu ist.
+
+Der verwendete Bloom-Filter ist sehr primitiv und aktuell nur aus einer
+Intuition heraus "gut" konvektioniert.
+Ein Key wird als Seed des C-Zufallsgenerators genommen. Um nun zu einem Key 4 Bits
+zu bekommen, die gesetzt werden sollen, wird der Zufallsgenerator 4 mal aufgerufen.
+Durch Modulo und diesen Pseudozufallsgenerator erhalte ich 4 Werte aus einem definierten
+Wertebereich.
+
+Anstelle des Setzens dieser Werte in einem sehr langen Bit-Vektor (was wäre hier optimal?)
+entschied ich mich für folgendes:
+
+Der erste Wert geht von 0 bis "Anzahl der Items, die bei einem Swap ausgelagert werden".
+Dieser Wert wird in einem *Set* abgelegt. Ist bei einem Key dieser Wert nicht vorhanden,
+ist der Key neu. Ansonsten:
+
+Der zweite Wert geht von 0 bis "Anzahl der Items, die bei einem Swap ausgelagert werden".
+Dieser Wert dient als Schlüssel in einer *unordered_map*.  Ist dieser Schlüssel nicht
+vorhanden, ist der Key offensichtlich neu. Ansonsten:
+
+Der 3. und 4. Wert geht von 0 bis "Anzahl der Items je Datei geteilt durch 4". Sind diese
+beiden Werte nicht in dem *Set* der o.g. *unordered_map* an Schlüsselposition zu finden,
+dann ist der Key neu. Ansonsten:
+
+Es wird in den *Ranges* die Dateien herausgesucht, wo der Key enthalten sein
+kann (min < key < max). Sollte jedoch keine Datei in Frage kommen, ist der Key neu. Ansonsten:
+
+Durchsuche jede in Frage kommende Datei, bis der Key gefunden ist. Ansonsten ist der Key neu. 
+
 ## todo?
 
 - iterator
 - delete (does not work because of bloom filter)
 - schnelle Dateisuche, da Daten in Datei sortiert sind
 - Vergleich/Grafiken zur Performance
+- Key=0 sollte möglich sein z.B. durch speichern der gelöschten Werte in der priority_queue in einem eigenen Set
 
 ## Hacks für die Zukunft
 
@@ -79,6 +115,10 @@ Das Testprogramm ließt eine pbf Datei (Open Street Map) und verarbeitet/ließt 
 - welche Prio ein Bucket hat, wird in einem array abgelegt. Ein Head-Pointer (id im Array) zeigt auf das Aktuellste Bucket.
 - eine Directory (unordered map) merkt sich min/max jedes Buckets
 - alte Buckets werden in Dateien ausgelagert.
+
+- über nicht buffered access oder multi thread nachdenken
+- kann ich b+-Baum für meine Zwecke bei der Dateisuche nutzen?
+- wie kann ich ohne dateisystem oder mit XFS arbeiten?
 
 ## Mehrere Swappy Items (Constructor Variable)
 

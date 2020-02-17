@@ -7,7 +7,7 @@
 #include <inttypes.h>
 #include <vector>
 
-#include "SwappyItems.hpp"
+#include "SwappyItemsSDA3.hpp"
 #include "osmpbfreader.h"
 
 using namespace CanalTP;
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    KVstore * ways = new KVstore(42);
+    KVstore * ways = new KVstore();
     Routing routing;
     routing.ways = ways;
     

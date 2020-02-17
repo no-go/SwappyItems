@@ -4,9 +4,10 @@ LDFLAGS = -lz -losmpbf -lprotobuf
 XLFLAGS = -lstxxl -lpthread -fopenmp 
 
 all:
-	g++ SwappyItems.cpp        -O2 $(CPPFLAGS) $(LDFLAGS) -lstdc++fs -o SwappyItems.exe
+	g++ SwappyItems.cpp        -O2 $(CPPFLAGS)                    $(LDFLAGS) -lstdc++fs -o SwappyItems.exe
+	g++ SwappyItemsSDA3.cpp    -O2 -Wall -mtune=native -std=c++11 $(LDFLAGS)            -o SwappyItemsSDA3.exe
 	g++ STxxL_unorderedMap.cpp -O2 $(CPPFLAGS) $(LDFLAGS) $(XLFLAGS) -o STxxL_unorderedMap.exe
-	g++ STxxL_Map.cpp -O2 $(CPPFLAGS) $(LDFLAGS) $(XLFLAGS) -o STxxL_Map.exe
+	g++ STxxL_Map.cpp          -O2 $(CPPFLAGS) $(LDFLAGS) $(XLFLAGS) -o STxxL_Map.exe
 
 debug:
 	g++ SwappyItems.cpp        -g -O0 -DDEBUG $(CPPFLAGS) $(LDFLAGS) -lstdc++fs -o SwappyItems.exe

@@ -1,13 +1,8 @@
 #ifndef __SWAPPY_ITEMS_HPP__
 #define __SWAPPY_ITEMS_HPP__ 1
 
-// we need it for PRId32 in snprintf
-#define __STDC_FORMAT_MACROS
-
 #include <inttypes.h>  // uintX_t stuff
-#include <fstream>     // file operations
 #include <iostream>    // sizeof and ios namespace
-#include <cstdio>      // snprintf for filename
 #include <algorithm>   // find
 #include <stdexcept>   // std::out_of_range
 
@@ -21,8 +16,11 @@
 #include <deque>          // for key order (prio)
 #include <map>            // for store keys in a sorted way
 
-#include <experimental/filesystem>     // check and create directories
-namespace filesys = std::experimental::filesystem;
+// open, close read, write
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h> // lseek()
+#include <fcntl.h>
 
 /**
  * a 0 as Key means, that this key/value pair is deleted, thus
@@ -30,8 +28,6 @@ namespace filesys = std::experimental::filesystem;
  */
 template <class TKEY, class TVALUE, int EACHFILE = 16384, int OLDIES = 4, int RAMSIZE = 2>
 class SwappyItems {
-
-    const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
 
     typedef uint32_t                               Id;
     typedef uint32_t                              Fid; // File id
@@ -59,8 +55,9 @@ class SwappyItems {
     Blooms _indicator2;
 
     uint64_t _counting = 0;
-    int _swappyId = 0;
 
+    int _deviceLink = -1;
+    
 public:
 
     struct {
@@ -158,9 +155,8 @@ public:
         return _prios.size();
     }
 
-    SwappyItems (int swappyId) {
+    SwappyItems (int deviceLink) {
         _counting = 0;
-        _swappyId = swappyId;
 
         statistic.updates = 0;
 
@@ -171,15 +167,8 @@ public:
         statistic.rangeFails = 0;
 
         statistic.fileLoads = 0;
-
-        char filename[120];
-        snprintf(filename, 120, "%s%d", _prefix, _swappyId);
-        if (filesys::exists(filename)) {
-            fprintf(stderr, "folder %s still exists! Please delete or rename it!\n", filename);
-            exit(0);
-        } else {
-            filesys::create_directory(filename);
-        }
+        
+        _deviceLink = deviceLink;
     }
 
 private:
@@ -251,12 +240,6 @@ private:
         for (Fid fid : candidates) {
             success = loadFromFile(fid, key);
             if (success) {
-#ifdef DEBUG
-                printf(
-                    "%" PRId64 " is in %s%d/%" PRId32 ".bin",
-                    _prefix, key, _swappyId, fid
-                );
-#endif
                 break; // the key was loaded into ram, because the file has it
             }
         }
@@ -291,17 +274,15 @@ private:
         TVALUE loadedVal;
         bool result = false;
 
-        char filename[120];
-        snprintf(filename, 120, "%s%d/%" PRId32 ".bin", _prefix, _swappyId, fid);
-        std::ifstream file(filename, std::ios::in | std::ios::binary);
+        uint64_t pointer = fid * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE));
+        lseek(_deviceLink, pointer, SEEK_SET);
 
         for (Id c = 0; c < EACHFILE; ++c) {
-            file.read((char *) &loadedKey, sizeof(TKEY));
-            file.read((char *) &loadedVal, sizeof(TVALUE));
+            read(_deviceLink, &loadedKey, sizeof(TKEY));
+            read(_deviceLink, &loadedVal, sizeof(TVALUE));
             if (loadedKey == key) result = true;
             temp[loadedKey] = loadedVal;
         }
-        file.close();
 
         if (result == false) return false; // key not exists
 
@@ -351,7 +332,6 @@ private:
 
         // run through sorted items
         Id written = 0;
-        std::ofstream file;
         typename std::map<TKEY,TVALUE>::iterator it;
 
         for (it=temp.begin(); it!=temp.end(); ++it) {
@@ -373,15 +353,14 @@ private:
                     _ranges.push_back(std::make_pair(0,0)); // add an empty dummy Range
                 }
 
-                char filename[120];
-                snprintf(filename, 120, "%s%d/%" PRId32 ".bin", _prefix, _swappyId, pos);
-                file.open(filename, std::ios::out | std::ios::binary);
+                uint64_t pointer = pos * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE));
+                lseek(_deviceLink, pointer, SEEK_SET);
                 smallest = it->first;
             }
 
             // store data
-            file.write((char *) &(it->first), sizeof(TKEY));
-            file.write((char *) &(it->second), sizeof(TVALUE));
+            write(_deviceLink, (char *) &(it->first), sizeof(TKEY));
+            write(_deviceLink, (char *) &(it->second), sizeof(TVALUE));
 
             ++written;
 
@@ -391,7 +370,6 @@ private:
                     smallest,
                     it->first
                 );
-                file.close();
             }
         }
     }

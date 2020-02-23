@@ -1,5 +1,26 @@
 # it is pre alpha!
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Deprecated -------
+
+the text that follows from here on is out of date and possibly incorrect or
+does not reflect the current state of the project.
+
+
+## Docker
+
 how to get, build and run v0.78 :
 
     mkdir data

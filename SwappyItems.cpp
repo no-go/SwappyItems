@@ -15,11 +15,11 @@
 using namespace CanalTP;
 using namespace std;
 
-#define FILE_ITEMS    (128*1024)
+#define FILE_ITEMS    ( 16*1024)
 #define FILE_MULTI            4
-#define RAM_MULTI             2
+#define RAM_MULTI             3
 #define BBITS                 3
-#define BMASK     (4*  128*1024)
+#define BMASK     (4*   16*1024)
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 

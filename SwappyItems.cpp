@@ -83,18 +83,12 @@ struct Routing {
 };
 
 int main(int argc, char** argv) {
-    if(argc != 3) {
-        printf("Usage: %s file_to_read.osm.pbf /dev/unusedSwapPartition\n", argv[0]);
+    if(argc != 2) {
+        printf("Usage: %s file_to_read.osm.pbf\n", argv[0]);
         return 1;
     }
     
-    int file = open(argv[2], O_RDWR | O_NONBLOCK);
-    if (file == -1) {
-        perror("open device failed");
-        return 2;
-    }
-    
-    KVstore * ways = new KVstore(file);
+    KVstore * ways = new KVstore(23);
     Routing routing;
     routing.ways = ways;
     
@@ -102,8 +96,6 @@ int main(int argc, char** argv) {
 
     //read_osm_pbf(argv[1], routing, false); // initial read nodes (and relations)
     read_osm_pbf(argv[1], routing, true); // read way only
-    
-    close(file);
     
     time_t now = time(nullptr);
     seconds = difftime(now,start);

@@ -1,5 +1,5 @@
 CC = g++
-CPPFLAGS = -Wall -mtune=native -std=c++11
+CPPFLAGS = -Wall -mtune=native -std=c++17
 LDFLAGS = -lz -losmpbf -lprotobuf -lstdc++fs
 
 all:

@@ -142,8 +142,6 @@ public:
         statistic.updates = 0;
 
         statistic.bloomSaysFresh = 0;
-        statistic.bloomFails = 0;
-
         statistic.rangeSaysNo = 0;
         statistic.rangeFails = 0;
 
@@ -191,19 +189,30 @@ private:
      * @return false, if not exists
      */
     bool loadFromFiles (const TKEY & key) {
-        bool success = false;
+        bool success;
         std::set<Fid> candidates;
-
+        Fingerprint fp = getFingerprint(key);
+        
         // pos as index in ranges
         for (Fid fid = 0; fid < _ranges.size(); ++fid) {
             if ( (key < _ranges[fid].minimum) || (key > _ranges[fid].maximum) ) {
                 // key is smaller then the smallest or bigger than the biggest
                 ++statistic.rangeSaysNo;
             } else {
-                candidates.insert(fid);
+                // check bloom (is it possible, that this key is in that file?)
+                success = true;
+                for (auto b : fp) {
+                    if (_ranges[fid].bloomMask[b] == false) {
+                        success = false;
+                        ++statistic.bloomSaysFresh;
+                        break;
+                    }
+                }
+                if (success) candidates.insert(fid);
             }
         }
 
+        success = false;
         for (Fid fid : candidates) {
             success = loadFromFile(fid, key);
             if (success) {

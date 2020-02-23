@@ -15,9 +15,11 @@
 using namespace CanalTP;
 using namespace std;
 
-#define FILE_ITEMS  (32*1024)
-#define FILE_MULTI         4
-#define RAM_MULTI          2
+#define FILE_ITEMS    (128*1024)
+#define FILE_MULTI            4
+#define RAM_MULTI             2
+#define BBITS                 3
+#define BMASK     (4*  128*1024)
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
@@ -35,12 +37,37 @@ void ValueSet (Value & v, double lon = 0, double lat = 0, bool town = false, uin
     v._town = town;
 }
 
-typedef SwappyItems<Key, Value, FILE_ITEMS, FILE_MULTI, RAM_MULTI, 4, 2* 4*(FILE_ITEMS)> KVstore;
+typedef SwappyItems<Key, Value, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> KVstore;
 
 // ---------------------------------------------------------------------
 
 time_t start;
 double seconds;
+
+int parseLine(char* line) {
+    // This assumes that a digit will be found and the line ends in " Kb".
+    int i = strlen(line);
+    const char* p = line;
+    while (*p <'0' || *p > '9') p++;
+    line[i-3] = '\0';
+    i = atoi(p);
+    return i;
+}
+
+int getUsedKB() {
+    FILE* fi = fopen("/proc/self/status", "r");
+    int result = -1;
+    char line[128];
+
+    while (fgets(line, 128, fi) != NULL){
+        if (strncmp(line, "VmRSS:", 6) == 0){
+            result = parseLine(line);
+            break;
+        }
+    }
+    fclose(fi);
+    return result;
+}
 
 struct Routing {
     KVstore * ways;
@@ -58,12 +85,31 @@ struct Routing {
                     time_t now = time(nullptr);
                     seconds = difftime(now,start);
                     printf(
-                        "%10.f "
-                        "%10ld "
-                        "%10ld items\n",
+                        "%10.f s "
+                        "%10ld i "
+                        "%10ld q "
+                        
+                        "%10" PRId64 " u "
+
+                        "%10" PRId64 " r "
+                        "%10" PRId64 " b "
+                        "%10" PRId64 " e "
+                        
+                        "%10" PRId64 " f "
+                        "%10d kB\n",
+                        
                         seconds,
                         ways->size(),
-                        ways->prioSize()
+                        ways->prioSize(),
+                        
+                        ways->statistic.updates,
+                        
+                        ways->statistic.rangeSaysNo, 
+                        ways->statistic.bloomSaysFresh,
+                        ways->statistic.rangeFails,
+                        
+                        ways->statistic.fileLoads,
+                        getUsedKB()
                     );
                 }
                 Value dummy;

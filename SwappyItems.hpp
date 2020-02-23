@@ -7,11 +7,9 @@
 #include <stdexcept>   // std::out_of_range
 
 #include <cstdlib>     // srand, rand, exit
-#include <tuple>       // to return some hash values
 
 #include <vector>         // store file information
 #include <set>            // a set of candidate files
-#include <utility>        // pair
 #include <unordered_map>  // for a key->data
 #include <deque>          // for key order (prio)
 #include <map>            // for store keys in a sorted way
@@ -27,19 +25,26 @@ namespace filesys = std::experimental::filesystem;
  * a 0 as Key means, that this key/value pair is deleted, thus
  * never use 0 as a key! this data may be ignored sometimes.
  */
-template <class TKEY, class TVALUE, int EACHFILE = 16384, int OLDIES = 4, int RAMSIZE = 2>
+template <
+    class TKEY, class TVALUE,
+    int EACHFILE = 16384, int OLDIES = 5, int RAMSIZE = 3, int BLOOMBITS = 4, int MASKLENGTH = (2* 4*16384)
+>
 class SwappyItems {
+
+    struct Detail {
+        TKEY minimum;
+        TKEY maximum;
+        std::vector<bool> bloomMask;
+    };
 
     typedef uint32_t                               Id;
     typedef uint32_t                              Fid; // File id
 
     typedef uint32_t                              Bid;
-    typedef std::tuple<Bid,Bid,Bid,Bid>   Fingerprint;
-    typedef std::set<Bid>                       Bloom;
-    typedef std::unordered_map<Bid,Bloom>      Blooms;
+    typedef std::set<Bid>                 Fingerprint;
 
     typedef std::unordered_map<TKEY,TVALUE>       Ram;
-    typedef std::vector<std::pair<TKEY,TKEY> > Ranges;
+    typedef std::vector<Detail>                Ranges;
     typedef std::deque<TKEY>                    Order;
 
     // the item store in RAM
@@ -51,14 +56,11 @@ class SwappyItems {
     // for each filenr we store min/max value to filter
     Ranges _ranges;
 
-    // Indicators to detect new keys
-    Bloom  _indicator1;
-    Blooms _indicator2;
-
     uint64_t _counting = 0;
 
     int _swappyId = 0;
-    const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")      
+    const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
+    
 public:
 
     struct {
@@ -79,18 +81,7 @@ public:
      * @return true if it is new
      */
     bool set (TKEY key, TVALUE value) {
-        // still exists?
-        bool isLoaded = false;
-        Fingerprint fp = getFingerprint(key);
-        bool maybe = mayExist(fp);
-        if (maybe) {
-            // key may exists, we try to load it
-            isLoaded = load(key);
-        } else {
-            ++statistic.bloomSaysFresh;
-        }
-
-        if (isLoaded) {
+        if (load(key)) {
             // just update
             auto it = std::find(_prios.begin(), _prios.end(), key);
             *it = 0; // overwrite the key with zero
@@ -104,15 +95,6 @@ public:
             ++_counting;
             _prios.push_back(key);
             _ramList[key] = value;
-
-            if (maybe == false) {
-                _indicator1.insert(std::get<0>(fp));
-                _indicator2[std::get<1>(fp)].insert(std::get<2>(fp));
-                _indicator2[std::get<1>(fp)].insert(std::get<3>(fp));
-            } else {
-                // bloom think, the key may exist, but the key does not exist
-                ++statistic.bloomFails;
-            }
             return true;
         }
     }
@@ -124,13 +106,7 @@ public:
      * @return nullptr if item not exists
      */
     TVALUE * get (const TKEY & key) {
-        Fingerprint fp = getFingerprint(key);
-        if (mayExist(fp) == false) {
-            ++statistic.bloomSaysFresh;
-            return nullptr;
-        }
-        bool isLoaded = load(key);
-        if (isLoaded) {
+        if (load(key)) {
             auto it = std::find(_prios.begin(), _prios.end(), key);
             *it = 0; // overwrite the key with zero
             _prios.push_back(key);
@@ -142,6 +118,8 @@ public:
 
     /**
      * with parameter true you get the number of items in ram
+     * 
+     * @todo add both to statistics ?
      */
     uint64_t size(bool ramOnly = false) {
         if (ramOnly) return _ramList.size();
@@ -151,6 +129,8 @@ public:
     /**
      * get the size of the priority queue, which may be bigger than
      * the items in ram (items marked as deleted)
+     * 
+     * @todo add to statistics ?
      */
     uint64_t prioSize() {
         return _prios.size();
@@ -182,36 +162,14 @@ public:
 
 private:
 
-    /**
-     * this is a not mathematical exact improvement
-     */
     Fingerprint getFingerprint (const TKEY & key) {
         srand(key);
-        return std::make_tuple(
-            rand()%(EACHFILE * OLDIES),
-            rand()%(EACHFILE * OLDIES),
-            rand()%(EACHFILE>>2),
-            rand()%(EACHFILE>>2)
-        );
-    }
-
-    bool mayExist (const Fingerprint & fp) {
-        Bloom indi_3_4;
-
-        if (_indicator1.find(std::get<0>(fp)) == _indicator1.end() ) return false;
-
-        try {
-            indi_3_4 = _indicator2.at(std::get<1>(fp));
-        } catch (const std::out_of_range & oor) {
-            return false;
+        Fingerprint fp;
+        for(int i=0; i < BLOOMBITS; ++i) {
+            fp.insert( rand()%(MASKLENGTH) );
         }
-
-        if (indi_3_4.find(std::get<2>(fp)) == indi_3_4.end() ) return false;
-        if (indi_3_4.find(std::get<3>(fp)) == indi_3_4.end() ) return false;
-
-        return true;
+        return fp;
     }
-
 
     /**
      * try to load a key/value into ramList
@@ -238,7 +196,7 @@ private:
 
         // pos as index in ranges
         for (Fid fid = 0; fid < _ranges.size(); ++fid) {
-            if ( (key < _ranges[fid].first) || (key > _ranges[fid].second) ) {
+            if ( (key < _ranges[fid].minimum) || (key > _ranges[fid].maximum) ) {
                 // key is smaller then the smallest or bigger than the biggest
                 ++statistic.rangeSaysNo;
             } else {
@@ -299,7 +257,7 @@ private:
 
         // ok, key exist. clean mask now, because we do not
         // need the (still undeleted) file anymore
-        _ranges[fid] = std::make_pair(0,0);
+        _ranges[fid] = Detail{0, 0};
 
         // we try to make place for the filecontent in RAM ...
         maySwap(true);
@@ -326,7 +284,9 @@ private:
         if ( (_ramList.size() + needed) < (RAMSIZE * EACHFILE * OLDIES) ) return;
 
         Id pos;
-        TKEY smallest;
+        Detail detail{0, 0};
+        Fingerprint fp;
+        
         std::map<TKEY,TVALUE> temp; // map is sorted by key!
         bool success;
 
@@ -353,7 +313,7 @@ private:
 
                 // find empty range, else create one on position ".size()"
                 for (Fid fid = 0; fid < _ranges.size(); ++fid) {
-                    if (_ranges[fid].first == 0 && _ranges[fid].second == 0) {
+                    if (_ranges[fid].minimum == 0 && _ranges[fid].maximum == 0) {
                         pos = fid;
                         success = true;
                         break; // we found an empty Range
@@ -362,27 +322,31 @@ private:
 
                 if (success == false) {
                     pos = _ranges.size();
-                    _ranges.push_back(std::make_pair(0,0)); // add an empty dummy Range
+                    // add an empty dummy Range
+                    _ranges.push_back( Detail{0, 0} ); 
                 }
 
                 char filename[120];
                 snprintf(filename, 120, "%s%d/%" PRId32 ".bin", _prefix, _swappyId, pos);
                 file.open(filename, std::ios::out | std::ios::binary);
-                smallest = it->first;
+                detail.minimum = it->first;
+                detail.bloomMask = std::vector<bool>(MASKLENGTH, false);
             }
 
             // store data
             file.write((char *) &(it->first), sizeof(TKEY));
             file.write((char *) &(it->second), sizeof(TVALUE));
 
+            fp = getFingerprint(it->first);
+            for (auto b : fp) {
+                detail.bloomMask[b] = true;
+            }
             ++written;
 
             if ((written%(EACHFILE)) == 0) {
                 // store range
-                _ranges[pos] = std::make_pair(
-                    smallest,
-                    it->first
-                );
+                detail.maximum = it->first;
+                _ranges[pos] = detail;
                 file.close();
             }
         }

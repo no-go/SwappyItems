@@ -15,9 +15,9 @@
 using namespace CanalTP;
 using namespace std;
 
-#define FILE_ITEMS  32*1024
-#define FILE_MULTI        4
-#define RAM_MULTI         2
+#define FILE_ITEMS  (32*1024)
+#define FILE_MULTI         4
+#define RAM_MULTI          2
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
@@ -35,7 +35,7 @@ void ValueSet (Value & v, double lon = 0, double lat = 0, bool town = false, uin
     v._town = town;
 }
 
-typedef SwappyItems<Key, Value, (FILE_ITEMS), FILE_MULTI, RAM_MULTI> KVstore;
+typedef SwappyItems<Key, Value, FILE_ITEMS, FILE_MULTI, RAM_MULTI, 4, 2* 4*(FILE_ITEMS)> KVstore;
 
 // ---------------------------------------------------------------------
 

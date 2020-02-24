@@ -72,6 +72,7 @@ public:
         uint64_t rangeSaysNo = 0;
         uint64_t rangeFails = 0;
 
+        uint64_t swaps = 0;
         uint64_t fileLoads = 0;
     } statistic;
 
@@ -145,6 +146,7 @@ public:
         statistic.rangeSaysNo = 0;
         statistic.rangeFails = 0;
 
+        statistic.swaps = 0;
         statistic.fileLoads = 0;
         
         _swappyId = swappyId;
@@ -298,6 +300,8 @@ private:
         
         std::map<TKEY,TVALUE> temp; // map is sorted by key!
         bool success;
+        
+        ++statistic.swaps;
 
         // remove old items from front and move them to temp
         for (pos = 0; pos < (OLDIES*EACHFILE); ) {

@@ -81,7 +81,7 @@ struct Routing {
 
                 wa = ways->get(ref);
 
-                if (ways->size()%2048 == 0) {
+                if (ways->size()%512 == 0) {
                     time_t now = time(nullptr);
                     seconds = difftime(now,start);
                     printf(
@@ -95,6 +95,7 @@ struct Routing {
                         "%10" PRId64 " b "
                         "%10" PRId64 " e "
                         
+                        "%10" PRId64 " s "
                         "%10" PRId64 " f "
                         "%10d kB\n",
                         
@@ -108,6 +109,7 @@ struct Routing {
                         ways->statistic.bloomSaysFresh,
                         ways->statistic.rangeFails,
                         
+                        ways->statistic.swaps,
                         ways->statistic.fileLoads,
                         getUsedKB()
                     );

@@ -4,6 +4,7 @@
 #define BBITS                 3
 #define BMASK     (4*   16*1024)
 
+HDD macbook 2 cores, aber nur 1 genutzt
 
 ~/Dokumente/MA/app
 tux@tux-pc$ ./SwappyItems.exe ../data/nrw.pbf 

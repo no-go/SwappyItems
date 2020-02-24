@@ -9,8 +9,7 @@ SSD ideapad 4 cores + 4 hyperthreads, aber nur 1 core genutzt,
 
 /run/media/tux/C408-48E7/app
 tux@chinair$ ./SwappyItems.exe ../data/nrw.pbf 
-Reading the file ../data/nrw.pbf
-667 MB to do
+Reading the file ../data/nrw.pbf 667 MB to do
          6 s          0 i          0 q          0 u          0 r          0 b          0 e          0 s          0 f      10616 kB
          6 s        512 i        534 q         11 u          0 r          0 b          0 e          0 s          0 f      10616 kB
          6 s       1024 i       1114 q         45 u          0 r          0 b          0 e          0 s          0 f      10616 kB

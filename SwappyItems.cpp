@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <utility> // pair
-#include <ctime>
+#include <chrono>
 
 #include <inttypes.h>
 #include <vector>
@@ -41,8 +41,8 @@ typedef SwappyItems<Key, Value, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK>
 
 // ---------------------------------------------------------------------
 
-time_t start;
-double seconds;
+std::chrono::time_point<std::chrono::system_clock> start;
+double mseconds;
 
 int parseLine(char* line) {
     // This assumes that a digit will be found and the line ends in " Kb".
@@ -81,9 +81,9 @@ struct Routing {
 
                 wa = ways->get(ref);
 
-                if (ways->size()%512 == 0) {
-                    time_t now = time(nullptr);
-                    seconds = difftime(now,start);
+                if (ways->size()%1024 == 0) {
+                    auto now = std::chrono::high_resolution_clock::now();
+                    mseconds = std::chrono::duration<double, std::milli>(now-start).count();
                     printf(
                         "%10.f s "
                         "%10ld i "
@@ -99,7 +99,7 @@ struct Routing {
                         "%10" PRId64 " f "
                         "%10d kB\n",
                         
-                        seconds,
+                        mseconds/1000,
                         ways->size(),
                         ways->prioSize(),
                         
@@ -140,14 +140,14 @@ int main(int argc, char** argv) {
     Routing routing;
     routing.ways = ways;
     
-    start = time(nullptr);
+    start = std::chrono::high_resolution_clock::now();
 
     //read_osm_pbf(argv[1], routing, false); // initial read nodes (and relations)
     read_osm_pbf(argv[1], routing, true); // read way only
     
-    time_t now = time(nullptr);
-    seconds = difftime(now,start);
-    printf("end: %.f\n", seconds);
+    auto now = std::chrono::high_resolution_clock::now();
+    mseconds = std::chrono::duration<double, std::milli>(now-start).count();
+    printf("end: %.f ms\n", mseconds);
     
     delete ways;
     return 0;

@@ -21,6 +21,10 @@
 #include <experimental/filesystem>     // check and create directories
 namespace filesys = std::experimental::filesystem;
 
+#include <thread>
+#include <atomic>
+#include "Semaphore.hpp"
+
 /**
  * a 0 as Key means, that this key/value pair is deleted, thus
  * never use 0 as a key! this data may be ignored sometimes.
@@ -60,6 +64,9 @@ class SwappyItems {
 
     int _swappyId = 0;
     const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
+    
+    Semaphore * _s;
+    std::atomic<bool> _loaded;
     
 public:
 
@@ -213,16 +220,26 @@ private:
                 if (success) candidates.insert(fid);
             }
         }
-
-        success = false;
+        
+        int cores = std::thread::hardware_concurrency();
+        _s = new Semaphore(cores);
+        _loaded = false;
+        
         for (Fid fid : candidates) {
-            success = loadFromFile(fid, key);
-            if (success) {
+            std::thread t(&SwappyItems::loadFromFile, this, fid, key);
+            t.detach();
+            _s->P();
+            if (_loaded) {
                 break; // the key was loaded into ram, because the file has it
             }
         }
+        
+        // @todo hier sollte ich nochmal darüber nachdenken, ob evtl noch
+        // threads laufen, welche in dateien (ohne erfolg, weil bereits gefunden)
+        // nach dem key suchen !!!
+        delete _s;
 
-        if (success == false) {
+        if (_loaded == false) {
             if (candidates.size() > 0) {
                 // many candidates, but finaly not found in file
                 ++statistic.rangeFails;
@@ -244,7 +261,7 @@ private:
      * @param key the key we are searching for
      * @return true, if key is loaded into ram
      */
-    bool loadFromFile (const Fid & fid, const TKEY & key) {
+    void loadFromFile (Fid fid, TKEY key) {
         // @todo Items are sorted in file! binary search?
 
         Ram temp;
@@ -264,7 +281,11 @@ private:
         }
         file.close();
 
-        if (result == false) return false; // key not exists
+        if (result == false) {
+             // key not exists
+            _s->V();
+            return;
+        }
 
         // ok, key exist. clean mask now, because we do not
         // need the (still undeleted) file anymore
@@ -277,7 +298,10 @@ private:
             _ramList[key_val.first] = key_val.second;
             _prios.push_back(key_val.first);
         }
-        return true;
+        
+        _loaded = true;
+        _s->V();
+        return;
     }
 
     /**

@@ -66,6 +66,7 @@ class SwappyItems {
     const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
     
     Semaphore * _s;
+    int _cores;
     std::atomic<bool> _loaded;
     
 public:
@@ -165,7 +166,15 @@ public:
         } else {
             filesys::create_directory(filename);
         }
+
+        _cores = std::thread::hardware_concurrency();
+        _s = new Semaphore(_cores);
     }
+    
+    ~SwappyItems () {
+        delete _s;
+    }
+
 
 private:
 
@@ -221,23 +230,18 @@ private:
             }
         }
         
-        int cores = std::thread::hardware_concurrency();
-        _s = new Semaphore(cores);
         _loaded = false;
         
         for (Fid fid : candidates) {
             std::thread t(&SwappyItems::loadFromFile, this, fid, key);
             t.detach();
             _s->P();
-            if (_loaded) {
-                break; // the key was loaded into ram, because the file has it
-            }
+            // the key was loaded into ram, because the file has it
+            if (_loaded) break;
         }
         
-        // @todo hier sollte ich nochmal darüber nachdenken, ob evtl noch
-        // threads laufen, welche in dateien (ohne erfolg, weil bereits gefunden)
-        // nach dem key suchen !!!
-        delete _s;
+        // wait until all threads are finish
+        while(_s->_count < _cores);
 
         if (_loaded == false) {
             if (candidates.size() > 0) {
@@ -276,7 +280,12 @@ private:
         for (Id c = 0; c < EACHFILE; ++c) {
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedVal, sizeof(TVALUE));
-            if (loadedKey == key) result = true;
+            if (loadedKey == key) {
+                result = true;
+            } else {
+                // stop this search, because a other thread find the key
+                if (_loaded) break;
+            }
             temp[loadedKey] = loadedVal;
         }
         file.close();

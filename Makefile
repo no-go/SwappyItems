@@ -1,6 +1,6 @@
 CC = g++
 CPPFLAGS = -Wall -mtune=native -std=c++17
-LDFLAGS = -pthread -lz -losmpbf -lprotobuf -lstdc++fs
+LDFLAGS = -lpthread -lz -losmpbf -lprotobuf -lstdc++fs
 
 all:
 	g++ SwappyItems.cpp    -O2         $(CPPFLAGS) $(LDFLAGS) -o SwappyItems.exe

@@ -143,7 +143,7 @@ int main(int argc, char** argv) {
     
     printf("# cores:                  %12d\n", thread::hardware_concurrency());
     printf("# items in a single file: %12d\n", FILE_ITEMS);
-    printf("# swap if more than       %12d items in RAM are reached\n",  RAM_MULTI);
+    printf("# swap if more than       %12d items in RAM are reached\n",  RAM_MULTI * FILE_MULTI * FILE_ITEMS);
     printf("# swap into               %12d files\n", FILE_MULTI);
     printf("# use                     %12d Bloom bits for a key in a file bitmask\n", BBITS);
     printf("# use a bitmask with      %12d bits for each file\n", BMASK);

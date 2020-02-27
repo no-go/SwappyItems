@@ -21,7 +21,9 @@
 #include <experimental/filesystem>     // check and create directories
 namespace filesys = std::experimental::filesystem;
 
-#include <thread>
+#include <execution> // c++17 and you need  -ltbb 
+
+#include <thread> // you need -lpthread
 #include <atomic>
 #include "Semaphore.hpp"
 
@@ -35,14 +37,15 @@ template <
 >
 class SwappyItems {
 
+    typedef uint32_t                               Id;
+    typedef uint32_t                              Fid; // File id
+
     struct Detail {
         TKEY minimum;
         TKEY maximum;
         std::vector<bool> bloomMask;
+        Fid fid;
     };
-
-    typedef uint32_t                               Id;
-    typedef uint32_t                              Fid; // File id
 
     typedef uint32_t                              Bid;
     typedef std::set<Bid>                 Fingerprint;
@@ -207,28 +210,33 @@ private:
      * @return false, if not exists
      */
     bool loadFromFiles (const TKEY & key) {
-        bool success;
         std::set<Fid> candidates;
+        std::mutex m;
         Fingerprint fp = getFingerprint(key);
         
-        // pos as index in ranges
-        for (Fid fid = 0; fid < _ranges.size(); ++fid) {
-            if ( (key < _ranges[fid].minimum) || (key > _ranges[fid].maximum) ) {
+        //for(Fid fid = 0; fid < _ranges.size(); ++fid) {
+        std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
+            if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
                 // key is smaller then the smallest or bigger than the biggest
+                std::lock_guard lock(m);
                 ++statistic.rangeSaysNo;
             } else {
                 // check bloom (is it possible, that this key is in that file?)
-                success = true;
+                bool success = true;
                 for (auto b : fp) {
-                    if (_ranges[fid].bloomMask[b] == false) {
+                    if (finfo.bloomMask[b] == false) {
                         success = false;
+                        std::lock_guard lock(m);
                         ++statistic.bloomSaysFresh;
                         break;
                     }
                 }
-                if (success) candidates.insert(fid);
+                if (success) {
+                    std::lock_guard lock(m);
+                    candidates.insert(finfo.fid);
+                }
             }
-        }
+        });
         
         _loaded = false;
         
@@ -359,7 +367,7 @@ private:
 
                 // find empty range, else create one on position ".size()"
                 for (Fid fid = 0; fid < _ranges.size(); ++fid) {
-                    if (_ranges[fid].minimum == 0 && _ranges[fid].maximum == 0) {
+                    if (_ranges[fid].minimum == _ranges[fid].maximum) {
                         pos = fid;
                         success = true;
                         break; // we found an empty Range
@@ -391,6 +399,7 @@ private:
 
             if ((written%(EACHFILE)) == 0) {
                 // store range
+                detail.fid = pos;
                 detail.maximum = it->first;
                 _ranges[pos] = detail;
                 file.close();

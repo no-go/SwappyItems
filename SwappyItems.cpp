@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <vector>
 #include <thread> // just for printing the number of cores
+#include <atomic>
 
 // catch ctrl+c
 #include <csignal>
@@ -20,18 +21,18 @@
 using namespace CanalTP;
 using namespace std;
 
-//#define FILE_ITEMS    (  4*1024)
-//#define FILE_MULTI           16
-//#define RAM_MULTI             8
-//#define BBITS                 5
-//#define BMASK     (10*   4*1024)
+#define FILE_ITEMS    (  4*1024)
+#define FILE_MULTI           16
+#define RAM_MULTI             8
+#define BBITS                 5
+#define BMASK     (10*   4*1024)
 
 // debug config --------------------------------
-#define FILE_ITEMS    (      10)
-#define FILE_MULTI            2
-#define RAM_MULTI             2
-#define BBITS                 5
-#define BMASK     (2*      5*10)
+//#define FILE_ITEMS    (      10)
+//#define FILE_MULTI            2
+//#define RAM_MULTI             2
+//#define BBITS                 5
+//#define BMASK     (2*      5*10)
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
@@ -84,6 +85,7 @@ int getUsedKB() {
 
 struct Routing {
     KVstore * ways;
+    atomic<bool> isPrinted = false;
 
     void node_callback (uint64_t osmid, double lon, double lat, const Tags & tags) {}
 
@@ -92,20 +94,21 @@ struct Routing {
             Value * wa;
             
             // debug brake ----------------------------------
-            if (ways->size() > 42) {
-                ways->hibernate();
-                exit(1);
-            }
+            //if (ways->size() > 42) {
+            //    ways->hibernate();
+            //    exit(1);
+            //}
             
             for (uint64_t ref : refs) {
 
                 wa = ways->get(ref);
 
-                if (ways->size()%1024 == 0) {
+                if ((ways->size()%1024 == 0) && (isPrinted == false)) {
+                    isPrinted = true;
                     auto now = std::chrono::high_resolution_clock::now();
                     mseconds = std::chrono::duration<double, std::milli>(now-start).count();
                     printf(
-                        "%10.f s "
+                        "%10.f ds "
                         "%10ld i "
                         "%10ld q "
                         
@@ -119,7 +122,7 @@ struct Routing {
                         "%10" PRId64 " f "
                         "%10d kB\n",
                         
-                        mseconds/1000,
+                        mseconds/100,
                         ways->size(),
                         ways->prioSize(),
                         
@@ -133,6 +136,9 @@ struct Routing {
                         ways->statistic.fileLoads,
                         getUsedKB()
                     );
+                } else {
+                    // prevent a log print every second, if size not changes
+                    isPrinted = false;
                 }
                 Value dummy;
                 if (wa == nullptr) {

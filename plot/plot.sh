@@ -5,8 +5,8 @@ set title outputFile
 set terminal pdf linewidth 1 size 20cm,18cm
 set output outputFile
 set yrange[0:2400]
-set xrange[0:2000]
-set xlabel \"time (sec)\"
+set xrange[0:20000]
+set xlabel \"time (deci sec)\"
 #set ylabel \"sachen\"
 set boxwidth 0.2
 set style fill solid 0.25 border -1

@@ -77,7 +77,7 @@ class SwappyItems {
     
 public:
 
-    struct {
+    struct statistic_s {
         uint64_t counting = 0;
         uint64_t updates = 0;
 
@@ -168,20 +168,44 @@ public:
      * stores all RAM content into file(s)
      */
     void hibernate () {
-        char fname[120];
-        snprintf(fname, 120, "%s%d/hibernate.ramlist", _prefix, _swappyId);
-        std::ofstream file(fname, std::ios::out | std::ios::binary);
-        
+        char filename[120];
+
+        snprintf(filename, 120, "%s%d/hibernate.ramlist", _prefix, _swappyId);
+        std::ofstream file(filename, std::ios::out | std::ios::binary);
         for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
             file.write((char *) &(it->first), sizeof(TKEY));
             file.write((char *) &(it->second), sizeof(TVALUE));
         }
         file.close();
-        
-        //snprintf(fname, 120, "%s%d/hibernate.prios", _prefix, _swappyId);
-        //snprintf(fname, 120, "%s%d/hibernate.ranges", _prefix, _swappyId);
-        //snprintf(fname, 120, "%s%d/hibernate.statistic", _prefix, _swappyId);
-        
+
+        snprintf(filename, 120, "%s%d/hibernate.statistic", _prefix, _swappyId);
+        file.open(filename, std::ios::out | std::ios::binary);
+        file.write((char *) &statistic, sizeof(statistic_s));
+        file.close();
+
+        snprintf(filename, 120, "%s%d/hibernate.prios", _prefix, _swappyId);
+        file.open(filename, std::ios::out | std::ios::binary);
+        for (auto it = _prios.begin(); it != _prios.end(); ++it) {
+            file.write((char *) &(it->key), sizeof(Qentry::key));
+            file.write((char *) &(it->deleted), sizeof(Qentry::deleted));
+        }
+        file.close();
+
+        snprintf(filename, 120, "%s%d/hibernate.ranges", _prefix, _swappyId);
+        file.open(filename, std::ios::out | std::ios::binary);
+        for (auto it = _ranges.begin(); it != _ranges.end(); ++it) {
+            file.write((char *) &(it->minimum), sizeof(Detail::minimum));
+            file.write((char *) &(it->maximum), sizeof(Detail::maximum));
+            for (bool b : it->bloomMask) {
+                if (b) {
+                    file.put('i');
+                } else {
+                    file.put('o');
+                }
+            }
+            file.write((char *) &(it->fid), sizeof(Detail::fid));
+        }
+        file.close();
     }
 
     /**
@@ -206,7 +230,6 @@ public:
 
     SwappyItems (int swappyId) {
         statistic.counting = 0;
-
         statistic.updates = 0;
 
         statistic.bloomSaysFresh = 0;

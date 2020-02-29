@@ -20,11 +20,18 @@
 using namespace CanalTP;
 using namespace std;
 
-#define FILE_ITEMS    (  4*1024)
-#define FILE_MULTI           16
-#define RAM_MULTI             8
+//#define FILE_ITEMS    (  4*1024)
+//#define FILE_MULTI           16
+//#define RAM_MULTI             8
+//#define BBITS                 5
+//#define BMASK     (10*   4*1024)
+
+// debug config --------------------------------
+#define FILE_ITEMS    (      10)
+#define FILE_MULTI            2
+#define RAM_MULTI             2
 #define BBITS                 5
-#define BMASK     (10*   4*1024)
+#define BMASK     (2*      5*10)
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
@@ -83,6 +90,13 @@ struct Routing {
     void way_callback (uint64_t osmid, const Tags & tags, const vector<uint64_t> & refs) {
         if (tags.find("highway") != tags.end()) {
             Value * wa;
+            
+            // debug brake ----------------------------------
+            if (ways->size() > 42) {
+                ways->hibernate();
+                exit(1);
+            }
+            
             for (uint64_t ref : refs) {
 
                 wa = ways->get(ref);

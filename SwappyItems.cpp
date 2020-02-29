@@ -10,6 +10,10 @@
 #include <vector>
 #include <thread> // just for printing the number of cores
 
+// catch ctrl+c
+#include <csignal>
+#include <unistd.h>
+
 #include "SwappyItems.hpp"
 #include "osmpbfreader.h"
 
@@ -39,6 +43,7 @@ void ValueSet (Value & v, double lon = 0, double lat = 0, bool town = false, uin
 }
 
 typedef SwappyItems<Key, Value, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> KVstore;
+KVstore * ways;
 
 // ---------------------------------------------------------------------
 
@@ -131,13 +136,24 @@ struct Routing {
     void relation_callback (uint64_t /*osmid*/, const Tags &/*tags*/, const References & refs){}
 };
 
+
+void my_handler(int s) {
+    printf("Caught signal %d\n", s);
+    
+    auto now = std::chrono::high_resolution_clock::now();
+    mseconds = std::chrono::duration<double, std::milli>(now-start).count();
+    printf("end (before hibernate): %.f ms\n", mseconds);
+    ways->hibernate();
+    exit(1);
+}
+
 int main(int argc, char** argv) {
     if(argc != 2) {
         printf("Usage: %s file_to_read.osm.pbf\n", argv[0]);
         return 1;
     }
     
-    KVstore * ways = new KVstore(23);
+    ways = new KVstore(23);
     Routing routing;
     routing.ways = ways;
     
@@ -147,6 +163,13 @@ int main(int argc, char** argv) {
     printf("# swap into               %12d files\n", FILE_MULTI);
     printf("# use                     %12d Bloom bits for a key in a file bitmask\n", BBITS);
     printf("# use a bitmask with      %12d bits for each file\n", BMASK);
+
+
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
 
     start = std::chrono::high_resolution_clock::now();
 

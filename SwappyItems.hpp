@@ -65,10 +65,8 @@ class SwappyItems {
     // a priority queue for the keys
     Order _prios;
 
-    // for each filenr we store min/max value to filter
+    // for each filenr we store min/max value and a bloom mask to filter
     Ranges _ranges;
-
-    uint64_t _counting = 0;
 
     int _swappyId = 0;
     const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
@@ -80,6 +78,7 @@ class SwappyItems {
 public:
 
     struct {
+        uint64_t counting = 0;
         uint64_t updates = 0;
 
         uint64_t bloomSaysFresh = 0;
@@ -114,7 +113,7 @@ public:
         } else {
             // key is new
             maySwap();
-            ++_counting;
+            ++statistic.counting;
             _prios.push_back(Qentry{key,false});
             _ramList[key] = value;
             return true;
@@ -142,6 +141,48 @@ public:
             return nullptr;
         }
     }
+    
+    /**
+     * delete a item
+     *
+     * @param key the unique key
+     * @return false if item not exists
+     */
+    bool del (const TKEY & key) {
+        if (load(key)) {
+            /// @todo reverse search should be faster
+            auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
+                [key] (const Qentry & qe) {
+                    return qe.key == key;
+                }
+            );
+            it->deleted = true;
+            --statistic.counting;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    /**
+     * stores all RAM content into file(s)
+     */
+    void hibernate () {
+        char fname[120];
+        snprintf(fname, 120, "%s%d/hibernate.ramlist", _prefix, _swappyId);
+        std::ofstream file(fname, std::ios::out | std::ios::binary);
+        
+        for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
+            file.write((char *) &(it->first), sizeof(TKEY));
+            file.write((char *) &(it->second), sizeof(TVALUE));
+        }
+        file.close();
+        
+        //snprintf(fname, 120, "%s%d/hibernate.prios", _prefix, _swappyId);
+        //snprintf(fname, 120, "%s%d/hibernate.ranges", _prefix, _swappyId);
+        //snprintf(fname, 120, "%s%d/hibernate.statistic", _prefix, _swappyId);
+        
+    }
 
     /**
      * with parameter true you get the number of items in ram
@@ -150,7 +191,7 @@ public:
      */
     uint64_t size(bool ramOnly = false) {
         if (ramOnly) return _ramList.size();
-        return _counting;
+        return statistic.counting;
     }
 
     /**
@@ -164,7 +205,7 @@ public:
     }
 
     SwappyItems (int swappyId) {
-        _counting = 0;
+        statistic.counting = 0;
 
         statistic.updates = 0;
 
@@ -179,6 +220,13 @@ public:
         char filename[120];
         snprintf(filename, 120, "%s%d", _prefix, _swappyId);
         if (filesys::exists(filename)) {
+            
+            
+            
+            /// @todo try to wake up after hibernate
+            
+            
+            
             fprintf(stderr, "folder %s still exists! Please delete or rename it!\n", filename);
             exit(0);
         } else {

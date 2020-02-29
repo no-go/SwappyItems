@@ -46,13 +46,18 @@ class SwappyItems {
         std::vector<bool> bloomMask;
         Fid fid;
     };
+    
+    struct Qentry {
+        TKEY key;
+        bool deleted;
+    };
 
     typedef uint32_t                              Bid;
     typedef std::set<Bid>                 Fingerprint;
 
     typedef std::unordered_map<TKEY,TVALUE>       Ram;
     typedef std::vector<Detail>                Ranges;
-    typedef std::deque<TKEY>                    Order;
+    typedef std::deque<Qentry>                  Order;
 
     // the item store in RAM
     Ram _ramList;
@@ -95,9 +100,14 @@ public:
     bool set (TKEY key, TVALUE value) {
         if (load(key)) {
             // just update
-            auto it = std::find(_prios.begin(), _prios.end(), key);
-            *it = 0; // overwrite the key with zero
-            _prios.push_back(key);
+            /// @todo reverse search should be faster
+            auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
+                [key] (const Qentry & qe) {
+                    return qe.key == key;
+                }
+            );
+            it->deleted = true;
+            _prios.push_back(Qentry{key,false});
             _ramList[key] = value;
             ++statistic.updates;
             return false;
@@ -105,7 +115,7 @@ public:
             // key is new
             maySwap();
             ++_counting;
-            _prios.push_back(key);
+            _prios.push_back(Qentry{key,false});
             _ramList[key] = value;
             return true;
         }
@@ -119,9 +129,14 @@ public:
      */
     TVALUE * get (const TKEY & key) {
         if (load(key)) {
-            auto it = std::find(_prios.begin(), _prios.end(), key);
-            *it = 0; // overwrite the key with zero
-            _prios.push_back(key);
+            /// @todo reverse search should be faster
+            auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
+                [key] (const Qentry & qe) {
+                    return qe.key == key;
+                }
+            );
+            it->deleted = true;
+            _prios.push_back(Qentry{key,false});
             return &(_ramList[key]);
         } else {
             return nullptr;
@@ -313,7 +328,7 @@ private:
         // ... and load the stuff
         for (auto key_val : temp) {
             _ramList[key_val.first] = key_val.second;
-            _prios.push_back(key_val.first);
+            _prios.push_back(Qentry{key_val.first,false});
         }
         
         _loaded = true;
@@ -346,11 +361,11 @@ private:
 
         // remove old items from front and move them to temp
         for (pos = 0; pos < (OLDIES*EACHFILE); ) {
-            TKEY key = _prios.front();
+            Qentry qe = _prios.front();
             _prios.pop_front();
-            if (key > 0) { // HINT
-                temp[key] = _ramList[key];
-                _ramList.erase(key);
+            if (qe.deleted == false) {
+                temp[qe.key] = _ramList[qe.key];
+                _ramList.erase(qe.key);
                 ++pos; // we only count undeleted stuff!
             }
         }

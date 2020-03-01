@@ -147,7 +147,8 @@ struct Routing {
                         
                         "%10" PRId64 " s "
                         "%10" PRId64 " l "
-                        "%10d kB\n",
+                        "%10d kB "
+                        "%10ld filekB\n",
                         
                         mseconds,
                         ways->size(),
@@ -162,7 +163,8 @@ struct Routing {
                         
                         ways->statistic.swaps,
                         ways->statistic.fileLoads,
-                        getUsedKB()
+                        getUsedKB(),
+                        ways->size(true)
                     );
                 }
                 
@@ -216,9 +218,11 @@ struct Routing {
             // this osmid node is a way (set lon and lat!)
             ValueSet(dummy, wa->_last, lon, lat, wa->_town, wa->_uses);
             ways->set(osmid, dummy);
+            isPrinted = false;
         }
 
-        if ((ways->statistic.updates%1024) == 0) {
+        if ((ways->statistic.updates%1024 == 0) && (isPrinted == false)) {
+            isPrinted = true;
             auto now = std::chrono::high_resolution_clock::now();
             mseconds = std::chrono::duration<double, std::milli>(now-start).count();
             printf(
@@ -235,7 +239,8 @@ struct Routing {
                 
                 "%10" PRId64 " s "
                 "%10" PRId64 " l "
-                "%10d kB\n",
+                "%10d kB "
+                "%10ld filekB\n",
                 
                 mseconds,
                 ways->size(),
@@ -250,7 +255,8 @@ struct Routing {
                 
                 ways->statistic.swaps,
                 ways->statistic.fileLoads,
-                getUsedKB()
+                getUsedKB(),
+                ways->size(true)
             );
         }
     }

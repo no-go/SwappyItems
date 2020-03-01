@@ -94,8 +94,8 @@ public:
     bool set (TKEY key, TVALUE value) {
         if (load(key)) {
             // just update
-            /// @todo reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
+            // reverse search should be faster
+            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
                 [key] (const Qentry & qe) {
                     return (qe.key == key) && (qe.deleted == false);
                 }
@@ -123,8 +123,8 @@ public:
      */
     TVALUE * get (const TKEY & key) {
         if (load(key)) {
-            /// @todo reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
+            // reverse search should be faster
+            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
                 [key] (const Qentry & qe) {
                     return (qe.key == key) && (qe.deleted == false);
                 }
@@ -145,8 +145,8 @@ public:
      */
     bool del (const TKEY & key) {
         if (load(key)) {
-            /// @todo reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
+            // reverse search should be faster
+            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
                 [key] (const Qentry & qe) {
                     return (qe.key == key) && (qe.deleted == false);
                 }
@@ -211,12 +211,12 @@ public:
     }
 
     /**
-     * with parameter true you get the number of items in ram
-     * 
-     * @todo add both to statistics ?
+     * with parameter true you get the kB of files
      */
-    uint64_t size(bool ramOnly = false) {
-        if (ramOnly) return _ramList.size();
+    uint64_t size(bool kBfiles = false) {
+        if (kBfiles) {
+            return (_ranges.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
+        }
         return statistic.counting;
     }
 
@@ -464,11 +464,22 @@ private:
      */
     void maySwap (bool reload = false) {
         Id needed = reload? EACHFILE : 0;
+        Id pos;
 
         // no need to swap files?
-        if ( (_ramList.size() + needed) < (RAMSIZE * EACHFILE * OLDIES) ) return;
-
-        Id pos;
+        if ( (_ramList.size() + needed) < (RAMSIZE * EACHFILE * OLDIES) ) {
+            // cleanup queue instead?
+            if ( _prios.size() > ( (RAMSIZE+2) * EACHFILE*OLDIES) ) {
+                Order newPrio;
+                // remove some deleted items
+                for (auto it = _prios.begin(); it != _prios.end(); ++it) {
+                    if (it->deleted == false) newPrio.push_back(*it);
+                }
+                _prios = newPrio;
+            }
+            return;
+        }
+        
         Detail detail{0, 0};
         Fingerprint fp;
         
@@ -478,7 +489,7 @@ private:
         ++statistic.swaps;
 
         // remove old items from front and move them to temp
-        for (pos = 0; pos < (OLDIES*EACHFILE); ) {
+        for (pos = 0; pos < (EACHFILE*OLDIES); ) {
             Qentry qe = _prios.front();
             _prios.pop_front();
             if (qe.deleted == false) {

@@ -187,7 +187,7 @@ private:
 
         // read the first 4 bytes of the file, this is the size of the blob-header
         if( !file.read((char*)&sz, 4) ){
-            info() << "We finished reading the file";
+            info() << "# We finished reading the file";
             this->finished = true;
             return result;
         }

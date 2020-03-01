@@ -21,11 +21,9 @@
 #include <experimental/filesystem>     // check and create directories
 namespace filesys = std::experimental::filesystem;
 
-#include <execution> // c++17 and you need  -ltbb 
-
+#include <execution> // c++17 and you need  -ltbb
+#include <mutex> // for std::lock_guard and mutex
 #include <thread> // you need -lpthread
-#include <atomic>
-#include "Semaphore.hpp"
 
 /**
  * a 0 as Key means, that this key/value pair is deleted, thus
@@ -68,18 +66,15 @@ class SwappyItems {
     // for each filenr we store min/max value and a bloom mask to filter
     Ranges _ranges;
 
-    int _swappyId = 0;
-    const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
-    
-    Semaphore * _s;
-    std::atomic<bool> _loaded;
-    std::atomic<unsigned int> _ready;
+    const char _prefix[7] = "./temp";
+    char _swappypath[256];
     
 public:
 
     struct statistic_s {
         uint64_t counting = 0;
         uint64_t updates = 0;
+        uint64_t deletes = 0;
 
         uint64_t bloomSaysFresh = 0;
         uint64_t bloomFails = 0;
@@ -158,6 +153,7 @@ public:
             );
             it->deleted = true;
             --statistic.counting;
+            ++statistic.deletes;
             return true;
         } else {
             return false;
@@ -168,31 +164,37 @@ public:
      * stores all RAM content into file(s)
      */
     void hibernate () {
-        char filename[120];
+        char filename[512];
 
-        snprintf(filename, 120, "%s%d/hibernate.ramlist", _prefix, _swappyId);
+        snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
         std::ofstream file(filename, std::ios::out | std::ios::binary);
+        Id length = _ramList.size();
+        file.write((char *) &length, sizeof(Id));
         for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
             file.write((char *) &(it->first), sizeof(TKEY));
             file.write((char *) &(it->second), sizeof(TVALUE));
         }
         file.close();
 
-        snprintf(filename, 120, "%s%d/hibernate.statistic", _prefix, _swappyId);
+        snprintf(filename, 512, "%s/hibernate.statistic", _swappypath);
         file.open(filename, std::ios::out | std::ios::binary);
         file.write((char *) &statistic, sizeof(statistic_s));
         file.close();
 
-        snprintf(filename, 120, "%s%d/hibernate.prios", _prefix, _swappyId);
+        snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
         file.open(filename, std::ios::out | std::ios::binary);
+        length = _prios.size();
+        file.write((char *) &length, sizeof(Id));
         for (auto it = _prios.begin(); it != _prios.end(); ++it) {
             file.write((char *) &(it->key), sizeof(Qentry::key));
             file.write((char *) &(it->deleted), sizeof(Qentry::deleted));
         }
         file.close();
 
-        snprintf(filename, 120, "%s%d/hibernate.ranges", _prefix, _swappyId);
+        snprintf(filename, 512, "%s/hibernate.ranges", _swappypath);
         file.open(filename, std::ios::out | std::ios::binary);
+        length = _ranges.size();
+        file.write((char *) &length, sizeof(Id));
         for (auto it = _ranges.begin(); it != _ranges.end(); ++it) {
             file.write((char *) &(it->minimum), sizeof(Detail::minimum));
             file.write((char *) &(it->maximum), sizeof(Detail::maximum));
@@ -231,6 +233,7 @@ public:
     SwappyItems (int swappyId) {
         statistic.counting = 0;
         statistic.updates = 0;
+        statistic.deletes = 0;
 
         statistic.bloomSaysFresh = 0;
         statistic.rangeSaysNo = 0;
@@ -239,32 +242,99 @@ public:
         statistic.swaps = 0;
         statistic.fileLoads = 0;
         
-        _swappyId = swappyId;
-        char filename[120];
-        snprintf(filename, 120, "%s%d", _prefix, _swappyId);
-        if (filesys::exists(filename)) {
-            
-            
-            
-            /// @todo try to wake up after hibernate
-            
-            
-            
-            fprintf(stderr, "folder %s still exists! Please delete or rename it!\n", filename);
-            exit(0);
+        // make quasi hash from (swappyId, template parameter) instead of just swappyId.
+        // this should fix problems with other template paramter and loading hibernate data!
+        snprintf(
+            _swappypath, 512,
+            "%s%d-"
+            "%d-%d-%d-%d-%d",
+            _prefix,
+            swappyId,
+            EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH
+        );
+        
+        if (filesys::exists(_swappypath)) {
+            // try to wake up after hibernate
+            if (false == wakeup()) {
+                fprintf(stderr, "folder '%s' still exists without hibernate data! Please delete or rename it!\n", _swappypath);
+                exit(0);
+            } else {
+                printf(
+                    "# wakeup on items, updates, deletes: "
+                    "%10ld %10" PRId64 " %10" PRId64 "\n",
+                    statistic.counting,
+                    statistic.updates,
+                    statistic.deletes
+                );
+            }
         } else {
-            filesys::create_directory(filename);
+            filesys::create_directory(_swappypath);
         }
-
-        _s = new Semaphore(std::thread::hardware_concurrency());
     }
-    
-    ~SwappyItems () {
-        delete _s;
-    }
-
 
 private:
+
+    /**
+     * load all hibernate content into RAM
+     * 
+     * @todo return on fail
+     */
+    bool wakeup () {
+        char filename[512];
+        TKEY loadedKey;
+        TVALUE loadedValue;
+        std::ifstream file;
+
+        snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
+        file.open(filename, std::ios::in | std::ios::binary);
+        Id length;
+        file.read((char *) &length, sizeof(Id));
+        for (Id c = 0; c < length; ++c) {
+            file.read((char *) &loadedKey, sizeof(TKEY));
+            file.read((char *) &loadedValue, sizeof(TVALUE));
+            _ramList[loadedKey] = loadedValue;
+        }
+        file.close();
+
+        snprintf(filename, 512, "%s/hibernate.statistic", _swappypath);
+        file.open(filename, std::ios::in | std::ios::binary);
+        file.read((char *) &statistic, sizeof(statistic_s));
+        file.close();
+
+        snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
+        file.open(filename, std::ios::in | std::ios::binary);
+        file.read((char *) &length, sizeof(Id));
+        Qentry qe;
+        for (Id c = 0; c < length; ++c) {
+            file.read((char *) &(qe.key), sizeof(Qentry::key));
+            file.read((char *) &(qe.deleted), sizeof(Qentry::deleted));
+            _prios.push_back(qe);
+        }
+        file.close();
+        
+        snprintf(filename, 512, "%s/hibernate.ranges", _swappypath);
+        file.open(filename, std::ios::in | std::ios::binary);
+        file.read((char *) &length, sizeof(Id));
+        Detail detail;
+        char cbit;
+        for (Fid c = 0; c < length; ++c) {
+            file.read((char *) &(detail.minimum), sizeof(Detail::minimum));
+            file.read((char *) &(detail.maximum), sizeof(Detail::maximum));
+            
+            detail.bloomMask = std::vector<bool>(MASKLENGTH, true);
+            
+            for (Bid b=0; b < MASKLENGTH; ++b) {
+                file.get(cbit);
+                if (cbit == 'o') detail.bloomMask[b] = false;
+            }
+            file.read((char *) &(detail.fid), sizeof(Detail::fid));
+            
+            _ranges.push_back(detail);
+        }
+        file.close();
+        
+        return true;
+    }
 
     Fingerprint getFingerprint (const TKEY & key) {
         srand(key);
@@ -322,30 +392,22 @@ private:
             }
         });
         
-        _loaded = false;
-        _ready = 0;
+        bool loaded = false;
         
         for (Fid fid : candidates) {
-            //loadFromFile(fid, key);
-            std::thread t(&SwappyItems::loadFromFile, this, fid, key);
-            t.detach();
-            _s->P();
-            // the key was loaded into ram, because the a file has it
-            if (_loaded) break;
+            loaded = loadFromFile(fid, key);
+            if (loaded) break;
         }
-        
-        // wait until all threads are finish
-        while(_ready < candidates.size());
 
-        if (_loaded == false) {
+        if (loaded) {
+            ++statistic.fileLoads;
+            return true;
+        } else {
             if (candidates.size() > 0) {
                 // many candidates, but finaly not found in file
                 ++statistic.rangeFails;
             }
             return false;
-        } else {
-            ++statistic.fileLoads;
-            return true;
         }
     }
 
@@ -359,38 +421,24 @@ private:
      * @param key the key we are searching for
      * @return true, if key is loaded into ram
      */
-    void loadFromFile (Fid fid, TKEY key) {
-        // @todo Items are sorted in file! binary search?
-
+    bool loadFromFile (Fid fid, TKEY key) {
         Ram temp;
         TKEY loadedKey;
-        TVALUE loadedVal;
         bool result = false;
 
-        char filename[120];
-        snprintf(filename, 120, "%s%d/%" PRId32 ".bin", _prefix, _swappyId, fid);
+        char filename[512];
+        snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
         std::ifstream file(filename, std::ios::in | std::ios::binary);
 
         for (Id c = 0; c < EACHFILE; ++c) {
             file.read((char *) &loadedKey, sizeof(TKEY));
-            file.read((char *) &loadedVal, sizeof(TVALUE));
-            if (loadedKey == key) {
-                result = true;
-            } else {
-                // stop this search, because a other thread find the key
-                if (_loaded) break;
-            }
-            temp[loadedKey] = loadedVal;
+            file.read((char *) &(temp[loadedKey]), sizeof(TVALUE));
+            if (loadedKey == key) result = true;
         }
         file.close();
-
-        if (result == false) {
-            // key not exists
-            ++_ready;
-            _s->V();
-            return;
-        }
-
+        
+        if (result == false) return false;
+        
         // ok, key exist. clean mask now, because we do not
         // need the (still undeleted) file anymore
         _ranges[fid] = Detail{0, 0};
@@ -403,10 +451,7 @@ private:
             _prios.push_back(Qentry{key_val.first,false});
         }
         
-        _loaded = true;
-        ++_ready;
-        _s->V();
-        return;
+        return true;
     }
 
     /**
@@ -468,8 +513,8 @@ private:
                     _ranges.push_back( Detail{0, 0} ); 
                 }
 
-                char filename[120];
-                snprintf(filename, 120, "%s%d/%" PRId32 ".bin", _prefix, _swappyId, pos);
+                char filename[512];
+                snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, pos);
                 file.open(filename, std::ios::out | std::ios::binary);
                 detail.minimum = it->first;
                 detail.bloomMask = std::vector<bool>(MASKLENGTH, false);

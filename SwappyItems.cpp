@@ -21,11 +21,11 @@
 using namespace CanalTP;
 using namespace std;
 
-#define FILE_ITEMS    (  4*1024)
-#define FILE_MULTI           16
-#define RAM_MULTI             8
-#define BBITS                 5
-#define BMASK     (10*   4*1024)
+#define FILE_ITEMS           (   4*1024)
+#define FILE_MULTI                   16
+#define RAM_MULTI                     8
+#define BBITS                         5
+#define BMASK   ((BBITS+3)*  FILE_ITEMS)
 
 // debug config --------------------------------
 //#define FILE_ITEMS    (      10)
@@ -95,10 +95,11 @@ struct Routing {
             Value * wa;
             
             // debug brake ----------------------------------
-            //if (ways->size() > 42) {
+            //if (ways->size() == 1234567) { // @todo ????????????????????????? does not work!!!
             //    ways->hibernate();
             //    exit(1);
             //}
+            // ----------------------------------------------
             
             for (uint64_t ref : refs) {
 
@@ -114,13 +115,14 @@ struct Routing {
                         "%10ld q "
                         
                         "%10" PRId64 " u "
+                        "%10" PRId64 " d "
 
                         "%10" PRId64 " r "
                         "%10" PRId64 " b "
                         "%10" PRId64 " e "
                         
                         "%10" PRId64 " s "
-                        "%10" PRId64 " f "
+                        "%10" PRId64 " zl "
                         "%10d kB\n",
                         
                         mseconds/100,
@@ -128,13 +130,14 @@ struct Routing {
                         ways->prioSize(),
                         
                         ways->statistic.updates,
+                        ways->statistic.deletes,
                         
                         ways->statistic.rangeSaysNo, 
                         ways->statistic.bloomSaysFresh,
                         ways->statistic.rangeFails,
                         
                         ways->statistic.swaps,
-                        ways->statistic.fileLoads,
+                        ways->statistic.fileLoads/10,
                         getUsedKB()
                     );
                 }
@@ -185,7 +188,6 @@ int main(int argc, char** argv) {
     printf("# use                     %12d Bloom bits for a key in a file bitmask\n", BBITS);
     printf("# use a bitmask with      %12d bits for each file\n", BMASK);
 
-
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = my_handler;
     sigemptyset(&sigIntHandler.sa_mask);
@@ -200,6 +202,9 @@ int main(int argc, char** argv) {
     auto now = std::chrono::high_resolution_clock::now();
     mseconds = std::chrono::duration<double, std::milli>(now-start).count();
     printf("end: %.f ms\n", mseconds);
+    
+    // stores final data structure!
+    ways->hibernate();
     
     delete ways;
     return 0;

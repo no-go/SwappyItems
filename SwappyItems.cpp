@@ -83,9 +83,10 @@ int getUsedKB() {
     return result;
 }
 
+atomic<bool> isPrinted = false;
+
 struct Routing {
     KVstore * ways;
-    atomic<bool> isPrinted = false;
 
     void node_callback (uint64_t osmid, double lon, double lat, const Tags & tags) {}
 
@@ -136,14 +137,14 @@ struct Routing {
                         ways->statistic.fileLoads,
                         getUsedKB()
                     );
-                } else {
-                    // prevent a log print every second, if size not changes
-                    isPrinted = false;
                 }
+                
                 Value dummy;
                 if (wa == nullptr) {
-                    
+
                     ValueSet(dummy, 0.0, 0.0, false);
+                    // prevent a log print every second, if size not changes
+                    isPrinted = false;
                     
                 } else {
                     ValueSet(dummy, wa->_lon, wa->_lat, wa->_town, wa->_uses+1);

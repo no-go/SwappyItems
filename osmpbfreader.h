@@ -157,15 +157,14 @@ struct Parser {
         wayOnly = _wayOnly;
         finished = false;
         file = std::ifstream(filename.c_str(), std::ios::binary );
-        //file = std::ifstream("../krefeld_mg.pbf", std::ios::binary );
 
         file_size = fileSize(filename.c_str());
         if(!file.is_open())
             fatal() << "Unable to open the file " << filename;
         buffer = new char[max_uncompressed_blob_size];
         unpack_buffer = new char[max_uncompressed_blob_size];
-        info() << "Reading the file " << filename;
-        info() << file_size/1000000 << " MB to do";
+        info() << "#Reading the file " << filename;
+        info() << "#" << file_size/1000000 << " MB to do";
     }
 
     ~Parser(){

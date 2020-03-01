@@ -72,8 +72,8 @@ class SwappyItems {
     const char _prefix[7] = "./temp"; // limit 120 chars (incl. 2 numbers and ".bin")
     
     Semaphore * _s;
-    int _cores;
     std::atomic<bool> _loaded;
+    std::atomic<unsigned int> _ready;
     
 public:
 
@@ -102,7 +102,7 @@ public:
             /// @todo reverse search should be faster
             auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
                 [key] (const Qentry & qe) {
-                    return qe.key == key;
+                    return (qe.key == key) && (qe.deleted == false);
                 }
             );
             it->deleted = true;
@@ -131,7 +131,7 @@ public:
             /// @todo reverse search should be faster
             auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
                 [key] (const Qentry & qe) {
-                    return qe.key == key;
+                    return (qe.key == key) && (qe.deleted == false);
                 }
             );
             it->deleted = true;
@@ -153,7 +153,7 @@ public:
             /// @todo reverse search should be faster
             auto it = std::find_if(std::execution::par, _prios.begin(), _prios.end(), 
                 [key] (const Qentry & qe) {
-                    return qe.key == key;
+                    return (qe.key == key) && (qe.deleted == false);
                 }
             );
             it->deleted = true;
@@ -256,8 +256,7 @@ public:
             filesys::create_directory(filename);
         }
 
-        _cores = std::thread::hardware_concurrency();
-        _s = new Semaphore(_cores);
+        _s = new Semaphore(std::thread::hardware_concurrency());
     }
     
     ~SwappyItems () {
@@ -300,7 +299,6 @@ private:
         std::mutex m;
         Fingerprint fp = getFingerprint(key);
         
-        //for(Fid fid = 0; fid < _ranges.size(); ++fid) {
         std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
             if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
                 // key is smaller then the smallest or bigger than the biggest
@@ -325,17 +323,19 @@ private:
         });
         
         _loaded = false;
+        _ready = 0;
         
         for (Fid fid : candidates) {
+            //loadFromFile(fid, key);
             std::thread t(&SwappyItems::loadFromFile, this, fid, key);
             t.detach();
             _s->P();
-            // the key was loaded into ram, because the file has it
+            // the key was loaded into ram, because the a file has it
             if (_loaded) break;
         }
         
         // wait until all threads are finish
-        while(_s->_count < _cores);
+        while(_ready < candidates.size());
 
         if (_loaded == false) {
             if (candidates.size() > 0) {
@@ -385,7 +385,8 @@ private:
         file.close();
 
         if (result == false) {
-             // key not exists
+            // key not exists
+            ++_ready;
             _s->V();
             return;
         }
@@ -403,6 +404,7 @@ private:
         }
         
         _loaded = true;
+        ++_ready;
         _s->V();
         return;
     }

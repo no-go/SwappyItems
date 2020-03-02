@@ -23,7 +23,7 @@ using namespace CanalTP;
 using namespace std;
 
 #define FILE_ITEMS           (   4*1024)
-#define FILE_MULTI                    4
+#define FILE_MULTI                   16
 #define RAM_MULTI                     8
 #define BBITS                         5
 #define BMASK   ((BBITS+3)*  FILE_ITEMS)

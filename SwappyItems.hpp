@@ -441,7 +441,8 @@ private:
         
         // ok, key exist. clean mask now, because we do not
         // need the (still undeleted) file anymore
-        _ranges[fid] = Detail{0, 0};
+        _ranges[fid].minimum = 0;
+        _ranges[fid].maximum = 0;
 
         // we try to make place for the filecontent in RAM ...
         maySwap(true);
@@ -521,7 +522,7 @@ private:
                 if (success == false) {
                     pos = _ranges.size();
                     // add an empty dummy Range
-                    _ranges.push_back( Detail{0, 0} ); 
+                    _ranges.push_back(detail); 
                 }
 
                 char filename[512];

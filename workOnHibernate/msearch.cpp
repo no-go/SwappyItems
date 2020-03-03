@@ -118,7 +118,6 @@ void loadFromFile (Id fid, Key key) {
 
     char filename[512];
     snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
-    printf("look into %s\n", filename);
     ifstream file(filename, ios::in | ios::binary);
 
     for (Id c = 0; c < FILE_ITEMS; ++c) {
@@ -133,20 +132,20 @@ void loadFromFile (Id fid, Key key) {
             return;
         }
     }
+    printf("looked into %s\n", filename);
     file.close();
     
     if (result) {
         for (auto key_val : temp) {
             _ramList[key_val.first] = key_val.second;
         }
-        // found and finished
     }
 }
 
 bool loadFromFiles (const Key & key) {
+    mutex m;
     set<Id> candidates;
     set<Id> fp = getFingerprint(key);
-    mutex m;
     
     for_each (execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
 #if WITHFILTERS == true
@@ -171,11 +170,16 @@ bool loadFromFiles (const Key & key) {
     });
     
     keyFound = false;
+    thread threads[candidates.size()];
+    Id i = 0;
     
     for (Id fid : candidates) {
-        loadFromFile(fid, key);
+        threads[i] = thread(loadFromFile, fid, key);
         if (keyFound) break;
+        ++i;
     }
+    for (auto& th : threads) th.join();
+    
     return keyFound;
 }
 

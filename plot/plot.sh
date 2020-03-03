@@ -4,8 +4,8 @@ printf "\
 set title outputFile
 set terminal pdf linewidth 1 size 27cm,18cm
 set output outputFile
-set yrange[0:]
-set xrange[0:]
+set yrange[0:600]
+set xrange[0:700000]
 set xlabel \"time (ms)\"
 #set ylabel \"sachen\"
 set boxwidth 0.2

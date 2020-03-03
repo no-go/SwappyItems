@@ -24,6 +24,8 @@ namespace filesys = std::experimental::filesystem;
 #include <execution> // c++17 and you need  -ltbb
 #include <mutex> // for std::lock_guard and mutex
 #include <thread> // you need -lpthread
+#include <atomic>
+#include "Semaphore.hpp"
 
 /**
  * a 0 as Key means, that this key/value pair is deleted, thus
@@ -68,7 +70,11 @@ class SwappyItems {
 
     const char _prefix[7] = "./temp";
     char _swappypath[256];
-    
+
+    std::atomic<bool> keyFound;
+    Semaphore * S;
+    std::atomic<unsigned> done;
+
 public:
 
     struct statistic_s {
@@ -231,6 +237,8 @@ public:
     }
 
     SwappyItems (int swappyId) {
+        S = new Semaphore(std::thread::hardware_concurrency());
+        
         statistic.counting = 0;
         statistic.updates = 0;
         statistic.deletes = 0;
@@ -270,6 +278,10 @@ public:
         } else {
             filesys::create_directory(_swappypath);
         }
+    }
+    
+    ~SwappyItems () {
+        delete S;
     }
 
 private:
@@ -392,14 +404,19 @@ private:
             }
         });
         
-        bool loaded = false;
-        
-        for (Fid fid : candidates) {
-            loaded = loadFromFile(fid, key);
-            if (loaded) break;
-        }
+        keyFound = false;
+        done = 0;
 
-        if (loaded) {
+        for (auto fid : candidates) {
+            if (!keyFound) {
+                std::thread th(&SwappyItems::loadFromFile, this, fid, key);
+                th.detach();
+                S->P();
+            }
+        }
+        if (candidates.size() > 0) while (done < candidates.size());
+
+        if (keyFound) {
             ++statistic.fileLoads;
             return true;
         } else {
@@ -419,40 +436,54 @@ private:
      *
      * @param filenr the index of the file and bitmask id
      * @param key the key we are searching for
-     * @return true, if key is loaded into ram
+     * @ return true, if key is loaded into ram
      */
-    bool loadFromFile (Fid fid, TKEY key) {
+    void loadFromFile (Fid fid, TKEY key) {
         Ram temp;
         TKEY loadedKey;
         bool result = false;
 
         char filename[512];
         snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+        if (keyFound) {
+            done++;
+            S->V();
+            return;
+        }
         std::ifstream file(filename, std::ios::in | std::ios::binary);
 
         for (Id c = 0; c < EACHFILE; ++c) {
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &(temp[loadedKey]), sizeof(TVALUE));
-            if (loadedKey == key) result = true;
+            if (loadedKey == key) {
+                result = true;
+                keyFound = true;
+            }
+            if ((result == false) && keyFound) {
+                file.close();
+                done++;
+                S->V();
+                return;
+            }
         }
         file.close();
         
-        if (result == false) return false;
-        
-        // ok, key exist. clean mask now, because we do not
-        // need the (still undeleted) file anymore
-        _ranges[fid].minimum = 0;
-        _ranges[fid].maximum = 0;
+        if (result) {
+            // ok, key exist. clean mask now, because we do not
+            // need the (still undeleted) file anymore
+            _ranges[fid].minimum = 0;
+            _ranges[fid].maximum = 0;
 
-        // we try to make place for the filecontent in RAM ...
-        maySwap(true);
-        // ... and load the stuff
-        for (auto key_val : temp) {
-            _ramList[key_val.first] = key_val.second;
-            _prios.push_back(Qentry{key_val.first,false});
+            // we try to make place for the filecontent in RAM ...
+            maySwap(true);
+            // ... and load the stuff
+            for (auto key_val : temp) {
+                _ramList[key_val.first] = key_val.second;
+                _prios.push_back(Qentry{key_val.first,false});
+            }
         }
-        
-        return true;
+        done++;
+        S->V();
     }
 
     /**

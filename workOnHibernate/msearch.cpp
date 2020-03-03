@@ -125,7 +125,7 @@ void loadFromFile (int x, Id fid, Key key) {
     snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
     if (keyFound) {
         printf("%d early break while looking into %s\n", x, filename);
-        S.V();
+        //S.V();
         return;
     }
     ifstream file(filename, ios::in | ios::binary);
@@ -142,11 +142,11 @@ void loadFromFile (int x, Id fid, Key key) {
         if ((result == false) && keyFound) {
             printf("%d break while looking into %s\n", x, filename);
             file.close();
-            S.V();
+            //S.V();
             return;
         }
     }
-    printf("%d looked into %s\n", x, filename);
+    //printf("%d looked into %s\n", x, filename);
     file.close();
     
     if (result) {
@@ -155,7 +155,7 @@ void loadFromFile (int x, Id fid, Key key) {
         }
         done = true;
     }
-    S.V();
+    //S.V();
 }
 
 bool loadFromFiles (const Key & key) {
@@ -190,9 +190,10 @@ bool loadFromFiles (const Key & key) {
     unsigned i=0;
     for (auto fid : candidates) {
         if (!keyFound) {
-            th[i%2] = thread(loadFromFile, i%2, fid, key);
-            th[i%2].detach();
-            S.P();
+            loadFromFile(i%2, fid, key);
+            //th[i%2] = thread(loadFromFile, i%2, fid, key);
+            //th[i%2].detach();
+            //S.P();
         }
         i++;
     }
@@ -244,17 +245,17 @@ int main(int argc, char** argv) {
     
     start = std::chrono::high_resolution_clock::now();
     
-    //for (int j=0; j < 100; ++j) {
+    for (int j=0; j < 20; ++j) {
         Value * val = get(query);
         
         if (val == nullptr) {
-            //printf("The '%lu' does not exist.\n", query);
+            printf("The '%lu' does not exist.\n", query);
         } else {
-            //printf("Name of '%lu': %s\n", query, val->_name);
+            printf("Name of '%lu': %s\n", query, val->_name);
         }
-    //    query = rand();
-    //    if (query < 0) query *= -1;
-    //}
+        query = rand();
+        if (query < 0) query *= -1;
+    }
     
     auto now = chrono::high_resolution_clock::now();
     mseconds = chrono::duration<double, milli>(now-start).count();

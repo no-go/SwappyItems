@@ -113,7 +113,7 @@ set<Id> getFingerprint (const Key & key) {
 }
 
 atomic<bool> keyFound;
-Semaphore S(2);
+Semaphore * S;
 atomic<bool> done;
 
 void loadFromFile (int x, Id fid, Key key) {
@@ -125,7 +125,7 @@ void loadFromFile (int x, Id fid, Key key) {
     snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
     if (keyFound) {
         printf("%d early break while looking into %s\n", x, filename);
-        //S.V();
+        S->V();
         return;
     }
     ifstream file(filename, ios::in | ios::binary);
@@ -142,7 +142,7 @@ void loadFromFile (int x, Id fid, Key key) {
         if ((result == false) && keyFound) {
             printf("%d break while looking into %s\n", x, filename);
             file.close();
-            //S.V();
+            S->V();
             return;
         }
     }
@@ -155,7 +155,7 @@ void loadFromFile (int x, Id fid, Key key) {
         }
         done = true;
     }
-    //S.V();
+    S->V();
 }
 
 bool loadFromFiles (const Key & key) {
@@ -186,14 +186,16 @@ bool loadFromFiles (const Key & key) {
     });
 
     keyFound = false;
-    thread th[2];
+    thread th[8];
     unsigned i=0;
     for (auto fid : candidates) {
         if (!keyFound) {
-            loadFromFile(i%2, fid, key);
-            //th[i%2] = thread(loadFromFile, i%2, fid, key);
-            //th[i%2].detach();
-            //S.P();
+            //loadFromFile(i%2, fid, key);
+            //th[i%8] = thread(loadFromFile, i%8, fid, key);
+            //th[i%8].detach();
+            thread th(loadFromFile, i%8, fid, key);
+            th.detach();
+            S->P();
         }
         i++;
     }
@@ -243,13 +245,14 @@ int main(int argc, char** argv) {
         query = stol(argv[1]);
     }
     
+    S = new Semaphore(8);
     start = std::chrono::high_resolution_clock::now();
     
-    for (int j=0; j < 20; ++j) {
+    for (int j=0; j < 200; ++j) {
         Value * val = get(query);
         
         if (val == nullptr) {
-            printf("The '%lu' does not exist.\n", query);
+            //printf("The '%lu' does not exist.\n", query);
         } else {
             printf("Name of '%lu': %s\n", query, val->_name);
         }
@@ -261,6 +264,7 @@ int main(int argc, char** argv) {
     mseconds = chrono::duration<double, milli>(now-start).count();
     printf("end: %.f ms\n", mseconds);
 
+    delete S;
     return 0;
 }
 

@@ -24,7 +24,7 @@
 
 using namespace std;
 
-//#define WITHFILTERS 1
+#define WITHFILTERS false
 
 #define FILE_ITEMS           (   4*1024)
 #define FILE_MULTI                    4
@@ -109,8 +109,9 @@ set<Id> getFingerprint (const Key & key) {
     return fp;
 }
 
+atomic<bool> keyFound;
 
-bool loadFromFile (Id fid, Key key) {
+void loadFromFile (Id fid, Key key) {
     unordered_map<Key,Value> temp;
     Key loadedKey;
     bool result = false;
@@ -123,17 +124,23 @@ bool loadFromFile (Id fid, Key key) {
     for (Id c = 0; c < FILE_ITEMS; ++c) {
         file.read((char *) &loadedKey, sizeof(Key));
         file.read((char *) &(temp[loadedKey]), sizeof(Value));
-        if (loadedKey == key) result = true;
+        if (loadedKey == key) {
+            result = true;
+            keyFound = true;
+        }
+        if ((result == false) && keyFound) {
+            file.close();
+            return;
+        }
     }
     file.close();
     
-    if (result == false) return false;
-
-    for (auto key_val : temp) {
-        _ramList[key_val.first] = key_val.second;
+    if (result) {
+        for (auto key_val : temp) {
+            _ramList[key_val.first] = key_val.second;
+        }
+        // found and finished
     }
-    
-    return true;
 }
 
 bool loadFromFiles (const Key & key) {
@@ -142,7 +149,7 @@ bool loadFromFiles (const Key & key) {
     mutex m;
     
     for_each (execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
-#ifdef WITHFILTERS
+#if WITHFILTERS == true
         if ( (key >= finfo.minimum) && (key <= finfo.maximum) ) {
             // check bloom (is it possible, that this key is in that file?)
             bool success = true;
@@ -163,13 +170,13 @@ bool loadFromFiles (const Key & key) {
 #endif
     });
     
-    bool loaded = false;
+    keyFound = false;
     
     for (Id fid : candidates) {
-        loaded = loadFromFile(fid, key);
-        if (loaded) break;
+        loadFromFile(fid, key);
+        if (keyFound) break;
     }
-    return loaded;
+    return keyFound;
 }
 
 Value * get(const Key & key) {

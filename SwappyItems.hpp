@@ -186,7 +186,7 @@ public:
         length = _prios.size();
         file.write((char *) &length, sizeof(Id));
         for (auto it = _prios.begin(); it != _prios.end(); ++it) {
-            file.write((char *) &(it->key), sizeof(Qentry::key));
+            file.write((char *) &(it->key), sizeof(TKEY));
             file.write((char *) &(it->deleted), sizeof(Qentry::deleted));
         }
         file.close();
@@ -196,8 +196,8 @@ public:
         length = _ranges.size();
         file.write((char *) &length, sizeof(Id));
         for (auto it = _ranges.begin(); it != _ranges.end(); ++it) {
-            file.write((char *) &(it->minimum), sizeof(Detail::minimum));
-            file.write((char *) &(it->maximum), sizeof(Detail::maximum));
+            file.write((char *) &(it->minimum), sizeof(TKEY));
+            file.write((char *) &(it->maximum), sizeof(TKEY));
             for (bool b : it->bloomMask) {
                 if (b) {
                     file.put('i');
@@ -205,7 +205,7 @@ public:
                     file.put('o');
                 }
             }
-            file.write((char *) &(it->fid), sizeof(Detail::fid));
+            file.write((char *) &(it->fid), sizeof(Fid));
         }
         file.close();
     }
@@ -306,7 +306,7 @@ private:
         file.read((char *) &length, sizeof(Id));
         Qentry qe;
         for (Id c = 0; c < length; ++c) {
-            file.read((char *) &(qe.key), sizeof(Qentry::key));
+            file.read((char *) &(qe.key), sizeof(TKEY));
             file.read((char *) &(qe.deleted), sizeof(Qentry::deleted));
             _prios.push_back(qe);
         }
@@ -318,8 +318,8 @@ private:
         Detail detail;
         char cbit;
         for (Fid c = 0; c < length; ++c) {
-            file.read((char *) &(detail.minimum), sizeof(Detail::minimum));
-            file.read((char *) &(detail.maximum), sizeof(Detail::maximum));
+            file.read((char *) &(detail.minimum), sizeof(TKEY));
+            file.read((char *) &(detail.maximum), sizeof(TKEY));
             
             detail.bloomMask = std::vector<bool>(MASKLENGTH, true);
             
@@ -327,7 +327,7 @@ private:
                 file.get(cbit);
                 if (cbit == 'o') detail.bloomMask[b] = false;
             }
-            file.read((char *) &(detail.fid), sizeof(Detail::fid));
+            file.read((char *) &(detail.fid), sizeof(Fid));
             
             _ranges.push_back(detail);
         }

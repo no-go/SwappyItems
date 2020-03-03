@@ -5,6 +5,12 @@
 # use                                5 Bloom bits for a key in a file bitmask
 # use a bitmask with             36864 bits for each file
 #Reading the file ../data/krefeld_mg.pbf
+#
+# insert:
+#  90000 ms =             c * (200000 items)^ x
+# 180000 ms =             c * (244000 items)^ x
+#         T = 35.2 * 10^12  * (       items)^ 3.49
+#
 #37 MB to do
        948 ms          0 i          0 q          0 u          0 d          0 r          0 b          0 e          0 s          0 l       8124 kB          0 filekB
        980 ms       1024 i       1218 q         97 u          0 d          0 r          0 b          0 e          0 s          0 l       8404 kB          0 filekB

@@ -1,5 +1,8 @@
 *.o
 *.exe
 a.out
+
 temp*/*.bin
 temp*/hibernate.*
+
+workOnHibernate/*.exe

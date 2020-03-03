@@ -22,6 +22,9 @@
 #include <thread>    // you need -lpthread
 #include <atomic>
 
+#include "Semaphore.hpp"
+
+
 using namespace std;
 
 #define WITHFILTERS false
@@ -110,36 +113,49 @@ set<Id> getFingerprint (const Key & key) {
 }
 
 atomic<bool> keyFound;
+Semaphore S(2);
+atomic<bool> done;
 
-void loadFromFile (Id fid, Key key) {
+void loadFromFile (int x, Id fid, Key key) {
     unordered_map<Key,Value> temp;
     Key loadedKey;
-    bool result = false;
-
+    bool result;
     char filename[512];
+    
     snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+    if (keyFound) {
+        printf("%d early break while looking into %s\n", x, filename);
+        S.V();
+        return;
+    }
     ifstream file(filename, ios::in | ios::binary);
 
+    result = false;
     for (Id c = 0; c < FILE_ITEMS; ++c) {
         file.read((char *) &loadedKey, sizeof(Key));
         file.read((char *) &(temp[loadedKey]), sizeof(Value));
         if (loadedKey == key) {
             result = true;
             keyFound = true;
+            printf("%d success while looking into %s\n", x, filename);
         }
         if ((result == false) && keyFound) {
+            printf("%d break while looking into %s\n", x, filename);
             file.close();
+            S.V();
             return;
         }
     }
-    printf("looked into %s\n", filename);
+    printf("%d looked into %s\n", x, filename);
     file.close();
     
     if (result) {
         for (auto key_val : temp) {
             _ramList[key_val.first] = key_val.second;
         }
+        done = true;
     }
+    S.V();
 }
 
 bool loadFromFiles (const Key & key) {
@@ -168,17 +184,19 @@ bool loadFromFiles (const Key & key) {
         candidates.insert(finfo.fid);
 #endif
     });
-    
+
     keyFound = false;
-    thread threads[candidates.size()];
-    Id i = 0;
-    
-    for (Id fid : candidates) {
-        threads[i] = thread(loadFromFile, fid, key);
-        if (keyFound) break;
-        ++i;
+    thread th[2];
+    unsigned i=0;
+    for (auto fid : candidates) {
+        if (!keyFound) {
+            th[i%2] = thread(loadFromFile, i%2, fid, key);
+            th[i%2].detach();
+            S.P();
+        }
+        i++;
     }
-    for (auto& th : threads) th.join();
+    while ((i < candidates.size()) || (keyFound && done == false));
     
     return keyFound;
 }
@@ -225,13 +243,18 @@ int main(int argc, char** argv) {
     }
     
     start = std::chrono::high_resolution_clock::now();
-    Value * val = get(query);
     
-    if (val == nullptr) {
-        printf("The '%lu' does not exist.\n", query);
-    } else {
-        printf("Name of '%lu': %s\n", query, val->_name);
-    }
+    //for (int j=0; j < 100; ++j) {
+        Value * val = get(query);
+        
+        if (val == nullptr) {
+            //printf("The '%lu' does not exist.\n", query);
+        } else {
+            //printf("Name of '%lu': %s\n", query, val->_name);
+        }
+    //    query = rand();
+    //    if (query < 0) query *= -1;
+    //}
     
     auto now = chrono::high_resolution_clock::now();
     mseconds = chrono::duration<double, milli>(now-start).count();

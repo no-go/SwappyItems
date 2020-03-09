@@ -194,9 +194,3 @@ bool catchWay(Value & dummy, const uint64_t & osmid, const Tags & tags) {
 
 
 
-
-
-
-
-
-

@@ -5,7 +5,7 @@
 #include <iostream>    // sizeof and ios namespace
 #include <algorithm>   // find
 #include <stdexcept>   // std::out_of_range
-
+#include <utility>     // make_pair
 #include <cstdlib>     // srand, rand, exit
 
 #include <vector>         // store file information
@@ -51,13 +51,14 @@ class SwappyItems {
         TKEY key;
         bool deleted;
     };
+    
+    typedef uint32_t                                   Bid;
+    typedef std::set<Bid>                      Fingerprint;
 
-    typedef uint32_t                              Bid;
-    typedef std::set<Bid>                 Fingerprint;
-
-    typedef std::unordered_map<TKEY,TVALUE>       Ram;
-    typedef std::vector<Detail>                Ranges;
-    typedef std::deque<Qentry>                  Order;
+    typedef std::pair<TVALUE, std::vector<TKEY> >     Data; // just for simplifing next line
+    typedef std::unordered_map<TKEY,Data>              Ram;
+    typedef std::vector<Detail>                     Ranges;
+    typedef std::deque<Qentry>                       Order;
 
     // the item store in RAM
     Ram _ramList;
@@ -108,7 +109,7 @@ public:
             );
             it->deleted = true;
             _prios.push_back(Qentry{key,false});
-            _ramList[key] = value;
+            _ramList[key] = std::make_pair(value, _ramList[key].second);
             ++statistic.updates;
             return false;
         } else {
@@ -116,7 +117,36 @@ public:
             maySwap();
             ++statistic.counting;
             _prios.push_back(Qentry{key,false});
-            _ramList[key] = value;
+            _ramList[key] = std::make_pair(value, std::vector<TKEY>(0));
+            return true;
+        }
+    }
+
+    /**
+     * set (create or update)
+     *
+     * @return true if it is new
+     */
+    bool set (TKEY key, TVALUE value, std::vector<TKEY> refs) {
+        if (load(key)) {
+            // just update
+            // reverse search should be faster
+            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
+                [key] (const Qentry & qe) {
+                    return (qe.key == key) && (qe.deleted == false);
+                }
+            );
+            it->deleted = true;
+            _prios.push_back(Qentry{key,false});
+            _ramList[key] = std::make_pair(value, refs);
+            ++statistic.updates;
+            return false;
+        } else {
+            // key is new
+            maySwap();
+            ++statistic.counting;
+            _prios.push_back(Qentry{key,false});
+            _ramList[key] = std::make_pair(value, refs);
             return true;
         }
     }
@@ -127,7 +157,7 @@ public:
      * @param key the unique key
      * @return nullptr if item not exists
      */
-    TVALUE * get (const TKEY & key) {
+    std::pair<TVALUE, std::vector<TKEY> > * get (const TKEY & key) {
         if (load(key)) {
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
@@ -178,7 +208,13 @@ public:
         file.write((char *) &length, sizeof(Id));
         for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
             file.write((char *) &(it->first), sizeof(TKEY));
-            file.write((char *) &(it->second), sizeof(TVALUE));
+            file.write((char *) &(it->second.first), sizeof(TVALUE));
+            // stored vector?
+            length = it->second.second.size();
+            file.write((char *) &length, sizeof(Id));
+            for (Id j=0; j<length; ++j) {
+                file.write((char *) &(it->second.second[j]), sizeof(TKEY));
+            }
         }
         file.close();
 
@@ -294,6 +330,7 @@ private:
     bool wakeup () {
         char filename[512];
         TKEY loadedKey;
+        TKEY loadedKey2;
         TVALUE loadedValue;
         std::ifstream file;
 
@@ -302,9 +339,18 @@ private:
         Id length;
         file.read((char *) &length, sizeof(Id));
         for (Id c = 0; c < length; ++c) {
+            std::vector<TKEY> vecdata(0);
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedValue, sizeof(TVALUE));
-            _ramList[loadedKey] = loadedValue;
+            // stored vector?
+            file.read((char *) &length, sizeof(Id));
+            if (length > 0) {
+                for (Id j=0; j<length; ++j) {
+                    file.read((char *) &loadedKey2, sizeof(TKEY));
+                    vecdata.push_back(loadedKey2);
+                }
+            }
+            _ramList[loadedKey] = std::make_pair(loadedValue, vecdata);
         }
         file.close();
 
@@ -440,7 +486,11 @@ private:
      */
     void loadFromFile (Fid fid, TKEY key) {
         Ram temp;
+        Id length;
         TKEY loadedKey;
+        TKEY loadedKey2;
+        TVALUE loadedValue;
+        
         bool result = false;
 
         char filename[512];
@@ -453,8 +503,19 @@ private:
         std::ifstream file(filename, std::ios::in | std::ios::binary);
 
         for (Id c = 0; c < EACHFILE; ++c) {
+            std::vector<TKEY> vecdata(0);
             file.read((char *) &loadedKey, sizeof(TKEY));
-            file.read((char *) &(temp[loadedKey]), sizeof(TVALUE));
+            file.read((char *) &loadedValue, sizeof(TVALUE));
+            // stored vector?
+            file.read((char *) &length, sizeof(Id));
+            if (length > 0) {
+                for (Id j=0; j<length; ++j) {
+                    file.read((char *) &loadedKey2, sizeof(TKEY));
+                    vecdata.push_back(loadedKey2);
+                }
+            }
+            temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+
             if (loadedKey == key) {
                 result = true;
                 keyFound = true;
@@ -515,7 +576,7 @@ private:
         Detail detail{0, 0};
         Fingerprint fp;
         
-        std::map<TKEY,TVALUE> temp; // map is sorted by key!
+        std::map<TKEY, std::pair<TVALUE, std::vector<TKEY> > > temp; // map is sorted by key!
         bool success;
         
         ++statistic.swaps;
@@ -534,10 +595,11 @@ private:
         // run through sorted items
         Id written = 0;
         std::ofstream file;
-        typename std::map<TKEY,TVALUE>::iterator it;
+        typename std::map<TKEY, std::pair<TVALUE, std::vector<TKEY> > >::iterator it;
 
         for (it=temp.begin(); it!=temp.end(); ++it) {
 
+            // open -----------------------------------
             if ((written%(EACHFILE)) == 0) {
                 success = false;
 
@@ -565,14 +627,24 @@ private:
 
             // store data
             file.write((char *) &(it->first), sizeof(TKEY));
-            file.write((char *) &(it->second), sizeof(TVALUE));
-
+            file.write((char *) &(it->second.first), sizeof(TVALUE));
+            
+            // store vector?
+            Id length = it->second.second.size();
+            file.write((char *) &length, sizeof(Id));
+            for (Id j=0; j<length; ++j) {
+                file.write((char *) &(it->second.second[j]), sizeof(TKEY));
+            }
+            
+            // remember key in bloom mask
             fp = getFingerprint(it->first);
             for (auto b : fp) {
                 detail.bloomMask[b] = true;
             }
-            ++written;
 
+            ++written;
+            
+            // close ----------------------------------
             if ((written%(EACHFILE)) == 0) {
                 // store range
                 detail.fid = pos;

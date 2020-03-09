@@ -57,58 +57,27 @@ double mseconds;
 atomic<bool> isPrinted = false;
 
 #include "tools.hpp"
+#include "Routing.hpp"
+
+/*
+unsigned maxref = 0;
 
 struct Routing {
 
     void way_callback (uint64_t osmid, const Tags & tags, const vector<uint64_t> & refs) {
         Value dummy;
 
-        /// @todo store refs on "master" osmid more intelligent (?) and make "recursive" access possible ---------------------------------- !
-        
         if (catchWay(dummy, osmid, tags)) { // fills in basis way data
-            Value * wa;
-            
-            for (size_t i=0; i < refs.size(); ++i) {
-                wa = ways->get(refs[i]);
-                
-                if ((ways->size()%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
-
-                if (wa == nullptr) {
-                    // new!
-                    ValueSet(dummy, (i==0 ? osmid : refs[i-1]) );
-                    // prevent a log print, if size not changes
-                    isPrinted = false;
-                    
-                } else {
-                    // update
-                    ValueSet(dummy, wa->_parent, wa->_lon, wa->_lat, wa->_type, wa->_uses+1);
-                }
-                ways->set(refs[i], dummy);
-            }
+            if (refs.size() > maxref) maxref = refs.size();
         }
     }
 
-    void node_callback (uint64_t osmid, double lon, double lat, const Tags & tags) {
-        Value * wa = ways->get(osmid);
-        Value dummy;
-        
-        if (wa == nullptr) {
-            // it seams to be not a way: we store it as town?
-            if (catchTown(dummy, osmid, lon, lat, tags)) {
-                ways->set(osmid, dummy);
-            }
-        } else {
-            // this osmid node is a way (set lon and lat!)
-            ValueSet(dummy, wa->_parent, lon, lat, wa->_type, wa->_uses);
-            ways->set(osmid, dummy);
-            isPrinted = false;
-        }
-
-        if ((ways->statistic.updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
-    }
+    void node_callback (uint64_t osmid, double lon, double lat, const Tags & tags) {}
     
-    void relation_callback (uint64_t /*osmid*/, const Tags &/*tags*/, const References & refs){}
+    void relation_callback (uint64_t osmid, const Tags & tags, const References & refs){}
 };
+*/
+
 
 int main(int argc, char** argv) {
     if(argc != 2) {
@@ -129,6 +98,7 @@ int main(int argc, char** argv) {
     auto now = std::chrono::high_resolution_clock::now();
     mseconds = std::chrono::duration<double, std::milli>(now-start).count();
     printf("# end ways: %.f ms\n", mseconds);
+    //printf("maxref: %u\n", maxref);
 
     read_osm_pbf(argv[1], routing, false); // read nodes and relations
     

@@ -3,16 +3,16 @@ struct Routing {
 
     void way_callback (uint64_t osmid, const Tags & tags, const vector<uint64_t> & refs) {
         pair<Value, vector<Key> > parent;
-        pair<Value, vector<Key> > dummy;
 
         if (catchWay(parent.first, osmid, tags)) { // fills in basis way data
             pair<Value, vector<Key> > * wa;
             pair<Value, vector<Key> > * waref;
+            pair<Value, vector<Key> > dummy;
             
             wa = ways->get(osmid);
             
             if (wa == nullptr) {
-                for (auto r : refs) parent.second.push_back(r);
+                for (Key r : refs) parent.second.push_back(r);
                 ways->set(osmid, parent.first, parent.second);
             }
 

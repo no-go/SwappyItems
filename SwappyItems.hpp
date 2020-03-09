@@ -273,7 +273,7 @@ public:
     }
 
     SwappyItems (int swappyId) {
-        S = new Semaphore(std::thread::hardware_concurrency());
+        S = new Semaphore(std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency()-1 : 1);
         
         statistic.counting = 0;
         statistic.updates = 0;
@@ -337,18 +337,17 @@ private:
         snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
         file.open(filename, std::ios::in | std::ios::binary);
         Id length;
+        Id lengthVec;
         file.read((char *) &length, sizeof(Id));
         for (Id c = 0; c < length; ++c) {
             std::vector<TKEY> vecdata(0);
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedValue, sizeof(TVALUE));
             // stored vector?
-            file.read((char *) &length, sizeof(Id));
-            if (length > 0) {
-                for (Id j=0; j<length; ++j) {
-                    file.read((char *) &loadedKey2, sizeof(TKEY));
-                    vecdata.push_back(loadedKey2);
-                }
+            file.read((char *) &lengthVec, sizeof(Id));
+            for (Id j=0; j<lengthVec; ++j) {
+                file.read((char *) &loadedKey2, sizeof(TKEY));
+                vecdata.push_back(loadedKey2);
             }
             _ramList[loadedKey] = std::make_pair(loadedValue, vecdata);
         }

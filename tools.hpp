@@ -46,7 +46,7 @@ int getUsedKB() {
 
 // -------------------------------------------------------------------------
 void my_handler(int s) {
-    printf("#Caught signal %d\n", s);
+    printf("# Caught signal %d\n", s);
     auto now = std::chrono::high_resolution_clock::now();
     mseconds = std::chrono::duration<double, std::milli>(now-start).count();
     printf("#end (before hibernate): %.f ms\n", mseconds);
@@ -96,38 +96,40 @@ void logEntry(double & msec, std::chrono::time_point<std::chrono::system_clock> 
         "%10ld filekB\n",
         
         msec,
-        ways->size(),
-        ways->prioSize(),
+        nodes->size(),
+        nodes->prioSize(),
         
-        ways->statistic.updates,
-        ways->statistic.deletes,
+        nodes->statistic.updates,
+        nodes->statistic.deletes,
         
-        ways->statistic.rangeSaysNo, 
-        ways->statistic.bloomSaysFresh,
+        nodes->statistic.rangeSaysNo, 
+        nodes->statistic.bloomSaysFresh,
         ways->statistic.rangeFails,
         
-        ways->statistic.swaps,
-        ways->statistic.fileLoads,
+        nodes->statistic.swaps,
+        nodes->statistic.fileLoads,
         getUsedKB(),
-        ways->size(true)
+        nodes->size(true)
     );
 }
 
 // -------------------------------------------------------------------------
-bool catchTown(Value & dummy, const uint64_t & osmid, double & lon, double & lat, const Tags & tags) {
+bool catchTown(PlaceData & dummy, const uint64_t & osmid, double & lon, double & lat, const Tags & tags) {
     if (tags.find("place") == tags.end()) return false;
     
     string pt = tags.at("place");
-    uint8_t typ = 1;
+    dummy._type = 1;
     
     if (pt.compare("village") == 0) {
-        typ = 2;
+        dummy._type = 2;
     } else if (pt.compare("town") == 0) {
-        typ = 3;
+        dummy._type = 3;
     } else if (pt.compare("city") == 0) {
-        typ = 4;
+        dummy._type = 4;
     }
-    ValueSet(dummy, osmid, lon, lat, typ);
+    dummy._lon = lon;
+    dummy._lat = lat;
+
     if (tags.find("name") != tags.end()) {
         pt = tags.at("name");
         pt = replacer(pt, "&", "und");
@@ -142,37 +144,35 @@ bool catchTown(Value & dummy, const uint64_t & osmid, double & lon, double & lat
 }
 
 // -------------------------------------------------------------------------
-bool catchWay(Value & dummy, const uint64_t & osmid, const Tags & tags) {
+bool catchWay(WayData & dummy, const uint64_t & osmid, const Tags & tags) {
     if (tags.find("highway") == tags.end()) return false;
 
-    uint8_t typ = 0;
+    dummy._type = 0;
     string wt = tags.at("highway");
     
     if (wt.compare("motorway") == 0) {
-        typ = 10;
+        dummy._type = 10;
     } else if (wt.compare("motorway_link") == 0) {
-        typ = 10;
+        dummy._type = 10;
     } else if (wt.compare("trunk") == 0) {
-        typ = 20;
+        dummy._type = 20;
     } else if (wt.compare("trunk_link") == 0) {
-        typ = 20;
+        dummy._type = 20;
     } else if (wt.compare("primary") == 0) {
-        typ = 30;
+        dummy._type = 30;
     } else if (wt.compare("primary_link") == 0) {
-        typ = 30;
+        dummy._type = 30;
     } else if (wt.compare("secondary") == 0) {
-        typ = 40;
+        dummy._type = 40;
     } else if (wt.compare("unclassified") == 0) {
-        typ = 50;
+        dummy._type = 50;
     } else if (wt.compare("tertiary") == 0) {
-        typ = 50;
+        dummy._type = 50;
     } else if (wt.compare("residential") == 0) {
-        typ = 60;
+        dummy._type = 60;
     }
     
-    if (typ == 0) return false;
-    
-    ValueSet(dummy, osmid, 0, 0, typ);
+    if (dummy._type == 0) return false;
 
     string wayName = "";
     if(tags.find("name") != tags.end()){

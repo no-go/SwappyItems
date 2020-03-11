@@ -30,25 +30,31 @@ using namespace std;
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
-struct Value {
-    uint8_t _type;
-    uint8_t _uses;
+struct NodeData {
+    uint8_t _used;
     double _lon;
     double _lat;
-    Key _parent; // if we want to store the whole ref list, then hiberate and file swap must be modified for collection vars !
+};
+
+struct WayData {
+    uint8_t _used;
+    uint8_t _type;
     char _name[256];
 };
 
-void ValueSet (Value & v, Key parent = 0, double lon = 0.0, double lat = 0.0, uint8_t typ = 0, uint8_t uses = 0) {
-    v._uses = uses;
-    v._lon = lon;
-    v._lat = lat;
-    v._type = typ;
-    v._parent = parent;
-}
+struct PlaceData {
+    uint8_t _type;
+    double _lon;
+    double _lat;
+    char _name[256];
+};
 
-typedef SwappyItems<Key, Value, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> KVstore;
-KVstore * ways;
+typedef SwappyItems<Key, WayData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsWAYS;
+typedef SwappyItems<Key, NodeData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsNODES;
+typedef SwappyItems<Key, PlaceData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsPLACES;
+SwappyItemsWAYS * ways;
+SwappyItemsNODES * nodes;
+SwappyItemsPLACES * places;
 
 // ---------------------------------------------------------------------
 
@@ -59,33 +65,15 @@ atomic<bool> isPrinted = false;
 #include "tools.hpp"
 #include "Routing.hpp"
 
-/*
-unsigned maxref = 0;
-
-struct Routing {
-
-    void way_callback (uint64_t osmid, const Tags & tags, const vector<uint64_t> & refs) {
-        Value dummy;
-
-        if (catchWay(dummy, osmid, tags)) { // fills in basis way data
-            if (refs.size() > maxref) maxref = refs.size();
-        }
-    }
-
-    void node_callback (uint64_t osmid, double lon, double lat, const Tags & tags) {}
-    
-    void relation_callback (uint64_t osmid, const Tags & tags, const References & refs){}
-};
-*/
-
-
 int main(int argc, char** argv) {
     if(argc != 2) {
         printf("Usage: %s file_to_read.osm.pbf\n", argv[0]);
         return 1;
     }
     
-    ways = new KVstore(23);
+    ways = new SwappyItemsWAYS(23);
+    nodes = new SwappyItemsNODES(42);
+    places = new SwappyItemsPLACES(815);
     Routing routing;
     
     logHead();
@@ -98,17 +86,15 @@ int main(int argc, char** argv) {
     auto now = std::chrono::high_resolution_clock::now();
     mseconds = std::chrono::duration<double, std::milli>(now-start).count();
     printf("# end ways: %.f ms\n", mseconds);
-    //printf("maxref: %u\n", maxref);
 
     read_osm_pbf(argv[1], routing, false); // read nodes and relations
     
     now = std::chrono::high_resolution_clock::now();
     mseconds = std::chrono::duration<double, std::milli>(now-start).count();
     printf("# end nodes: %.f ms\n", mseconds);
-    
-    // stores final data structure!
-    ways->hibernate();
 
+    delete places;
+    delete nodes;
     delete ways;
     return 0;
 }

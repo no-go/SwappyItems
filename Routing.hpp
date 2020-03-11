@@ -2,73 +2,60 @@
 struct Routing {
 
     void way_callback (uint64_t osmid, const Tags & tags, const vector<uint64_t> & refs) {
-        pair<Value, vector<Key> > parent;
-
-        if (catchWay(parent.first, osmid, tags)) { // fills in basis way data
-            pair<Value, vector<Key> > * wa;
-            pair<Value, vector<Key> > * waref;
-            pair<Value, vector<Key> > dummy;
+        pair<WayData, vector<Key> > way;
+        
+        if (catchWay(way.first, osmid, tags)) { // fills in basis way data
             
-            wa = ways->get(osmid);
-            
-            if (wa == nullptr) {
-                for (Key r : refs) parent.second.push_back(r);
-                ways->set(osmid, parent.first, parent.second);
-            }
+            pair<WayData, vector<Key> > * wayptr = ways->get(osmid);
 
-            for (size_t i=0; i < refs.size(); ++i) {
-                waref = ways->get(refs[i]);
-                
-                if ((ways->size()%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
-
-                if (waref == nullptr) {
-                    // new!
-                    ValueSet(
-                        parent.first,
-                        (i==0 ? osmid : refs[i-1]), 
-                        parent.first._lon, 
-                        parent.first._lat, 
-                        parent.first._type, 
-                        0
-                    );
-                    // prevent a log print, if size not changes
-                    isPrinted = false;
-                    
-                } else {
-                    // update
-                    ValueSet(
-                        dummy.first,
-                        waref->first._parent,
-                        waref->first._lon,
-                        waref->first._lat,
-                        waref->first._type,
-                        waref->first._uses+1
-                    );
+            if (wayptr == nullptr) {
+                for (Key r : refs) {
+                    way.second.push_back(r);
+                    pair<NodeData, vector<Key> > * nodeptr = nodes->get(r);
+                    if (nodeptr == nullptr) {
+                        pair<NodeData, vector<Key> > node;
+                        node.first._used = 0;
+                        node.first._lon = 0.0;
+                        node.first._lat = 0.0;
+                        nodes->set(r, node.first);
+                    } else {
+                        // node is also used in another way!
+                        nodeptr->first._used++;
+                        nodes->set(r, nodeptr->first);
+                        isPrinted = false;
+                    }
                 }
-                ways->set(refs[i], dummy.first);
+                ways->set(osmid, way.first, way.second);
+            } else {
+                // @todo does this really happend?
+                wayptr->first._used++;
+                ways->set(osmid, wayptr->first, wayptr->second);
             }
+            
+            if ((nodes->statistic.updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
         }
     }
 
     void node_callback (uint64_t osmid, double lon, double lat, const Tags & tags) {
-        pair<Value, vector<Key> > * wa = ways->get(osmid);
-        Value dummy;
+        pair<NodeData, vector<Key> > * nodeptr = nodes->get(osmid);
+        pair<PlaceData, vector<Key> > place;
         
-        if (wa == nullptr) {
-            // it seams to be not a way: we store it as town?
-            if (catchTown(dummy, osmid, lon, lat, tags)) {
-                ways->set(osmid, dummy);
+        if (nodeptr == nullptr) {
+            // it seams to be not a way: we store it as place?
+            if (catchTown(place.first, osmid, lon, lat, tags)) {
+                places->set(osmid, place.first);
             }
         } else {
             // this osmid node is part of a way, because we read way first and it exist now
             // -> set lon and lat!
-            ValueSet(dummy, wa->first._parent, lon, lat, wa->first._type, wa->first._uses);
-            snprintf(dummy._name, 256, "%s", wa->first._name);
-            ways->set(osmid, dummy);
+            nodeptr->first._used++;
+            nodeptr->first._lon = lon;
+            nodeptr->first._lat = lat;
+            nodes->set(osmid, nodeptr->first);
             isPrinted = false;
         }
 
-        if ((ways->statistic.updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
+        if ((nodes->statistic.updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
     }
     
     void relation_callback (uint64_t /*osmid*/, const Tags &/*tags*/, const References & refs){}

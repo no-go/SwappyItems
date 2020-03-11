@@ -317,6 +317,7 @@ public:
     }
     
     ~SwappyItems () {
+        hibernate();
         delete S;
     }
 

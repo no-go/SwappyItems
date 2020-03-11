@@ -22,9 +22,17 @@ struct WayData {
     char _name[256];
 };
 
-typedef SwappyItems<Key, WayData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsWAYS;
-SwappyItemsWAYS * ways;
+struct PlaceData {
+    uint8_t _type;
+    double _lon;
+    double _lat;
+    char _name[256];
+};
 
+typedef SwappyItems<Key, WayData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsWAYS;
+typedef SwappyItems<Key, PlaceData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsPLACES;
+SwappyItemsWAYS * ways;
+SwappyItemsPLACES * places;
 
 // ---------------------------------------------------------------------
 
@@ -46,6 +54,19 @@ int main(int argc, char** argv) {
         printf("     uses: %d\n", val->first._used);
     }
     
+    places = new SwappyItemsPLACES(815);
+    
+    SwappyItemsPLACES::Data pla;
+    Key k2;
+    bool here = places->each(pla, [&k2](Key key, SwappyItemsPLACES::Data val) {
+        printf("each gets '%lu' %s\n", key, val.first._name);
+        k2 = key;
+        return val.first._name[1] == 'o';
+    });
+    
+    if (here) printf("found: '%lu' %s\n", k2, pla.first._name);
+    
+    delete places;
     delete ways;
     
     auto now = std::chrono::high_resolution_clock::now();

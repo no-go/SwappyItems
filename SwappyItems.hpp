@@ -37,6 +37,7 @@ template <
 >
 class SwappyItems {
 
+private:
     typedef uint32_t                               Id;
     typedef uint32_t                              Fid; // File id
 
@@ -55,7 +56,10 @@ class SwappyItems {
     typedef uint32_t                                   Bid;
     typedef std::set<Bid>                      Fingerprint;
 
+public:
     typedef std::pair<TVALUE, std::vector<TKEY> >     Data; // just for simplifing next line
+
+private:
     typedef std::unordered_map<TKEY,Data>              Ram;
     typedef std::vector<Detail>                     Ranges;
     typedef std::deque<Qentry>                       Order;
@@ -77,6 +81,7 @@ class SwappyItems {
     std::atomic<unsigned> done;
 
 public:
+
 
     struct statistic_s {
         uint64_t counting = 0;
@@ -157,7 +162,7 @@ public:
      * @param key the unique key
      * @return nullptr if item not exists
      */
-    std::pair<TVALUE, std::vector<TKEY> > * get (const TKEY & key) {
+    Data * get (const TKEY & key) {
         if (load(key)) {
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
@@ -197,7 +202,27 @@ public:
     }
     
     /**
+     * @todo iter through all items
+     * 
+     * @param back is pointer to the value, were the each loop breaks
+     * @param foo is a lambda function, which gets each key and value. if foo return true, the each loop breaks
+     * @return if it is false, the loop did not break
+     */
+    bool each (Data & back, std::function<bool(TKEY, Data)> foo) {
+        typename Ram::iterator it;
+        for (it = _ramList.begin(); it != _ramList.end(); ++it) {
+            if (foo(it->first, it->second)) {
+                back = it->second;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
      * stores all RAM content into file(s)
+     * 
+     * @todo does strg+c make a regulat delete? if so, than we do not need hibernate() in public?!
      */
     void hibernate () {
         char filename[512];
@@ -576,7 +601,7 @@ private:
         Detail detail{0, 0};
         Fingerprint fp;
         
-        std::map<TKEY, std::pair<TVALUE, std::vector<TKEY> > > temp; // map is sorted by key!
+        std::map<TKEY,Data> temp; // map is sorted by key!
         bool success;
         
         ++statistic.swaps;
@@ -595,7 +620,7 @@ private:
         // run through sorted items
         Id written = 0;
         std::ofstream file;
-        typename std::map<TKEY, std::pair<TVALUE, std::vector<TKEY> > >::iterator it;
+        typename std::map<TKEY,Data>::iterator it;
 
         for (it=temp.begin(); it!=temp.end(); ++it) {
 

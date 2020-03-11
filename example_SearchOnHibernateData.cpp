@@ -16,6 +16,12 @@ using namespace std;
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
+struct NodeData {
+    uint8_t _used;
+    double _lon;
+    double _lat;
+};
+
 struct WayData {
     uint8_t _used;
     uint8_t _type;
@@ -30,8 +36,10 @@ struct PlaceData {
 };
 
 typedef SwappyItems<Key, WayData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsWAYS;
+typedef SwappyItems<Key, NodeData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsNODES;
 typedef SwappyItems<Key, PlaceData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsPLACES;
 SwappyItemsWAYS * ways;
+SwappyItemsNODES * nodes;
 SwappyItemsPLACES * places;
 
 // ---------------------------------------------------------------------
@@ -44,7 +52,12 @@ int main(int argc, char** argv) {
     if (argc == 2) query = stol(argv[1]);
     start = std::chrono::high_resolution_clock::now();
 
-    SwappyItemsWAYS * ways = new SwappyItemsWAYS(23);
+    ways = new SwappyItemsWAYS(23);
+    nodes = new SwappyItemsNODES(42);
+    places = new SwappyItemsPLACES(815);
+    
+    // get a way by key -------------------------------------------
+    
     std::pair<WayData, vector<Key> > * val = ways->get(query);
     
     if (val == nullptr) {
@@ -53,21 +66,44 @@ int main(int argc, char** argv) {
         printf("Name of '%lu': %s\n", query, val->first._name);
         printf("     uses: %d\n", val->first._used);
     }
+    // ---------------------------------------------------------
     
-    places = new SwappyItemsPLACES(815);
-    
-    SwappyItemsPLACES::Data pla;
+    SwappyItemsPLACES::Data p;
     Key k2;
-    bool here = places->each(pla, [&k2](Key key, SwappyItemsPLACES::Data val) {
-        printf("each gets '%lu' %s\n", key, val.first._name);
-        k2 = key;
-        return val.first._name[1] == 'o';
+    bool here = places->each(p, [&k2](Key key, SwappyItemsPLACES::Data & val) {
+        printf("each %d gets '%lu' %s\n", val.first._type, key, val.first._name);
+        k2 = key; // an other kind of "returning" a value
+        //val.first._type++; // change data works!!
+        // stop on true
+        return val.first._name[1] == 'o'; // the second letter must be a "o"
+    });
+    if (here) printf("found: '%lu' %s\n", k2, p.first._name);
+
+    SwappyItemsWAYS::Data w;
+    ways->each(w, [](Key key, SwappyItemsWAYS::Data & val) {
+        if (val.first._name[0] == 'A') {
+            printf("'%lu' with type %d has name %s\n", key, val.first._type, val.first._name);
+            for (auto k : val.second) {
+                printf("  ref '%lu'\n", k);
+            }
+        }
+        // all items, no stop
+        return false;
+    });
+
+    SwappyItemsNODES::Data n;
+    nodes->each(n, [](Key key, SwappyItemsNODES::Data & val) {
+        if (val.first._used > 2) {
+            printf("%lu\n", key);
+        }
+        // all items, no stop
+        return false;
     });
     
-    if (here) printf("found: '%lu' %s\n", k2, pla.first._name);
     
     delete places;
     delete ways;
+    delete nodes;
     
     auto now = std::chrono::high_resolution_clock::now();
     mseconds = std::chrono::duration<double, std::milli>(now-start).count();

@@ -10,6 +10,7 @@
 
 #include <vector>         // store file information
 #include <set>            // a set of candidate files
+#include <unordered_set>  // a set of keys
 #include <unordered_map>  // for a key->data
 #include <deque>          // for key order (prio)
 #include <map>            // for store keys in a sorted way
@@ -202,20 +203,84 @@ public:
     }
     
     /**
-     * @todo iter through all items
+     * This "for_each" catches all items and runs a function on each item.
+     * If this function returns true, the "for_each" stops.
+     * 
+     * @todo foreach multithread
+     * @todo load next range in background
      * 
      * @param back is pointer to the value, were the each loop breaks
-     * @param foo is a lambda function, which gets each key and value. if foo return true, the each loop breaks
+     * @param foo is a lambda function, which gets each key and value(pair). if foo return true, the each-loop breaks
      * @return if it is false, the loop did not break
      */
-    bool each (Data & back, std::function<bool(TKEY, Data)> foo) {
+    bool each (Data & back, std::function<bool(TKEY, Data &)> foo) {
         typename Ram::iterator it;
+        std::set<Fid> important;
+                
+        // run in RAM
+        /// @todo foreach multithread
         for (it = _ramList.begin(); it != _ramList.end(); ++it) {
             if (foo(it->first, it->second)) {
                 back = it->second;
                 return true;
             }
         }
+        // store all undeleted ranges, because they have the other items
+        std::for_each (_ranges.begin(), _ranges.end(), [&](Detail finfo) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                important.insert(finfo.fid);
+            }
+        });
+        
+        
+        for (Fid fid : important) {
+            // 1) load into temp each range/file to get all keys of the file
+            Ram temp;
+            std::unordered_set<TKEY> keys;
+            Id length;
+            TKEY loadedKey;
+            TKEY loadedKey2;
+            TVALUE loadedValue;
+
+            char filename[512];
+            snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+            std::ifstream file(filename, std::ios::in | std::ios::binary);
+
+            for (Id c = 0; c < EACHFILE; ++c) {
+                std::vector<TKEY> vecdata(0);
+                file.read((char *) &loadedKey, sizeof(TKEY));
+                file.read((char *) &loadedValue, sizeof(TVALUE));
+                keys.insert(loadedKey);
+                // stored vector?
+                file.read((char *) &length, sizeof(Id));
+                if (length > 0) {
+                    for (Id j=0; j<length; ++j) {
+                        file.read((char *) &loadedKey2, sizeof(TKEY));
+                        vecdata.push_back(loadedKey2);
+                    }
+                }
+                temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+            }
+            file.close();
+            // 2) mark file as empty --------------------- 
+            _ranges[fid].minimum = 0;
+            _ranges[fid].maximum = 0;
+            // 3) may swap and place temp into ram ---------- 
+            maySwap(true);
+            // ... and load the stuff
+            for (auto key_val : temp) {
+                _ramList[key_val.first] = key_val.second;
+                _prios.push_back(Qentry{key_val.first,false});
+            }
+            // 4) run through in RAM with keys from temp
+            for (auto k : keys) {
+                if (foo(k, _ramList[k])) {
+                    back = _ramList[k];
+                    return true;
+                }
+            }
+        }
+        
         return false;
     }
     
@@ -453,24 +518,27 @@ private:
         Fingerprint fp = getFingerprint(key);
         
         std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
-            if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
-                // key is smaller then the smallest or bigger than the biggest
-                std::lock_guard lock(m);
-                ++statistic.rangeSaysNo;
-            } else {
-                // check bloom (is it possible, that this key is in that file?)
-                bool success = true;
-                for (auto b : fp) {
-                    if (finfo.bloomMask[b] == false) {
-                        success = false;
-                        std::lock_guard lock(m);
-                        ++statistic.bloomSaysFresh;
-                        break;
-                    }
-                }
-                if (success) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                
+                if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
+                    // key is smaller then the smallest or bigger than the biggest
                     std::lock_guard lock(m);
-                    candidates.insert(finfo.fid);
+                    ++statistic.rangeSaysNo;
+                } else {
+                    // check bloom (is it possible, that this key is in that file?)
+                    bool success = true;
+                    for (auto b : fp) {
+                        if (finfo.bloomMask[b] == false) {
+                            success = false;
+                            std::lock_guard lock(m);
+                            ++statistic.bloomSaysFresh;
+                            break;
+                        }
+                    }
+                    if (success) {
+                        std::lock_guard lock(m);
+                        candidates.insert(finfo.fid);
+                    }
                 }
             }
         });

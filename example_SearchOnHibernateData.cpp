@@ -100,7 +100,6 @@ int main(int argc, char** argv) {
         return false;
     });
     
-    
     delete places;
     delete ways;
     delete nodes;

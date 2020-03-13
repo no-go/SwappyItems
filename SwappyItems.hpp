@@ -89,7 +89,7 @@ public:
         uint64_t updates = 0;
         uint64_t deletes = 0;
 
-        uint64_t bloomSaysFresh = 0;
+        uint64_t bloomSaysNotIn = 0;
         uint64_t bloomFails = 0;
 
         uint64_t rangeSaysNo = 0;
@@ -369,7 +369,7 @@ public:
         statistic.updates = 0;
         statistic.deletes = 0;
 
-        statistic.bloomSaysFresh = 0;
+        statistic.bloomSaysNotIn = 0;
         statistic.rangeSaysNo = 0;
         statistic.rangeFails = 0;
 
@@ -531,7 +531,7 @@ private:
                         if (finfo.bloomMask[b] == false) {
                             success = false;
                             std::lock_guard lock(m);
-                            ++statistic.bloomSaysFresh;
+                            ++statistic.bloomSaysNotIn;
                             break;
                         }
                     }
@@ -747,6 +747,125 @@ private:
             }
         }
     }
+
+// todo ---------------------------------------------------------------------------------------------------
+
+public:
+
+    /**
+     * get a item (for use in a "each-loop" in the same SwappyItems instance)
+     * 
+     * this method never touches the priority queue and never swaps or load data into RAM
+     *
+     * @param result the value as copy
+     * @param key the unique key
+     * 
+     * @return true, if exists
+     */
+    bool flat_get (Data & result, const TKEY & key) {
+        
+        try {
+            result = _ramList.at(key);
+            return true;
+        } catch (const std::out_of_range & oor) {
+            if (flat_loadFromFiles(result, key)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+private:
+
+    bool flat_loadFromFiles (Data & result, const TKEY & key) {
+        std::set<Fid> candidates;
+        std::mutex m;
+        Fingerprint fp = getFingerprint(key);
+        
+        std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                
+                if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
+                    // key is smaller then the smallest or bigger than the biggest
+                    std::lock_guard lock(m);
+                    ++statistic.rangeSaysNo;
+                } else {
+                    // check bloom (is it possible, that this key is in that file?)
+                    bool success = true;
+                    for (auto b : fp) {
+                        if (finfo.bloomMask[b] == false) {
+                            success = false;
+                            std::lock_guard lock(m);
+                            ++statistic.bloomSaysNotIn;
+                            break;
+                        }
+                    }
+                    if (success) {
+                        std::lock_guard lock(m);
+                        candidates.insert(finfo.fid);
+                    }
+                }
+            }
+        });
+        
+        bool success = false;
+
+        for (auto fid : candidates) {
+
+            Id length;
+            TKEY loadedKey;
+            TKEY loadedKey2;
+            TVALUE loadedValue;
+            
+            char filename[512];
+            snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+            std::ifstream file(filename, std::ios::in | std::ios::binary);
+
+            for (Id c = 0; c < EACHFILE; ++c) {
+                file.read((char *) &loadedKey, sizeof(TKEY));
+
+                if (loadedKey == key) {
+                    success = true;
+                    
+                    std::vector<TKEY> vecdata(0);
+                    file.read((char *) &loadedValue, sizeof(TVALUE));
+                    // stored vector?
+                    file.read((char *) &length, sizeof(Id));
+                    if (length > 0) {
+                        for (Id j=0; j<length; ++j) {
+                            file.read((char *) &loadedKey2, sizeof(TKEY));
+                            vecdata.push_back(loadedKey2);
+                        }
+                    }
+                    result = std::make_pair(loadedValue, vecdata);
+                    break;
+
+                } else {
+                    /// @todo a better way to set the filepointer to the next key-value pair!
+                    file.read((char *) &loadedValue, sizeof(TVALUE));
+                    // stored vector?
+                    file.read((char *) &length, sizeof(Id));
+                    for (Id j=0; j<length; ++j) file.read((char *) &loadedKey2, sizeof(TKEY));
+                }
+            }
+            file.close();
+            if (success) break;
+        }
+
+        if (success) {
+            ++statistic.fileLoads;
+            return true;
+        } else {
+            if (candidates.size() > 0) {
+                // many candidates, but finaly not found in file
+                ++statistic.rangeFails;
+            }
+            return false;
+        }
+    }
+
+
 };
 
 #endif

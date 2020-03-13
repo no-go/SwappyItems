@@ -103,7 +103,7 @@ void logEntry(double & msec, std::chrono::time_point<std::chrono::system_clock> 
         nodes->statistic.deletes,
         
         nodes->statistic.rangeSaysNo, 
-        nodes->statistic.bloomSaysFresh,
+        nodes->statistic.bloomSaysNotIn,
         ways->statistic.rangeFails,
         
         nodes->statistic.swaps,

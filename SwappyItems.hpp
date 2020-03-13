@@ -38,6 +38,27 @@ template <
 >
 class SwappyItems {
 
+public:
+    typedef std::pair<TVALUE, std::vector<TKEY> >     Data; // just for simplifing next line
+    
+    struct statistic_s {
+        uint64_t size    = 0;
+        uint64_t fileKB  = 0;
+        uint64_t queue   = 0;
+        
+        uint64_t updates = 0;
+        uint64_t deletes = 0;
+
+        uint64_t bloomSaysNotIn = 0;
+        uint64_t bloomFails = 0;
+
+        uint64_t rangeSaysNo = 0;
+        uint64_t rangeFails = 0;
+
+        uint64_t swaps = 0;
+        uint64_t fileLoads = 0;
+    };
+    
 private:
     typedef uint32_t                               Id;
     typedef uint32_t                              Fid; // File id
@@ -56,11 +77,7 @@ private:
     
     typedef uint32_t                                   Bid;
     typedef std::set<Bid>                      Fingerprint;
-
-public:
-    typedef std::pair<TVALUE, std::vector<TKEY> >     Data; // just for simplifing next line
-
-private:
+    
     typedef std::unordered_map<TKEY,Data>              Ram;
     typedef std::vector<Detail>                     Ranges;
     typedef std::deque<Qentry>                       Order;
@@ -81,23 +98,9 @@ private:
     Semaphore * S;
     std::atomic<unsigned> done;
 
+    struct statistic_s statistic;
+    
 public:
-
-
-    struct statistic_s {
-        uint64_t counting = 0;
-        uint64_t updates = 0;
-        uint64_t deletes = 0;
-
-        uint64_t bloomSaysNotIn = 0;
-        uint64_t bloomFails = 0;
-
-        uint64_t rangeSaysNo = 0;
-        uint64_t rangeFails = 0;
-
-        uint64_t swaps = 0;
-        uint64_t fileLoads = 0;
-    } statistic;
 
     /**
      * set (create or update)
@@ -121,7 +124,7 @@ public:
         } else {
             // key is new
             maySwap();
-            ++statistic.counting;
+            ++statistic.size;
             _prios.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, std::vector<TKEY>(0));
             return true;
@@ -150,7 +153,7 @@ public:
         } else {
             // key is new
             maySwap();
-            ++statistic.counting;
+            ++statistic.size;
             _prios.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, refs);
             return true;
@@ -194,7 +197,7 @@ public:
                 }
             );
             it->deleted = true;
-            --statistic.counting;
+            --statistic.size;
             ++statistic.deletes;
             return true;
         } else {
@@ -284,88 +287,19 @@ public:
         return false;
     }
     
-    /**
-     * stores all RAM content into file(s)
-     * 
-     * @todo does strg+c make a regulat delete? if so, than we do not need hibernate() in public?!
-     */
-    void hibernate () {
-        char filename[512];
-
-        snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
-        std::ofstream file(filename, std::ios::out | std::ios::binary);
-        Id length = _ramList.size();
-        file.write((char *) &length, sizeof(Id));
-        for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
-            file.write((char *) &(it->first), sizeof(TKEY));
-            file.write((char *) &(it->second.first), sizeof(TVALUE));
-            // stored vector?
-            length = it->second.second.size();
-            file.write((char *) &length, sizeof(Id));
-            for (Id j=0; j<length; ++j) {
-                file.write((char *) &(it->second.second[j]), sizeof(TKEY));
-            }
-        }
-        file.close();
-
-        snprintf(filename, 512, "%s/hibernate.statistic", _swappypath);
-        file.open(filename, std::ios::out | std::ios::binary);
-        file.write((char *) &statistic, sizeof(statistic_s));
-        file.close();
-
-        snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
-        file.open(filename, std::ios::out | std::ios::binary);
-        length = _prios.size();
-        file.write((char *) &length, sizeof(Id));
-        for (auto it = _prios.begin(); it != _prios.end(); ++it) {
-            file.write((char *) &(it->key), sizeof(TKEY));
-            file.write((char *) &(it->deleted), sizeof(Qentry::deleted));
-        }
-        file.close();
-
-        snprintf(filename, 512, "%s/hibernate.ranges", _swappypath);
-        file.open(filename, std::ios::out | std::ios::binary);
-        length = _ranges.size();
-        file.write((char *) &length, sizeof(Id));
-        for (auto it = _ranges.begin(); it != _ranges.end(); ++it) {
-            file.write((char *) &(it->minimum), sizeof(TKEY));
-            file.write((char *) &(it->maximum), sizeof(TKEY));
-            for (bool b : it->bloomMask) {
-                if (b) {
-                    file.put('i');
-                } else {
-                    file.put('o');
-                }
-            }
-            file.write((char *) &(it->fid), sizeof(Fid));
-        }
-        file.close();
-    }
-
-    /**
-     * with parameter true you get the kB of files
-     */
-    uint64_t size(bool kBfiles = false) {
-        if (kBfiles) {
-            return (_ranges.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
-        }
-        return statistic.counting;
-    }
-
-    /**
-     * get the size of the priority queue, which may be bigger than
-     * the items in ram (items marked as deleted)
-     * 
-     * @todo add to statistics ?
-     */
-    uint64_t prioSize() {
-        return _prios.size();
+    struct statistic_s getStatistic() {
+        statistic.fileKB = (_ranges.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
+        statistic.queue = _prios.size();
+        return statistic;
     }
 
     SwappyItems (int swappyId) {
         S = new Semaphore(std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency()-1 : 1);
         
-        statistic.counting = 0;
+        statistic.size   = 0;
+        statistic.fileKB = 0;
+        statistic.queue  = 0;
+        
         statistic.updates = 0;
         statistic.deletes = 0;
 
@@ -396,7 +330,7 @@ public:
                 printf(
                     "# wakeup on items, updates, deletes: "
                     "%10ld %10" PRId64 " %10" PRId64 "\n",
-                    statistic.counting,
+                    statistic.size,
                     statistic.updates,
                     statistic.deletes
                 );
@@ -482,6 +416,64 @@ private:
         file.close();
         
         return true;
+    }
+
+    /**
+     * stores all RAM content into file(s)
+     * 
+     * strg+c -> make a regular delete to do a hibernate!
+     */
+    void hibernate () {
+        char filename[512];
+
+        snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
+        std::ofstream file(filename, std::ios::out | std::ios::binary);
+        Id length = _ramList.size();
+        file.write((char *) &length, sizeof(Id));
+        for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
+            file.write((char *) &(it->first), sizeof(TKEY));
+            file.write((char *) &(it->second.first), sizeof(TVALUE));
+            // stored vector?
+            length = it->second.second.size();
+            file.write((char *) &length, sizeof(Id));
+            for (Id j=0; j<length; ++j) {
+                file.write((char *) &(it->second.second[j]), sizeof(TKEY));
+            }
+        }
+        file.close();
+
+        snprintf(filename, 512, "%s/hibernate.statistic", _swappypath);
+        file.open(filename, std::ios::out | std::ios::binary);
+        file.write((char *) &statistic, sizeof(statistic_s));
+        file.close();
+
+        snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
+        file.open(filename, std::ios::out | std::ios::binary);
+        length = _prios.size();
+        file.write((char *) &length, sizeof(Id));
+        for (auto it = _prios.begin(); it != _prios.end(); ++it) {
+            file.write((char *) &(it->key), sizeof(TKEY));
+            file.write((char *) &(it->deleted), sizeof(Qentry::deleted));
+        }
+        file.close();
+
+        snprintf(filename, 512, "%s/hibernate.ranges", _swappypath);
+        file.open(filename, std::ios::out | std::ios::binary);
+        length = _ranges.size();
+        file.write((char *) &length, sizeof(Id));
+        for (auto it = _ranges.begin(); it != _ranges.end(); ++it) {
+            file.write((char *) &(it->minimum), sizeof(TKEY));
+            file.write((char *) &(it->maximum), sizeof(TKEY));
+            for (bool b : it->bloomMask) {
+                if (b) {
+                    file.put('i');
+                } else {
+                    file.put('o');
+                }
+            }
+            file.write((char *) &(it->fid), sizeof(Fid));
+        }
+        file.close();
     }
 
     Fingerprint getFingerprint (const TKEY & key) {

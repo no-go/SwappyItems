@@ -23,7 +23,6 @@ struct NodeData {
 };
 
 struct WayData {
-    uint8_t _used;
     uint8_t _type;
     char _name[256];
 };
@@ -64,7 +63,6 @@ int main(int argc, char** argv) {
         printf("The '%lu' does not exist.\n", query);
     } else {
         printf("Name of '%lu': %s\n", query, val->first._name);
-        printf("     uses: %d\n", val->first._used);
     }
     // ---------------------------------------------------------
     
@@ -92,10 +90,30 @@ int main(int argc, char** argv) {
     });
 
     SwappyItemsNODES::Data n;
-    nodes->each(n, [](Key key, SwappyItemsNODES::Data & val) {
+    nodes->each(n, [&w](Key nkey, SwappyItemsNODES::Data & val) {
         if (val.first._used > 2) {
-            printf("%lu\n", key);
+            printf("%lu\n", nkey);
+            // Test node-each in a way-each
+            ways->each(w, [nkey](Key eKey, SwappyItemsWAYS::Data & eVal) {
+                // search the node-key in refs of all ways
+                for(Key r : eVal.second) {
+                    // stop if found
+                    if (r == nkey) {
+                        printf(" in way %s\n", eVal.first._name);
+                        return true;
+                    }
+                    SwappyItemsNODES::Data nn;
+                    // test a "special get", that does not confuse prio-queue and ram!
+                    if(nodes->flat_get(nn, r/2)) {
+                        // we print a dot, if the half value of a ref key from a way exists in the nodes!
+                        printf(".");
+                    }
+                }
+
+                return false;
+            });
         }
+        
         // all items, no stop
         return false;
     });

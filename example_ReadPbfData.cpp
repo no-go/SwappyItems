@@ -37,7 +37,6 @@ struct NodeData {
 };
 
 struct WayData {
-    uint8_t _used;
     uint8_t _type;
     char _name[256];
 };

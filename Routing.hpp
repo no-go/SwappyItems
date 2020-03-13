@@ -6,33 +6,26 @@ struct Routing {
         
         if (catchWay(way.first, osmid, tags)) { // fills in basis way data
             
-            pair<WayData, vector<Key> > * wayptr = ways->get(osmid);
-
-            if (wayptr == nullptr) {
-                for (Key r : refs) {
-                    way.second.push_back(r);
-                    pair<NodeData, vector<Key> > * nodeptr = nodes->get(r);
-                    if (nodeptr == nullptr) {
-                        pair<NodeData, vector<Key> > node;
-                        node.first._used = 0;
-                        node.first._lon = 0.0;
-                        node.first._lat = 0.0;
-                        nodes->set(r, node.first);
-                    } else {
-                        // node is also used in another way!
-                        nodeptr->first._used++;
-                        nodes->set(r, nodeptr->first);
-                        isPrinted = false;
-                    }
+            for (Key r : refs) {
+                way.second.push_back(r);
+                pair<NodeData, vector<Key> > * nodeptr = nodes->get(r);
+                if (nodeptr == nullptr) {
+                    pair<NodeData, vector<Key> > node;
+                    node.first._used = 0;
+                    node.first._lon = 0.0;
+                    node.first._lat = 0.0;
+                    nodes->set(r, node.first);
+                } else {
+                    // node is also used in another way!
+                    nodeptr->first._used++;
+                    nodes->set(r, nodeptr->first);
+                    isPrinted = false;
                 }
-                ways->set(osmid, way.first, way.second);
-            } else {
-                // @todo does this really happend?
-                wayptr->first._used++;
-                ways->set(osmid, wayptr->first, wayptr->second);
             }
+            // tests: osmid of the way is always new OR you read a 2nd time because of hibernate!
+            ways->set(osmid, way.first, way.second);
             
-            if ((nodes->statistic.updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
+            if ((nodes->getStatistic().updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
         }
     }
 
@@ -55,7 +48,7 @@ struct Routing {
             isPrinted = false;
         }
 
-        if ((nodes->statistic.updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
+        if ((nodes->getStatistic().updates%1024 == 0) && (isPrinted == false)) logEntry(mseconds, start, isPrinted);
     }
     
     void relation_callback (uint64_t /*osmid*/, const Tags &/*tags*/, const References & refs){}

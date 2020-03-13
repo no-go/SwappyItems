@@ -50,7 +50,11 @@ void my_handler(int s) {
     auto now = std::chrono::high_resolution_clock::now();
     mseconds = std::chrono::duration<double, std::milli>(now-start).count();
     printf("#end (before hibernate): %.f ms\n", mseconds);
-    ways->hibernate();
+    
+    delete places;
+    delete ways;
+    delete nodes;
+    
     exit(1);
 }
 
@@ -96,20 +100,20 @@ void logEntry(double & msec, std::chrono::time_point<std::chrono::system_clock> 
         "%10ld filekB\n",
         
         msec,
-        nodes->size(),
-        nodes->prioSize(),
+        nodes->getStatistic().size,
+        nodes->getStatistic().queue,
         
-        nodes->statistic.updates,
-        nodes->statistic.deletes,
+        nodes->getStatistic().updates,
+        nodes->getStatistic().deletes,
         
-        nodes->statistic.rangeSaysNo, 
-        nodes->statistic.bloomSaysNotIn,
-        ways->statistic.rangeFails,
+        nodes->getStatistic().rangeSaysNo, 
+        nodes->getStatistic().bloomSaysNotIn,
+        ways->getStatistic().rangeFails,
         
-        nodes->statistic.swaps,
-        nodes->statistic.fileLoads,
+        nodes->getStatistic().swaps,
+        nodes->getStatistic().fileLoads,
         getUsedKB(),
-        nodes->size(true)
+        nodes->getStatistic().fileKB
     );
 }
 

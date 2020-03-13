@@ -205,88 +205,6 @@ public:
         }
     }
     
-    /**
-     * This "for_each" catches all items and runs a function on each item.
-     * If this function returns true, the "for_each" stops.
-     * 
-     * @todo foreach multithread
-     * @todo load next range in background
-     * 
-     * @param back is pointer to the value, were the each loop breaks
-     * @param foo is a lambda function, which gets each key and value(pair). if foo return true, the each-loop breaks
-     * @return if it is false, the loop did not break
-     */
-    bool each (Data & back, std::function<bool(TKEY, Data &)> foo) {
-        typename Ram::iterator it;
-        std::set<Fid> important;
-                
-        // run in RAM
-        /// @todo foreach multithread
-        for (it = _ramList.begin(); it != _ramList.end(); ++it) {
-            if (foo(it->first, it->second)) {
-                back = it->second;
-                return true;
-            }
-        }
-        // store all undeleted ranges, because they have the other items
-        std::for_each (_ranges.begin(), _ranges.end(), [&](Detail finfo) {
-            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
-                important.insert(finfo.fid);
-            }
-        });
-        
-        
-        for (Fid fid : important) {
-            // 1) load into temp each range/file to get all keys of the file
-            Ram temp;
-            std::unordered_set<TKEY> keys;
-            Id length;
-            TKEY loadedKey;
-            TKEY loadedKey2;
-            TVALUE loadedValue;
-
-            char filename[512];
-            snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
-            std::ifstream file(filename, std::ios::in | std::ios::binary);
-
-            for (Id c = 0; c < EACHFILE; ++c) {
-                std::vector<TKEY> vecdata(0);
-                file.read((char *) &loadedKey, sizeof(TKEY));
-                file.read((char *) &loadedValue, sizeof(TVALUE));
-                keys.insert(loadedKey);
-                // stored vector?
-                file.read((char *) &length, sizeof(Id));
-                if (length > 0) {
-                    for (Id j=0; j<length; ++j) {
-                        file.read((char *) &loadedKey2, sizeof(TKEY));
-                        vecdata.push_back(loadedKey2);
-                    }
-                }
-                temp[loadedKey] = std::make_pair(loadedValue, vecdata);
-            }
-            file.close();
-            // 2) mark file as empty --------------------- 
-            _ranges[fid].minimum = 0;
-            _ranges[fid].maximum = 0;
-            // 3) may swap and place temp into ram ---------- 
-            maySwap(true);
-            // ... and load the stuff
-            for (auto key_val : temp) {
-                _ramList[key_val.first] = key_val.second;
-                _prios.push_back(Qentry{key_val.first,false});
-            }
-            // 4) run through in RAM with keys from temp
-            for (auto k : keys) {
-                if (foo(k, _ramList[k])) {
-                    back = _ramList[k];
-                    return true;
-                }
-            }
-        }
-        
-        return false;
-    }
-    
     struct statistic_s getStatistic() {
         statistic.fileKB = (_ranges.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
         statistic.queue = _prios.size();
@@ -593,11 +511,9 @@ private:
             file.read((char *) &loadedValue, sizeof(TVALUE));
             // stored vector?
             file.read((char *) &length, sizeof(Id));
-            if (length > 0) {
-                for (Id j=0; j<length; ++j) {
-                    file.read((char *) &loadedKey2, sizeof(TKEY));
-                    vecdata.push_back(loadedKey2);
-                }
+            for (Id j=0; j<length; ++j) {
+                file.read((char *) &loadedKey2, sizeof(TKEY));
+                vecdata.push_back(loadedKey2);
             }
             temp[loadedKey] = std::make_pair(loadedValue, vecdata);
 
@@ -740,10 +656,92 @@ private:
         }
     }
 
-// todo ---------------------------------------------------------------------------------------------------
+// Each stuff ---------------------------------------------------------------------------------------------------
 
 public:
+    
+    /**
+     * This "for_each" catches all items and runs a function on each item.
+     * If this function returns true, the "for_each" stops.
+     * 
+     * @todo foreach multithread
+     * @todo load next range in background
+     * 
+     * @param back is pointer to the value, were the each loop breaks
+     * @param foo is a lambda function, which gets each key and value(pair). if foo return true, the each-loop breaks
+     * @return if it is false, the loop did not break
+     */
+    bool each (Data & back, std::function<bool(TKEY, Data &)> foo) {
+        typename Ram::iterator it;
+        std::set<Fid> important;
+                
+        // run in RAM
+        /// @todo foreach multithread
+        for (it = _ramList.begin(); it != _ramList.end(); ++it) {
+            if (foo(it->first, it->second)) {
+                back = it->second;
+                return true;
+            }
+        }
+        // store all undeleted ranges, because they have the other items
+        std::for_each (_ranges.begin(), _ranges.end(), [&](Detail finfo) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                important.insert(finfo.fid);
+            }
+        });
+        
+        
+        for (Fid fid : important) {
+            // 1) load into temp each range/file to get all keys of the file
+            Ram temp;
+            std::unordered_set<TKEY> keys;
+            Id length;
+            TKEY loadedKey;
+            TKEY loadedKey2;
+            TVALUE loadedValue;
 
+            char filename[512];
+            snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+            std::ifstream file(filename, std::ios::in | std::ios::binary);
+
+            for (Id c = 0; c < EACHFILE; ++c) {
+                std::vector<TKEY> vecdata(0);
+                file.read((char *) &loadedKey, sizeof(TKEY));
+                file.read((char *) &loadedValue, sizeof(TVALUE));
+                keys.insert(loadedKey);
+                // stored vector?
+                file.read((char *) &length, sizeof(Id));
+                if (length > 0) {
+                    for (Id j=0; j<length; ++j) {
+                        file.read((char *) &loadedKey2, sizeof(TKEY));
+                        vecdata.push_back(loadedKey2);
+                    }
+                }
+                temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+            }
+            file.close();
+            // 2) mark file as empty --------------------- 
+            _ranges[fid].minimum = 0;
+            _ranges[fid].maximum = 0;
+            // 3) may swap and place temp into ram ---------- 
+            maySwap(true);
+            // ... and load the stuff
+            for (auto key_val : temp) {
+                _ramList[key_val.first] = key_val.second;
+                _prios.push_back(Qentry{key_val.first,false});
+            }
+            // 4) run through in RAM with keys from temp
+            for (auto k : keys) {
+                if (foo(k, _ramList[k])) {
+                    back = _ramList[k];
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
     /**
      * get a item (for use in a "each-loop" in the same SwappyItems instance)
      * 
@@ -754,106 +752,147 @@ public:
      * 
      * @return true, if exists
      */
-    bool flat_get (Data & result, const TKEY & key) {
+    bool apply (Data & result, const TKEY & key, std::function<void(Data &)> foo) {
         
         try {
+            
             result = _ramList.at(key);
+            foo(result);
+            _ramList[key] = result;
             return true;
+            
         } catch (const std::out_of_range & oor) {
-            if (flat_loadFromFiles(result, key)) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-
-private:
-
-    bool flat_loadFromFiles (Data & result, const TKEY & key) {
-        std::set<Fid> candidates;
-        std::mutex m;
-        Fingerprint fp = getFingerprint(key);
-        
-        std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
-            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
-                
-                if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
-                    // key is smaller then the smallest or bigger than the biggest
-                    std::lock_guard lock(m);
-                    ++statistic.rangeSaysNo;
-                } else {
-                    // check bloom (is it possible, that this key is in that file?)
-                    bool success = true;
-                    for (auto b : fp) {
-                        if (finfo.bloomMask[b] == false) {
-                            success = false;
+            
+            std::set<Fid> candidates;
+            std::mutex m;
+            Fingerprint fp = getFingerprint(key);
+            
+            std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
+                if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                    
+                    if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
+                        // key is smaller then the smallest or bigger than the biggest
+                        std::lock_guard lock(m);
+                        ++statistic.rangeSaysNo;
+                    } else {
+                        // check bloom (is it possible, that this key is in that file?)
+                        bool success = true;
+                        for (auto b : fp) {
+                            if (finfo.bloomMask[b] == false) {
+                                success = false;
+                                std::lock_guard lock(m);
+                                ++statistic.bloomSaysNotIn;
+                                break;
+                            }
+                        }
+                        if (success) {
                             std::lock_guard lock(m);
-                            ++statistic.bloomSaysNotIn;
-                            break;
+                            candidates.insert(finfo.fid);
                         }
                     }
-                    if (success) {
-                        std::lock_guard lock(m);
-                        candidates.insert(finfo.fid);
-                    }
                 }
-            }
-        });
-        
-        bool success = false;
-
-        for (auto fid : candidates) {
-
-            Id length;
-            TKEY loadedKey;
-            TKEY loadedKey2;
-            TVALUE loadedValue;
+            });
             
+            bool success = false;
+            Fid successFid = 0;
+            std::streampos startpos;
+            std::map<TKEY,Data> temp; // map is sorted by key!
             char filename[512];
-            snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
-            std::ifstream file(filename, std::ios::in | std::ios::binary);
+                            
+            for (auto fid : candidates) {
 
-            for (Id c = 0; c < EACHFILE; ++c) {
-                file.read((char *) &loadedKey, sizeof(TKEY));
+                Id length;
+                TKEY loadedKey;
+                TKEY loadedKey2;
+                TVALUE loadedValue;
+                
+                snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+                std::ifstream file(filename, std::ios::in | std::ios::binary);
 
-                if (loadedKey == key) {
-                    success = true;
-                    
-                    std::vector<TKEY> vecdata(0);
-                    file.read((char *) &loadedValue, sizeof(TVALUE));
-                    // stored vector?
-                    file.read((char *) &length, sizeof(Id));
-                    if (length > 0) {
+                for (Id c = 0; c < EACHFILE; ++c) {
+                    if(!success) startpos = file.tellg();
+                    file.read((char *) &loadedKey, sizeof(TKEY));
+
+                    if (loadedKey == key) {
+                        success = true;
+                        successFid = fid;
+                        
+                        std::vector<TKEY> vecdata(0);
+                        file.read((char *) &loadedValue, sizeof(TVALUE));
+                        // stored vector?
+                        file.read((char *) &length, sizeof(Id));
                         for (Id j=0; j<length; ++j) {
                             file.read((char *) &loadedKey2, sizeof(TKEY));
                             vecdata.push_back(loadedKey2);
                         }
+                        // remember data and end position
+                        result = std::make_pair(loadedValue, vecdata);
+                    } else {
+                        if (success) {
+                            // store data from behind the relevant key-value pair
+                            std::vector<TKEY> vecdata(0);
+                            file.read((char *) &loadedValue, sizeof(TVALUE));
+                            // stored vector?
+                            file.read((char *) &length, sizeof(Id));
+                            for (Id j=0; j<length; ++j) {
+                                file.read((char *) &loadedKey2, sizeof(TKEY));
+                                vecdata.push_back(loadedKey2);
+                            }
+                            // remember data
+                            temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+                        } else {
+                            // ignore
+                            /// @todo a better way to set the filepointer to the next key-value pair!
+                            file.read((char *) &loadedValue, sizeof(TVALUE));
+                            // stored vector?
+                            file.read((char *) &length, sizeof(Id));
+                            for (Id j=0; j<length; ++j) file.read((char *) &loadedKey2, sizeof(TKEY));
+                        }
                     }
-                    result = std::make_pair(loadedValue, vecdata);
-                    break;
-
-                } else {
-                    /// @todo a better way to set the filepointer to the next key-value pair!
-                    file.read((char *) &loadedValue, sizeof(TVALUE));
-                    // stored vector?
-                    file.read((char *) &length, sizeof(Id));
-                    for (Id j=0; j<length; ++j) file.read((char *) &loadedKey2, sizeof(TKEY));
                 }
+                file.close();
+                // do not load other candidates, because we find the key!
+                if (success) break;
             }
-            file.close();
-            if (success) break;
-        }
 
-        if (success) {
-            ++statistic.fileLoads;
-            return true;
-        } else {
-            if (candidates.size() > 0) {
-                // many candidates, but finaly not found in file
-                ++statistic.rangeFails;
+            if (success) {
+                // apply lambda function to the data with relevant key
+                foo(result);
+                temp[key] = result;
+                
+                // reopen file to renew data
+                snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, successFid);
+                std::ofstream file(filename, std::ios::out | std::ios::binary);
+                
+                // got to place, where we have to renew
+                file.seekp(startpos);
+
+                // overwrite data to the file
+                typename std::map<TKEY,Data>::iterator it;
+                
+                for (it=temp.begin(); it!=temp.end(); ++it) {
+                    // store data
+                    file.write((char *) &(it->first), sizeof(TKEY));
+                    file.write((char *) &(it->second.first), sizeof(TVALUE));
+                    
+                    // store vector?
+                    Id le = it->second.second.size();
+                    file.write((char *) &le, sizeof(Id));
+                    for (Id j=0; j<le; ++j) {
+                        file.write((char *) &(it->second.second[j]), sizeof(TKEY));
+                    }
+                }
+                file.close();
+                
+                ++statistic.fileLoads;
+                return true;
+            } else {
+                if (candidates.size() > 0) {
+                    // many candidates, but finaly not found in file
+                    ++statistic.rangeFails;
+                }
+                return false;
             }
-            return false;
         }
     }
 

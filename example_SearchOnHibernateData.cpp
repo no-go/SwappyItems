@@ -57,12 +57,21 @@ int main(int argc, char** argv) {
     
     // get a way by key -------------------------------------------
     
-    std::pair<WayData, vector<Key> > * val = ways->get(query);
+    //std::pair<WayData, vector<Key> > * val = ways->get(query);
+    std::pair<NodeData, vector<Key> > * val = nodes->get(query);
     
     if (val == nullptr) {
         printf("The '%lu' does not exist.\n", query);
     } else {
-        printf("Name of '%lu': %s\n", query, val->first._name);
+        //printf("Name of '%lu': %s\n", query, val->first._name);
+        printf("Name of '%lu': %lf\n", query, val->first._lon);
+
+        SwappyItemsNODES::Data nn;
+        nodes->apply(nn, query, [](SwappyItemsNODES::Data & dat) {
+            // we can do anything to "dat", which is the data to key "r/2".
+            // the data is also written as copy via reference to "nn"
+            dat.first._lon = 99999;
+        });
     }
     // ---------------------------------------------------------
     
@@ -102,12 +111,22 @@ int main(int argc, char** argv) {
                         printf(" in way %s\n", eVal.first._name);
                         return true;
                     }
+                    /*
+                    
                     SwappyItemsNODES::Data nn;
                     // test a "special get", that does not confuse prio-queue and ram!
-                    if(nodes->flat_get(nn, r/2)) {
+                    // we try to get a "random" key = r/2
+                    bool rHalfExist = nodes->apply(nn, r/2, [](SwappyItemsNODES::Data & dat) {
+                        // we can do anything to "dat", which is the data to key "r/2".
+                        // the data is also written as copy via reference to "nn"
+                        dat.first._lon = 99999;
+                    });
+                    if(rHalfExist) {
                         // we print a dot, if the half value of a ref key from a way exists in the nodes!
-                        printf(".");
+                        printf("'%lu' nn %lf\n", r, nn.first._lon);
                     }
+                    
+                    */
                 }
 
                 return false;

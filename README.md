@@ -1,3 +1,5 @@
+# The SwappyItems Key-Values Store
+
 The SwappyItems Store is a flexible c++17 multicore single disk key-value storage.
 If the data in RAM gets large, it behaves similar to your system swap, but
 with more parameters and it swaps only the data - not the program code!
@@ -12,7 +14,7 @@ Main difference to other key-value stores:
 - flat: no need of a fat framework
 - no additional libs!
 
-## API
+## API ...
 
 ### `constructor(id)`
 

@@ -243,6 +243,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a0">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -257,6 +259,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a6">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -271,6 +275,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a7">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -285,6 +291,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a5">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -314,39 +322,41 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                                {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordflow">if</span>(argc != 2) {</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        printf(<span class="stringliteral">&quot;Usage: %s file_to_read.osm.pbf\n&quot;</span>, argv[0]);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">return</span> 1;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    }</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#af98694559e6e2a9513ef6d8ad6e3222c">ways</a> = <span class="keyword">new</span> <a class="code" href="ReadPbfData_8cpp.html#ad8514963e91b1fafcb32e50052e3dde3">SwappyItemsWAYS</a>(23);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a> = <span class="keyword">new</span> <a class="code" href="ReadPbfData_8cpp.html#ae0dc015bed021f67e9b12cea2b1561dd">SwappyItemsNODES</a>(42);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#a18260e731b3d4c7e3f074c9d64fdb0bf">places</a> = <span class="keyword">new</span> <a class="code" href="ReadPbfData_8cpp.html#ae835cdc76ba7cafcc5ed32bb128e941b">SwappyItemsPLACES</a>(815);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="structRouting.html">Routing</a> routing;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="tools_8hpp.html#a35e6fd2e5e66f123f18a412c41e500bc">logHead</a>();</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="tools_8hpp.html#afda34066cc370b0969f5f06ba8d955be">catchSig</a>();</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a> = std::chrono::high_resolution_clock::now();</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="namespaceCanalTP.html#a0b7163ce303be16ec78861cda0f9f6cd">read_osm_pbf</a>(argv[1], routing, <span class="keyword">true</span>); <span class="comment">// read way only</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">auto</span> now = std::chrono::high_resolution_clock::now();</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a> = std::chrono::duration&lt;double, std::milli&gt;(now-<a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>).count();</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    printf(<span class="stringliteral">&quot;# end ways: %.f ms\n&quot;</span>, <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="namespaceCanalTP.html#a0b7163ce303be16ec78861cda0f9f6cd">read_osm_pbf</a>(argv[1], routing, <span class="keyword">false</span>); <span class="comment">// read nodes and relations</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    now = std::chrono::high_resolution_clock::now();</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a> = std::chrono::duration&lt;double, std::milli&gt;(now-<a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>).count();</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    printf(<span class="stringliteral">&quot;# end nodes: %.f ms\n&quot;</span>, <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">delete</span> <a class="code" href="ReadPbfData_8cpp.html#a18260e731b3d4c7e3f074c9d64fdb0bf">places</a>;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">delete</span> <a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keyword">delete</span> <a class="code" href="ReadPbfData_8cpp.html#af98694559e6e2a9513ef6d8ad6e3222c">ways</a>;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;}</div>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a14">ReadPbfData.cpp</a>.</dd>
+</dl>
+<div class="fragment"><div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                                {</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">if</span>(argc != 2) {</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        printf(<span class="stringliteral">&quot;Usage: %s file_to_read.osm.pbf\n&quot;</span>, argv[0]);</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">return</span> 1;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    }</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#af98694559e6e2a9513ef6d8ad6e3222c">ways</a> = <span class="keyword">new</span> <a class="code" href="ReadPbfData_8cpp.html#ad8514963e91b1fafcb32e50052e3dde3">SwappyItemsWAYS</a>(23);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a> = <span class="keyword">new</span> <a class="code" href="ReadPbfData_8cpp.html#ae0dc015bed021f67e9b12cea2b1561dd">SwappyItemsNODES</a>(42);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#a18260e731b3d4c7e3f074c9d64fdb0bf">places</a> = <span class="keyword">new</span> <a class="code" href="ReadPbfData_8cpp.html#ae835cdc76ba7cafcc5ed32bb128e941b">SwappyItemsPLACES</a>(815);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <a class="code" href="structRouting.html">Routing</a> routing;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <a class="code" href="tools_8hpp.html#a35e6fd2e5e66f123f18a412c41e500bc">logHead</a>();</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <a class="code" href="tools_8hpp.html#afda34066cc370b0969f5f06ba8d955be">catchSig</a>();</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a> = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <a class="code" href="namespaceCanalTP.html#a0b7163ce303be16ec78861cda0f9f6cd">read_osm_pbf</a>(argv[1], routing, <span class="keyword">true</span>); <span class="comment">// read way only</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">auto</span> now = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a> = std::chrono::duration&lt;double, std::milli&gt;(now-<a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>).count();</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    printf(<span class="stringliteral">&quot;# end ways: %.f ms\n&quot;</span>, <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="namespaceCanalTP.html#a0b7163ce303be16ec78861cda0f9f6cd">read_osm_pbf</a>(argv[1], routing, <span class="keyword">false</span>); <span class="comment">// read nodes and relations</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    now = std::chrono::high_resolution_clock::now();</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a> = std::chrono::duration&lt;double, std::milli&gt;(now-<a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>).count();</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    printf(<span class="stringliteral">&quot;# end nodes: %.f ms\n&quot;</span>, <a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>);</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keyword">delete</span> <a class="code" href="ReadPbfData_8cpp.html#a18260e731b3d4c7e3f074c9d64fdb0bf">places</a>;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keyword">delete</span> <a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>;</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">delete</span> <a class="code" href="ReadPbfData_8cpp.html#af98694559e6e2a9513ef6d8ad6e3222c">ways</a>;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -362,6 +372,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a13">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -376,6 +388,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a12">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -390,6 +404,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a9">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -404,6 +420,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a10">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -418,6 +436,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a11">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>
@@ -432,6 +452,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#a8">ReadPbfData.cpp</a>.</dd>
+</dl>
 
 </div>
 </div>

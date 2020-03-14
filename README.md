@@ -19,11 +19,11 @@ or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyI
 
 ## API basics
 
-### constructor *SwappyItems(int swappyId)*
+### (constructor)
 
-It trys to wakeup from hibernate files. The id identifies the SwappyItems store.
+It trys to wakeup from hibernate files. The id parameter identifies the SwappyItems Store (important for the file path!).
 
-### destructor  *~SwappyItems()*
+### (destructor)
 
 Makes a hibernate from ram to files.
 

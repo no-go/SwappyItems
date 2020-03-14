@@ -64,6 +64,10 @@ atomic<bool> isPrinted = false;
 #include "tools.hpp"
 #include "Routing.hpp"
 
+/** @example ReadPbfData.cpp
+ * One of the main focus in SwappyItems is: processing big data like
+ * pbf or osm files from open streetmaps. */
+ 
 int main(int argc, char** argv) {
     if(argc != 2) {
         printf("Usage: %s file_to_read.osm.pbf\n", argv[0]);

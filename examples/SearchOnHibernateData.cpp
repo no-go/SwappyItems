@@ -46,6 +46,11 @@ SwappyItemsPLACES * places;
 std::chrono::time_point<std::chrono::system_clock> start;
 double mseconds;
 
+/** @example SearchOnHibernate.cpp
+ * This is a example, how to use all the generated temp and hibernate
+ * data by just making the same instances (like in ReadPbfData.cpp).
+ * It is a example for each() and apply() too. */
+
 int main(int argc, char** argv) {
     Key query = 103535041; // 185769837 // node 280319902
     if (argc == 2) query = stol(argv[1]);

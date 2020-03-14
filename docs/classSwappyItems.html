@@ -108,8 +108,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a0d5a502f944681f13f2eb4398f7d9ba3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad435934836fba9541979039ec53d3a2c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">each</a> (<a class="el" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp;back, std::function&lt; bool(TKEY, <a class="el" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp;)&gt; foo)</td></tr>
 <tr class="separator:ad435934836fba9541979039ec53d3a2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68f0faa57ed347f99372ab45b858fa31"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSwappyItems.html#a68f0faa57ed347f99372ab45b858fa31">apply</a> (<a class="el" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp;result, const TKEY &amp;key, std::function&lt; void(<a class="el" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> *)&gt; foo)</td></tr>
-<tr class="separator:a68f0faa57ed347f99372ab45b858fa31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8fdb5bac81d5aff26621ef0b625d3967"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">apply</a> (<a class="el" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp;back, const TKEY &amp;key, std::function&lt; void(<a class="el" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> *)&gt; foo)</td></tr>
+<tr class="separator:a8fdb5bac81d5aff26621ef0b625d3967"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
@@ -463,8 +463,8 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a68f0faa57ed347f99372ab45b858fa31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68f0faa57ed347f99372ab45b858fa31">&#9670;&nbsp;</a></span>apply()</h2>
+<a id="a8fdb5bac81d5aff26621ef0b625d3967"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fdb5bac81d5aff26621ef0b625d3967">&#9670;&nbsp;</a></span>apply()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -478,7 +478,7 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
           <td class="memname">bool <a class="el" href="classSwappyItems.html">SwappyItems</a>&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;::apply </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp;&#160;</td>
-          <td class="paramname"><em>result</em>, </td>
+          <td class="paramname"><em>back</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -508,19 +508,19 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
 <p>this method never touches the priority queue and never swaps or load data into RAM</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">result</td><td>the value as copy </td></tr>
+    <tr><td class="paramname">back</td><td>the value as copy </td></tr>
     <tr><td class="paramname">key</td><td>the unique key</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true, if exists </dd></dl>
 <dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>a better way to set the filepointer to the next key-value pair! </dd></dl>
-<div class="fragment"><div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;                                                                                {</div>
+<div class="fragment"><div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;                                                                              {</div>
 <div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;        </div>
 <div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;        <span class="keywordflow">try</span> {</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;            result = <a class="code" href="classSwappyItems.html#a561c90c55bd61a146b9ae9bb723de3dc">_ramList</a>.at(key);</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;            foo(&amp;result);</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;            <a class="code" href="classSwappyItems.html#a561c90c55bd61a146b9ae9bb723de3dc">_ramList</a>[key] = result;</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;            back = <a class="code" href="classSwappyItems.html#a561c90c55bd61a146b9ae9bb723de3dc">_ramList</a>.at(key);</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;            foo(&amp;back);</div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;            <a class="code" href="classSwappyItems.html#a561c90c55bd61a146b9ae9bb723de3dc">_ramList</a>[key] = back;</div>
 <div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;            </div>
 <div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::out_of_range &amp; oor) {</div>
@@ -588,7 +588,7 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
 <div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;                            vecdata.push_back(loadedKey2);</div>
 <div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;                        }</div>
 <div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;                        <span class="comment">// remember data and end position</span></div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;                        result = std::make_pair(loadedValue, vecdata);</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;                        back = std::make_pair(loadedValue, vecdata);</div>
 <div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;                    } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;                        <span class="keywordflow">if</span> (success) {</div>
 <div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;                            <span class="comment">// store data from behind the relevant key-value pair</span></div>
@@ -618,8 +618,8 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
 <div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160; </div>
 <div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;            <span class="keywordflow">if</span> (success) {</div>
 <div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;                <span class="comment">// apply lambda function to the data with relevant key</span></div>
-<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;                foo(&amp;result);</div>
-<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;                temp[key] = result;</div>
+<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;                foo(&amp;back);</div>
+<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;                temp[key] = back;</div>
 <div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;                </div>
 <div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;                <span class="comment">// reopen file to renew data</span></div>
 <div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;                snprintf(filename, 512, <span class="stringliteral">&quot;%s/%&quot;</span> PRId32 <span class="stringliteral">&quot;.bucket&quot;</span>, <a class="code" href="classSwappyItems.html#a63b49d8aa5d8476868ea1d3bc2eac55e">_swappypath</a>, successFid);</div>

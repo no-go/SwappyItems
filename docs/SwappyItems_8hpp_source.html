@@ -736,12 +736,12 @@ $(function() {
 <div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;    }</div>
 <div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;    </div>
-<div class="line"><a name="l00751"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a68f0faa57ed347f99372ab45b858fa31">  751</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classSwappyItems.html#a68f0faa57ed347f99372ab45b858fa31">apply</a> (<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp; result, <span class="keyword">const</span> TKEY &amp; key, std::function&lt;<span class="keywordtype">void</span>(<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> *)&gt; foo) {</div>
+<div class="line"><a name="l00751"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">  751</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">apply</a> (<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp; back, <span class="keyword">const</span> TKEY &amp; key, std::function&lt;<span class="keywordtype">void</span>(<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> *)&gt; foo) {</div>
 <div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;        </div>
 <div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;        <span class="keywordflow">try</span> {</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;            result = _ramList.at(key);</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;            foo(&amp;result);</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;            _ramList[key] = result;</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;            back = _ramList.at(key);</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;            foo(&amp;back);</div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;            _ramList[key] = back;</div>
 <div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;            </div>
 <div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::out_of_range &amp; oor) {</div>
@@ -809,7 +809,7 @@ $(function() {
 <div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;                            vecdata.push_back(loadedKey2);</div>
 <div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;                        }</div>
 <div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;                        <span class="comment">// remember data and end position</span></div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;                        result = std::make_pair(loadedValue, vecdata);</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;                        back = std::make_pair(loadedValue, vecdata);</div>
 <div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;                    } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;                        <span class="keywordflow">if</span> (success) {</div>
 <div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;                            <span class="comment">// store data from behind the relevant key-value pair</span></div>
@@ -839,8 +839,8 @@ $(function() {
 <div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160; </div>
 <div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;            <span class="keywordflow">if</span> (success) {</div>
 <div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;                <span class="comment">// apply lambda function to the data with relevant key</span></div>
-<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;                foo(&amp;result);</div>
-<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;                temp[key] = result;</div>
+<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;                foo(&amp;back);</div>
+<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;                temp[key] = back;</div>
 <div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;                </div>
 <div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;                <span class="comment">// reopen file to renew data</span></div>
 <div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;                snprintf(filename, 512, <span class="stringliteral">&quot;%s/%&quot;</span> PRId32 <span class="stringliteral">&quot;.bucket&quot;</span>, _swappypath, successFid);</div>
@@ -885,11 +885,11 @@ $(function() {
 <div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassSwappyItems_html_abcede914498849ec57b666403119d5d1"><div class="ttname"><a href="classSwappyItems.html#abcede914498849ec57b666403119d5d1">SwappyItems::wakeup</a></div><div class="ttdeci">bool wakeup()</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:273</div></div>
-<div class="ttc" id="aclassSwappyItems_html_a68f0faa57ed347f99372ab45b858fa31"><div class="ttname"><a href="classSwappyItems.html#a68f0faa57ed347f99372ab45b858fa31">SwappyItems::apply</a></div><div class="ttdeci">bool apply(Data &amp;result, const TKEY &amp;key, std::function&lt; void(Data *)&gt; foo)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:751</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a42836644c087e3c1d77d9173ddf760d2"><div class="ttname"><a href="classSwappyItems.html#a42836644c087e3c1d77d9173ddf760d2">SwappyItems::Bid</a></div><div class="ttdeci">uint32_t Bid</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:78</div></div>
 <div class="ttc" id="aclassSwappyItems_html_acd4dcb8b2b7e0a215e742343f902e676"><div class="ttname"><a href="classSwappyItems.html#acd4dcb8b2b7e0a215e742343f902e676">SwappyItems::hibernate</a></div><div class="ttdeci">void hibernate()</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:344</div></div>
 <div class="ttc" id="aclassSwappyItems_html_ab76f2bf942b66c83213a1865e7260385"><div class="ttname"><a href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get</a></div><div class="ttdeci">Data * get(const TKEY &amp;key)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:169</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a345cbcef0584f2d798693d8b058f5682"><div class="ttname"><a href="classSwappyItems.html#a345cbcef0584f2d798693d8b058f5682">SwappyItems::done</a></div><div class="ttdeci">std::atomic&lt; unsigned &gt; done</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:99</div></div>
+<div class="ttc" id="aclassSwappyItems_html_a8fdb5bac81d5aff26621ef0b625d3967"><div class="ttname"><a href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems::apply</a></div><div class="ttdeci">bool apply(Data &amp;back, const TKEY &amp;key, std::function&lt; void(Data *)&gt; foo)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:751</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a7a358a935bc81011269d51fe3df1b5c7"><div class="ttname"><a href="classSwappyItems.html#a7a358a935bc81011269d51fe3df1b5c7">SwappyItems::Order</a></div><div class="ttdeci">std::deque&lt; Qentry &gt; Order</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:83</div></div>
 <div class="ttc" id="aclassSemaphore_html_a3e42125b95660ef696d0d0069b804343"><div class="ttname"><a href="classSemaphore.html#a3e42125b95660ef696d0d0069b804343">Semaphore::V</a></div><div class="ttdeci">void V()</div><div class="ttdef"><b>Definition:</b> Semaphore.hpp:16</div></div>
 <div class="ttc" id="aclassSemaphore_html"><div class="ttname"><a href="classSemaphore.html">Semaphore</a></div><div class="ttdef"><b>Definition:</b> Semaphore.hpp:6</div></div>

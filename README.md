@@ -19,47 +19,49 @@ or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyI
 
 ## API basics
 
-### constructor(id)
+### constructor *SwappyItems(int swappyId)*
 
 It trys to wakeup from hibernate files. The id identifies the SwappyItems store.
 
-### destructor
+### destructor  *~SwappyItems()*
 
 Makes a hibernate from ram to files.
 
-### `set(key, value)`
+### bool = set(key, value)
 
 Set or create an item. It returns `false`, if the item is created (and not overwritten).
 
-### `set(key, value, vector<keys>)`
+### bool = set(key, value, vector<keys>)
 
 Set or create an item. It returns `false`, if the item is created (and not overwritten).
 Your can add a vector with additional keys in it.
 
-### `pair(value, vector<keys>) = get(key)`
+### pair(value, vector<keys>) * = get(key)
 
 Get the values by key. Your get a pointer to that tuple. If it does not exist, you get a `nullptr`.
 
-### `del(key)`
+### del(key)
 
 Delete a item.
 
-### `getStatistic()`
+### getStatistic()
 
 You get a struct with many values (inserts, sizes, deletes, lookup failures, ...) to
 deploy the SwappyItems Store.
 
-### `each()`
+### bool = each(back, lambda func)
 
 - iterate through all elements at a fixed state
-- with a lambda function it is similar to a "find"
+- with a lambda function it is similar to a "find" (if lambda returns `true`, the `each()` breaks)
 - can change data via lambda
 - gives a reference back to last processed data
+- returns `false` if the loop did not break and iterated through all items
 
-### `apply()`
+### bool = apply(back, lambda func)
 
-It is usable with a lambda function and similar to `get()` and `set()`.
+It is usable with a lambda function and similar to SwappyItems::get() and SwappyItems::set().
 It does not change the swap data and behavior and thus this access it a bit slow.
 If you want to get or change data in the same SwappyItems store, where you
-iter through with `each()`, then you must use `apply()` in the lambda
-function of `each()`.
+iter through with SwappyItems::each(), then you must use SwappyItems::apply() in the lambda
+function of SwappyItems::each(). It returns `false` if the item did not exit.
+

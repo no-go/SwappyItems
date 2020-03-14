@@ -80,37 +80,38 @@ $(function() {
 <h1><a class="anchor" id="autotoc_md1"></a>
 API basics</h1>
 <h2><a class="anchor" id="autotoc_md2"></a>
-constructor(id)</h2>
+constructor &lt;em&gt;SwappyItems(int swappyId)&lt;/em&gt;</h2>
 <p>It trys to wakeup from hibernate files. The id identifies the <a class="el" href="classSwappyItems.html">SwappyItems</a> store.</p>
 <h2><a class="anchor" id="autotoc_md3"></a>
-destructor</h2>
+destructor  *~SwappyItems()*</h2>
 <p>Makes a hibernate from ram to files.</p>
 <h2><a class="anchor" id="autotoc_md4"></a>
-&lt;tt&gt;set(key, value)&lt;/tt&gt;</h2>
+bool = set(key, value)</h2>
 <p>Set or create an item. It returns <code>false</code>, if the item is created (and not overwritten).</p>
 <h2><a class="anchor" id="autotoc_md5"></a>
-&lt;tt&gt;set(key, value, vector&lt;keys&gt;)&lt;/tt&gt;</h2>
+bool = set(key, value, vector&lt;keys&gt;)</h2>
 <p>Set or create an item. It returns <code>false</code>, if the item is created (and not overwritten). Your can add a vector with additional keys in it.</p>
 <h2><a class="anchor" id="autotoc_md6"></a>
-&lt;tt&gt;pair(value, vector&lt;keys&gt;) = get(key)&lt;/tt&gt;</h2>
+pair(value, vector&lt;keys&gt;) * = get(key)</h2>
 <p>Get the values by key. Your get a pointer to that tuple. If it does not exist, you get a <code>nullptr</code>.</p>
 <h2><a class="anchor" id="autotoc_md7"></a>
-&lt;tt&gt;del(key)&lt;/tt&gt;</h2>
+del(key)</h2>
 <p>Delete a item.</p>
 <h2><a class="anchor" id="autotoc_md8"></a>
-&lt;tt&gt;getStatistic()&lt;/tt&gt;</h2>
+getStatistic()</h2>
 <p>You get a struct with many values (inserts, sizes, deletes, lookup failures, ...) to deploy the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store.</p>
 <h2><a class="anchor" id="autotoc_md9"></a>
-&lt;tt&gt;each()&lt;/tt&gt;</h2>
+bool = each(back, lambda func)</h2>
 <ul>
 <li>iterate through all elements at a fixed state</li>
-<li>with a lambda function it is similar to a "find"</li>
+<li>with a lambda function it is similar to a "find" (if lambda returns <code>true</code>, the <code>each()</code> breaks)</li>
 <li>can change data via lambda</li>
 <li>gives a reference back to last processed data</li>
+<li>returns <code>false</code> if the loop did not break and iterated through all items</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md10"></a>
-&lt;tt&gt;apply()&lt;/tt&gt;</h2>
-<p>It is usable with a lambda function and similar to <code>get()</code> and <code>set()</code>. It does not change the swap data and behavior and thus this access it a bit slow. If you want to get or change data in the same <a class="el" href="classSwappyItems.html">SwappyItems</a> store, where you iter through with <code>each()</code>, then you must use <code>apply()</code> in the lambda function of <code>each()</code>. </p>
+bool = apply(back, lambda func)</h2>
+<p>It is usable with a lambda function and similar to <a class="el" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get()</a> and <a class="el" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">SwappyItems::set()</a>. It does not change the swap data and behavior and thus this access it a bit slow. If you want to get or change data in the same <a class="el" href="classSwappyItems.html">SwappyItems</a> store, where you iter through with <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>, then you must use <a class="el" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems::apply()</a> in the lambda function of <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>. It returns <code>false</code> if the item did not exit. </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->

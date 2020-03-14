@@ -743,17 +743,17 @@ public:
      * 
      * this method never touches the priority queue and never swaps or load data into RAM
      *
-     * @param result the value as copy
+     * @param back the value as copy
      * @param key the unique key
      * 
      * @return true, if exists
      */
-    bool apply (Data & result, const TKEY & key, std::function<void(Data *)> foo) {
+    bool apply (Data & back, const TKEY & key, std::function<void(Data *)> foo) {
         
         try {
-            result = _ramList.at(key);
-            foo(&result);
-            _ramList[key] = result;
+            back = _ramList.at(key);
+            foo(&back);
+            _ramList[key] = back;
             return true;
             
         } catch (const std::out_of_range & oor) {
@@ -821,7 +821,7 @@ public:
                             vecdata.push_back(loadedKey2);
                         }
                         // remember data and end position
-                        result = std::make_pair(loadedValue, vecdata);
+                        back = std::make_pair(loadedValue, vecdata);
                     } else {
                         if (success) {
                             // store data from behind the relevant key-value pair
@@ -852,8 +852,8 @@ public:
 
             if (success) {
                 // apply lambda function to the data with relevant key
-                foo(&result);
-                temp[key] = result;
+                foo(&back);
+                temp[key] = back;
                 
                 // reopen file to renew data
                 snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, successFid);

@@ -752,12 +752,11 @@ public:
      * 
      * @return true, if exists
      */
-    bool apply (Data & result, const TKEY & key, std::function<void(Data &)> foo) {
+    bool apply (Data & result, const TKEY & key, std::function<void(Data *)> foo) {
         
         try {
-            
             result = _ramList.at(key);
-            foo(result);
+            foo(&result);
             _ramList[key] = result;
             return true;
             
@@ -857,15 +856,16 @@ public:
 
             if (success) {
                 // apply lambda function to the data with relevant key
-                foo(result);
+                foo(&result);
                 temp[key] = result;
                 
                 // reopen file to renew data
                 snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, successFid);
-                std::ofstream file(filename, std::ios::out | std::ios::binary);
+                //printf("%s\n", filename);
+                std::fstream file(filename, std::ios::in | std::ios::out | std::ios::binary);
                 
                 // got to place, where we have to renew
-                file.seekp(startpos);
+                file.seekg(startpos);
 
                 // overwrite data to the file
                 typename std::map<TKEY,Data>::iterator it;

@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #include "SwappyItems.hpp"
-#include "osmpbfreader.h"
+#include "osmpbfreader.hpp"
 
 using namespace CanalTP;
 using namespace std;

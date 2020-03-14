@@ -79,7 +79,7 @@ private:
     typedef std::set<Bid>                      Fingerprint;
     
     typedef std::unordered_map<TKEY,Data>              Ram;
-    typedef std::vector<Detail>                     Ranges;
+    typedef std::vector<Detail>                    Buckets;
     typedef std::deque<Qentry>                       Order;
 
     // the item store in RAM
@@ -89,7 +89,7 @@ private:
     Order _prios;
 
     // for each filenr we store min/max value and a bloom mask to filter
-    Ranges _ranges;
+    Buckets _buckets;
 
     const char _prefix[7] = "./temp";
     char _swappypath[256];
@@ -206,7 +206,7 @@ public:
     }
     
     struct statistic_s getStatistic() {
-        statistic.fileKB = (_ranges.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
+        statistic.fileKB = (_buckets.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
         statistic.queue = _prios.size();
         return statistic;
     }
@@ -312,7 +312,7 @@ private:
         }
         file.close();
         
-        snprintf(filename, 512, "%s/hibernate.ranges", _swappypath);
+        snprintf(filename, 512, "%s/hibernate.buckets", _swappypath);
         file.open(filename, std::ios::in | std::ios::binary);
         file.read((char *) &length, sizeof(Id));
         Detail detail;
@@ -329,7 +329,7 @@ private:
             }
             file.read((char *) &(detail.fid), sizeof(Fid));
             
-            _ranges.push_back(detail);
+            _buckets.push_back(detail);
         }
         file.close();
         
@@ -375,11 +375,11 @@ private:
         }
         file.close();
 
-        snprintf(filename, 512, "%s/hibernate.ranges", _swappypath);
+        snprintf(filename, 512, "%s/hibernate.buckets", _swappypath);
         file.open(filename, std::ios::out | std::ios::binary);
-        length = _ranges.size();
+        length = _buckets.size();
         file.write((char *) &length, sizeof(Id));
-        for (auto it = _ranges.begin(); it != _ranges.end(); ++it) {
+        for (auto it = _buckets.begin(); it != _buckets.end(); ++it) {
             file.write((char *) &(it->minimum), sizeof(TKEY));
             file.write((char *) &(it->maximum), sizeof(TKEY));
             for (bool b : it->bloomMask) {
@@ -427,7 +427,7 @@ private:
         std::mutex m;
         Fingerprint fp = getFingerprint(key);
         
-        std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
+        std::for_each (std::execution::par, _buckets.begin(), _buckets.end(), [&](Detail finfo) {
             if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                 
                 if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
@@ -497,7 +497,7 @@ private:
         bool result = false;
 
         char filename[512];
-        snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+        snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, fid);
         if (keyFound) {
             done++;
             S->V();
@@ -533,8 +533,8 @@ private:
         if (result) {
             // ok, key exist. clean mask now, because we do not
             // need the (still undeleted) file anymore
-            _ranges[fid].minimum = 0;
-            _ranges[fid].maximum = 0;
+            _buckets[fid].minimum = 0;
+            _buckets[fid].maximum = 0;
 
             // we try to make place for the filecontent in RAM ...
             maySwap(true);
@@ -604,23 +604,23 @@ private:
             if ((written%(EACHFILE)) == 0) {
                 success = false;
 
-                // find empty range, else create one on position ".size()"
-                for (Fid fid = 0; fid < _ranges.size(); ++fid) {
-                    if (_ranges[fid].minimum == _ranges[fid].maximum) {
+                // find empty bucket, else create one on position ".size()"
+                for (Fid fid = 0; fid < _buckets.size(); ++fid) {
+                    if (_buckets[fid].minimum == _buckets[fid].maximum) {
                         pos = fid;
                         success = true;
-                        break; // we found an empty Range
+                        break; // we found an empty Bucket
                     }
                 }
 
                 if (success == false) {
-                    pos = _ranges.size();
-                    // add an empty dummy Range
-                    _ranges.push_back(detail); 
+                    pos = _buckets.size();
+                    // add an empty dummy Bucket
+                    _buckets.push_back(detail); 
                 }
 
                 char filename[512];
-                snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, pos);
+                snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, pos);
                 file.open(filename, std::ios::out | std::ios::binary);
                 detail.minimum = it->first;
                 detail.bloomMask = std::vector<bool>(MASKLENGTH, false);
@@ -647,10 +647,10 @@ private:
             
             // close ----------------------------------
             if ((written%(EACHFILE)) == 0) {
-                // store range
+                // store bucket
                 detail.fid = pos;
                 detail.maximum = it->first;
-                _ranges[pos] = detail;
+                _buckets[pos] = detail;
                 file.close();
             }
         }
@@ -663,9 +663,6 @@ public:
     /**
      * This "for_each" catches all items and runs a function on each item.
      * If this function returns true, the "for_each" stops.
-     * 
-     * @todo foreach multithread
-     * @todo load next range in background
      * 
      * @param back is pointer to the value, were the each loop breaks
      * @param foo is a lambda function, which gets each key and value(pair). if foo return true, the each-loop breaks
@@ -683,16 +680,15 @@ public:
                 return true;
             }
         }
-        // store all undeleted ranges, because they have the other items
-        std::for_each (_ranges.begin(), _ranges.end(), [&](Detail finfo) {
+        // store all undeleted buckets, because they have the other items
+        std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
             if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                 important.insert(finfo.fid);
             }
         });
         
-        
         for (Fid fid : important) {
-            // 1) load into temp each range/file to get all keys of the file
+            // 1) load into temp each bucket to get all keys of the file
             Ram temp;
             std::unordered_set<TKEY> keys;
             Id length;
@@ -701,7 +697,7 @@ public:
             TVALUE loadedValue;
 
             char filename[512];
-            snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+            snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, fid);
             std::ifstream file(filename, std::ios::in | std::ios::binary);
 
             for (Id c = 0; c < EACHFILE; ++c) {
@@ -720,9 +716,9 @@ public:
                 temp[loadedKey] = std::make_pair(loadedValue, vecdata);
             }
             file.close();
-            // 2) mark file as empty --------------------- 
-            _ranges[fid].minimum = 0;
-            _ranges[fid].maximum = 0;
+            // 2) mark bucket file as empty --------------------- 
+            _buckets[fid].minimum = 0;
+            _buckets[fid].maximum = 0;
             // 3) may swap and place temp into ram ---------- 
             maySwap(true);
             // ... and load the stuff
@@ -766,7 +762,7 @@ public:
             std::mutex m;
             Fingerprint fp = getFingerprint(key);
             
-            std::for_each (std::execution::par, _ranges.begin(), _ranges.end(), [&](Detail finfo) {
+            std::for_each (std::execution::par, _buckets.begin(), _buckets.end(), [&](Detail finfo) {
                 if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                     
                     if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
@@ -805,7 +801,7 @@ public:
                 TKEY loadedKey2;
                 TVALUE loadedValue;
                 
-                snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, fid);
+                snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, fid);
                 std::ifstream file(filename, std::ios::in | std::ios::binary);
 
                 for (Id c = 0; c < EACHFILE; ++c) {
@@ -860,7 +856,7 @@ public:
                 temp[key] = result;
                 
                 // reopen file to renew data
-                snprintf(filename, 512, "%s/%" PRId32 ".bin", _swappypath, successFid);
+                snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, successFid);
                 //printf("%s\n", filename);
                 std::fstream file(filename, std::ios::in | std::ios::out | std::ios::binary);
                 

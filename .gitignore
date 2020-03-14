@@ -2,7 +2,5 @@
 *.exe
 a.out
 
-temp*/*.bin
+temp*/*.bucket
 temp*/hibernate.*
-
-workOnHibernate/*.exe

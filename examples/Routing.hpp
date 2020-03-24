@@ -44,7 +44,14 @@ struct Routing {
             nodeptr->first._used++;
             nodeptr->first._lon = lon;
             nodeptr->first._lat = lat;
+            
+            // for testing ------------------------------------------------------
+            //if (osmid%16 == 0) {
+            //    nodes->del(osmid);
+            //} else {
             nodes->set(osmid, nodeptr->first);
+            //}
+
             isPrinted = false;
         }
 

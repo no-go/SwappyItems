@@ -27,7 +27,7 @@ namespace filesys = std::experimental::filesystem;
 #include <mutex> // for std::lock_guard and mutex
 #include <thread> // you need -lpthread
 #include <atomic>
-#include "Semaphore.hpp"
+#include <condition_variable>
 
 /**
  * @todo still "TKEY = uint64_t" is expected ?
@@ -66,6 +66,31 @@ private:
     typedef uint32_t                               Id;
     typedef uint32_t                              Fid; // File id
 
+    class Resource {
+    private:
+        std::mutex _mtx;
+        std::condition_variable _cv;
+        std::atomic<int> _count;
+    public:
+        Resource () {
+            // 1 or (cores-1) we need 1 for the main thread!?
+            _count = std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency()-1 : 1;
+            //_count = std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency()/2 : 1;
+        }
+        // Vreigeben
+        void V() {
+            std::unique_lock<std::mutex> lck(_mtx);
+            _count++;
+            _cv.notify_one();
+        }
+        // Parken, falls nicht freigegeben
+        void P() {
+            std::unique_lock<std::mutex> lck(_mtx);
+            while(_count == 0) _cv.wait(lck);
+            _count--;
+        }
+    };
+
     struct Detail {
         TKEY minimum;
         TKEY maximum;
@@ -100,7 +125,7 @@ private:
     char _swappypath[256];
 
     std::atomic<bool> keyFound;
-    Semaphore * S;
+    Resource * S;
     std::atomic<unsigned> done;
 
     struct statistic_s statistic;
@@ -292,7 +317,7 @@ public:
      * @param id parameter identifies the instance
      */
     SwappyItems (int swappyId) {
-        S = new Semaphore(std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency()-1 : 1);
+        S = new Resource();
         
         statistic.size   = 0;
         statistic.fileKB = 0;
@@ -549,10 +574,16 @@ private:
         keyFound = false;
         done = 0;
 
+        // init it with new "cores-1"
+        /// @todo but is it realy possible, that we reach this code line again with S._core not set to its inital value?
+        delete S;
+        S = new Resource();
+        
         for (auto fid : candidates) {
             if (!keyFound) {
                 std::thread th(&SwappyItems::loadFromFile, this, fid, key);
                 th.detach();
+                //th.join();
                 S->P();
             }
         }

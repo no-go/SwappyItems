@@ -98,9 +98,12 @@ pair(value, vector&lt;keys&gt;) * = get(key)</h2>
 del(key)</h2>
 <p>Delete a item.</p>
 <h2><a class="anchor" id="autotoc_md8"></a>
+min() and max()</h2>
+<p>Get the smallest or the biggest key in the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store.</p>
+<h2><a class="anchor" id="autotoc_md9"></a>
 getStatistic()</h2>
 <p>You get a <a class="el" href="structSwappyItems_1_1statistic__s.html">SwappyItems::statistic_s</a> with many values (inserts, sizes, deletes, lookup failures, ...) to deploy the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store.</p>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md10"></a>
 bool = each(back, lambda func)</h2>
 <ul>
 <li>iterate through all elements at a fixed state</li>
@@ -109,7 +112,7 @@ bool = each(back, lambda func)</h2>
 <li>gives a reference back to last processed data</li>
 <li>returns <code>false</code> if the loop did not break and iterated through all items</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md10"></a>
+<h2><a class="anchor" id="autotoc_md11"></a>
 bool = apply(back, lambda func)</h2>
 <p>It is usable with a lambda function and similar to <a class="el" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get()</a> and <a class="el" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">SwappyItems::set()</a>. It does not change the swap data and behavior and thus this access it a bit slow. If you want to get or change data in the same <a class="el" href="classSwappyItems.html">SwappyItems</a> store, where you iter through with <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>, then you must use <a class="el" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems::apply()</a> in the lambda function of <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>. It returns <code>false</code> if the item did not exit. </p>
 </div></div><!-- PageDoc -->

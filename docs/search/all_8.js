@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['hibernate_50',['hibernate',['../classSwappyItems.html#acd4dcb8b2b7e0a215e742343f902e676',1,'SwappyItems']]]
+  ['hibernate_52',['hibernate',['../classSwappyItems.html#a9f7ae3b8dd873e5dcd5a0fcdc63e5e92',1,'SwappyItems']]]
 ];

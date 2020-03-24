@@ -66,12 +66,18 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><dl class="reflist">
+<dt>Class <a class="el" href="classSwappyItems.html">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>  </dt>
+<dd><a class="anchor" id="_todo000001"></a>still "TKEY = uint64_t" is expected ?  </dd>
 <dt>Member <a class="el" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;::apply</a>  (Data &amp;back, const TKEY &amp;key, std::function&lt; void(Data *)&gt; foo)</dt>
-<dd><a class="anchor" id="_todo000003"></a>a better way to set the filepointer to the next key-value pair!  </dd>
+<dd><a class="anchor" id="_todo000006"></a>a better way to set the filepointer to the next key-value pair!  </dd>
 <dt>Member <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;::each</a>  (Data &amp;back, std::function&lt; bool(TKEY, Data &amp;)&gt; foo)</dt>
-<dd><a class="anchor" id="_todo000002"></a>foreach multithread  </dd>
-<dt>Member <a class="el" href="classSwappyItems.html#abcede914498849ec57b666403119d5d1">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;::wakeup</a>  ()</dt>
-<dd><a class="anchor" id="_todo000001"></a>return on fail </dd>
+<dd><a class="anchor" id="_todo000005"></a>foreach multithread possible?  </dd>
+<dt>Member <a class="el" href="classSwappyItems.html#a3c14dcad6cdfedc2870a4f4ff2a26b43">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;::max</a>  (void)</dt>
+<dd><a class="anchor" id="_todo000003"></a>makes multithread sense here? maybe collect mins from threads and get min of them?  </dd>
+<dt>Member <a class="el" href="classSwappyItems.html#ab3e5312b43b13421f525eb4f1aa9de92">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;::min</a>  (void)</dt>
+<dd><a class="anchor" id="_todo000002"></a>makes multithread sense here? maybe collect mins from threads and get min of them?  </dd>
+<dt>Member <a class="el" href="classSwappyItems.html#a0cc3bebb177ca89c286544b1391b67de">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;::wakeup</a>  (void)</dt>
+<dd><a class="anchor" id="_todo000004"></a>return on fail </dd>
 </dl>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->

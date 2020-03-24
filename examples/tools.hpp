@@ -80,6 +80,7 @@ void logHead() {
 // -------------------------------------------------------------------------
 void logEntry(double & msec, std::chrono::time_point<std::chrono::system_clock> & old, atomic<bool> & isprnt) {
     isprnt = true;
+    auto stat = nodes->getStatistic();
     auto now = std::chrono::high_resolution_clock::now();
     msec     = std::chrono::duration<double, std::milli>(now-old).count();
     printf(
@@ -97,23 +98,29 @@ void logEntry(double & msec, std::chrono::time_point<std::chrono::system_clock> 
         "%10" PRId64 " s "
         "%10" PRId64 " l "
         "%10d kB "
-        "%10ld filekB\n",
+        "%10ld filekB "
+
+        "%10" PRId64 " "
+        "%10" PRId64 "\n",
         
         msec,
-        nodes->getStatistic().size,
-        nodes->getStatistic().queue,
+        stat.size,
+        stat.queue,
         
-        nodes->getStatistic().updates,
-        nodes->getStatistic().deletes,
+        stat.updates,
+        stat.deletes,
         
-        nodes->getStatistic().rangeSaysNo, 
-        nodes->getStatistic().bloomSaysNotIn,
-        ways->getStatistic().rangeFails,
+        stat.rangeSaysNo, 
+        stat.bloomSaysNotIn,
+        stat.rangeFails,
         
-        nodes->getStatistic().swaps,
-        nodes->getStatistic().fileLoads,
+        stat.swaps,
+        stat.fileLoads,
         getUsedKB(),
-        nodes->getStatistic().fileKB
+        stat.fileKB,
+        
+        stat.minKey,
+        stat.maxKey
     );
 }
 

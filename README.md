@@ -34,7 +34,7 @@ Set or create an item. It returns `false`, if the item is created (and not overw
 ### bool = set(key, value, vector<keys>)
 
 Set or create an item. It returns `false`, if the item is created (and not overwritten).
-Your can add a vector with additional keys in it.
+You can add a vector with additional keys in it.
 
 ### pair(value, vector<keys>) * = get(key)
 
@@ -44,9 +44,13 @@ Get the values by key. Your get a pointer to that tuple. If it does not exist, y
 
 Delete a item.
 
+### min() and max()
+
+Get the smallest or the biggest key in the SwappyItems Store.
+
 ### getStatistic()
 
-You get a struct with many values (inserts, sizes, deletes, lookup failures, ...) to
+You get a SwappyItems::statistic_s with many values (inserts, sizes, deletes, lookup failures, ...) to
 deploy the SwappyItems Store.
 
 ### bool = each(back, lambda func)

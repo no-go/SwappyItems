@@ -3,10 +3,11 @@
 
 #include <inttypes.h>  // uintX_t stuff
 #include <iostream>    // sizeof and ios namespace
-#include <algorithm>   // find
+#include <algorithm>   // find, minmax
 #include <stdexcept>   // std::out_of_range
 #include <utility>     // make_pair
 #include <cstdlib>     // srand, rand, exit
+#include <limits>      // min max of int... etc
 
 #include <vector>         // store file information
 #include <set>            // a set of candidate files
@@ -29,8 +30,7 @@ namespace filesys = std::experimental::filesystem;
 #include "Semaphore.hpp"
 
 /**
- * a 0 as Key means, that this key/value pair is deleted, thus
- * never use 0 as a key! this data may be ignored sometimes.
+ * @todo still "TKEY = uint64_t" is expected ?
  */
 template <
     class TKEY, class TVALUE,
@@ -57,6 +57,9 @@ public:
 
         uint64_t swaps = 0;
         uint64_t fileLoads = 0;
+        
+        TKEY maxKey;
+        TKEY minKey;
     };
     
 private:
@@ -84,7 +87,9 @@ private:
 
     // the item store in RAM
     Ram _ramList;
-
+    TKEY _ramMinimum;
+    TKEY _ramMaximum;
+        
     // a priority queue for the keys
     Order _prios;
 
@@ -127,6 +132,9 @@ public:
             ++statistic.size;
             _prios.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, std::vector<TKEY>(0));
+            // update min/max of RAM
+            if (key > _ramMaximum) _ramMaximum = key;
+            if (key < _ramMinimum) _ramMinimum = key;
             return true;
         }
     }
@@ -156,6 +164,9 @@ public:
             ++statistic.size;
             _prios.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, refs);
+            // update min/max of RAM
+            if (key > _ramMaximum) _ramMaximum = key;
+            if (key < _ramMinimum) _ramMinimum = key;
             return true;
         }
     }
@@ -174,6 +185,7 @@ public:
                     return (qe.key == key) && (qe.deleted == false);
                 }
             );
+            // every get fills the queue with "deleted = true" on this key, thus older entries are never equal false
             it->deleted = true;
             _prios.push_back(Qentry{key,false});
             return &(_ramList[key]);
@@ -197,20 +209,88 @@ public:
                 }
             );
             it->deleted = true;
+            // we really have to delete it in ram, because load() search key initialy in ram!
+            _ramList.erase(key);
+            
             --statistic.size;
             ++statistic.deletes;
+            
+            if (key == _ramMaximum || key == _ramMinimum) ramMinMax();
             return true;
         } else {
             return false;
         }
     }
     
-    struct statistic_s getStatistic() {
+    /*
+    TKEY min(void) {
+        TKEY omin = std::numeric_limits<TKEY>::max();
+        /// @todo makes multithread sense here? maybe collect mins from threads and get min of them?
+        auto result = std::min(std::execution::par, _buckets, [](Detail const & lhs, Detail const & rhs) {
+            /// @todo does this realy ignore deleted values?
+            
+            // a deleted left value should never be a minimum
+            if (lhs.minimum == lhs.maximum) return false;
+            // a deleted right value should never be bigger
+            if (rhs.minimum == rhs.maximum) return true;
+            
+            return (lhs.minimum < rhs.minimum);
+        });
+        omin = result.minimum;
+        _ramMaximum = result.second;
+        return _ramMinimum;
+    }
+    */
+
+    /**
+     * return the smallest key
+     */
+    TKEY min (void) {
+        TKEY val = std::numeric_limits<TKEY>::max();
+        /// @todo makes multithread sense here? maybe collect mins from threads and get min of them?
+        std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                if (finfo.minimum < val) val = finfo.minimum;
+            }
+        });
+        
+        if (_ramMinimum < val) val = _ramMinimum;
+        return val;
+    }
+
+    /**
+     * return the biggest key
+     */
+    TKEY max (void) {
+        TKEY val = std::numeric_limits<TKEY>::min();
+        /// @todo makes multithread sense here? maybe collect mins from threads and get min of them?
+        std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                if (finfo.maximum > val) val = finfo.maximum;
+            }
+        });
+        
+        if (_ramMaximum > val) val = _ramMaximum;
+        return val;
+    }
+    
+    /**
+     * get a struct with many statistic values
+     */
+    struct statistic_s getStatistic (void) {
         statistic.fileKB = (_buckets.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
         statistic.queue = _prios.size();
+        statistic.maxKey = this->max();
+        statistic.minKey = this->min();
         return statistic;
     }
 
+    /**
+     * It trys to wakeup from hibernate files. The id parameter identifies the 
+     * SwappyItems Store (important for the file path!).
+     * 
+     * @param id parameter identifies the instance
+     */
     SwappyItems (int swappyId) {
         S = new Semaphore(std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency()-1 : 1);
         
@@ -227,6 +307,12 @@ public:
 
         statistic.swaps = 0;
         statistic.fileLoads = 0;
+        
+        _ramMinimum = std::numeric_limits<TKEY>::max();
+        _ramMaximum = std::numeric_limits<TKEY>::min();
+        
+        statistic.minKey = _ramMinimum;
+        statistic.maxKey = _ramMaximum;
         
         // make quasi hash from (swappyId, template parameter) instead of just swappyId.
         // this should fix problems with other template paramter and loading hibernate data!
@@ -258,7 +344,10 @@ public:
         }
     }
     
-    ~SwappyItems () {
+    /**
+     * Makes a hibernate from ram datas to files.
+     */
+    ~SwappyItems (void) {
         hibernate();
         delete S;
     }
@@ -270,7 +359,7 @@ private:
      * 
      * @todo return on fail
      */
-    bool wakeup () {
+    bool wakeup (void) {
         char filename[512];
         TKEY loadedKey;
         TKEY loadedKey2;
@@ -299,6 +388,8 @@ private:
         snprintf(filename, 512, "%s/hibernate.statistic", _swappypath);
         file.open(filename, std::ios::in | std::ios::binary);
         file.read((char *) &statistic, sizeof(statistic_s));
+        file.read((char *) &_ramMinimum, sizeof(TKEY));
+        file.read((char *) &_ramMaximum, sizeof(TKEY));
         file.close();
 
         snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
@@ -341,7 +432,7 @@ private:
      * 
      * strg+c -> make a regular delete to do a hibernate!
      */
-    void hibernate () {
+    void hibernate (void) {
         char filename[512];
 
         snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
@@ -363,6 +454,8 @@ private:
         snprintf(filename, 512, "%s/hibernate.statistic", _swappypath);
         file.open(filename, std::ios::out | std::ios::binary);
         file.write((char *) &statistic, sizeof(statistic_s));
+        file.write((char *) &_ramMinimum, sizeof(TKEY));
+        file.write((char *) &_ramMaximum, sizeof(TKEY));
         file.close();
 
         snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
@@ -531,6 +624,10 @@ private:
         file.close();
         
         if (result) {
+            // store possible min/max for ram
+            TKEY omin = _buckets[fid].minimum;
+            TKEY omax = _buckets[fid].maximum;
+            
             // ok, key exist. clean mask now, because we do not
             // need the (still undeleted) file anymore
             _buckets[fid].minimum = 0;
@@ -543,6 +640,9 @@ private:
                 _ramList[key_val.first] = key_val.second;
                 _prios.push_back(Qentry{key_val.first,false});
             }
+            // update ram min/max
+            if (omax > _ramMaximum) _ramMaximum = omax;
+            if (omin < _ramMinimum) _ramMinimum = omin;
         }
         done++;
         S->V();
@@ -582,7 +682,7 @@ private:
         
         ++statistic.swaps;
 
-        // remove old items from front and move them to temp
+        // remove old items from front and move them into temp
         for (pos = 0; pos < (EACHFILE*OLDIES); ) {
             Qentry qe = _prios.front();
             _prios.pop_front();
@@ -654,6 +754,22 @@ private:
                 file.close();
             }
         }
+        ramMinMax();
+    }
+    
+    /**
+     * updates the min and max value from the ram keys
+     */
+    void ramMinMax(void) {
+        auto result = std::minmax_element(std::execution::par, _ramList.begin(), _ramList.end(), [](auto lhs, auto rhs) {
+            return (lhs.first < rhs.first); // compare the keys
+        });
+        //                    .------------ the min
+        //                    v    v------- the key of the unordered_map entry
+        _ramMinimum = result.first->first;
+        //                    v------------ the max
+        _ramMaximum = result.second->first;
+        
     }
 
 // Each stuff ---------------------------------------------------------------------------------------------------
@@ -673,7 +789,7 @@ public:
         std::set<Fid> important;
                 
         // run in RAM
-        /// @todo foreach multithread
+        /// @todo foreach multithread possible?
         for (it = _ramList.begin(); it != _ramList.end(); ++it) {
             if (foo(it->first, it->second)) {
                 back = it->second;
@@ -688,7 +804,7 @@ public:
         });
         
         for (Fid fid : important) {
-            // 1) load into temp each bucket to get all keys of the file
+            // 1.1) load into temp each bucket to get all keys of the file
             Ram temp;
             std::unordered_set<TKEY> keys;
             Id length;
@@ -716,16 +832,23 @@ public:
                 temp[loadedKey] = std::make_pair(loadedValue, vecdata);
             }
             file.close();
+            // 1.2) store possible min/max for ram
+            TKEY omin = _buckets[fid].minimum;
+            TKEY omax = _buckets[fid].maximum;
             // 2) mark bucket file as empty --------------------- 
             _buckets[fid].minimum = 0;
             _buckets[fid].maximum = 0;
-            // 3) may swap and place temp into ram ---------- 
+            // 3.1) may swap .... ---------- 
             maySwap(true);
-            // ... and load the stuff
+            // ... and load temp into ram ----------
             for (auto key_val : temp) {
                 _ramList[key_val.first] = key_val.second;
                 _prios.push_back(Qentry{key_val.first,false});
             }
+            // 3.2) update ram min/max
+            if (omax > _ramMaximum) _ramMaximum = omax;
+            if (omin < _ramMinimum) _ramMinimum = omin;
+
             // 4) run through in RAM with keys from temp
             for (auto k : keys) {
                 if (foo(k, _ramList[k])) {
@@ -741,7 +864,8 @@ public:
     /**
      * get a item (for use in a "each-loop" in the same SwappyItems instance)
      * 
-     * this method never touches the priority queue and never swaps or load data into RAM
+     * this method never touches the priority queue and never swaps or load data into RAM.
+     * It does not create new items.
      *
      * @param back the value as copy
      * @param key the unique key

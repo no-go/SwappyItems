@@ -8,6 +8,9 @@ all: osmread searchonhib
 osmread:
 	g++ examples/ReadPbfData.cpp -O2 $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o ReadPbfData.exe
 
+such:
+	g++ examples/such.cpp -O6 -DDEBUG $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o such.exe
+
 searchonhib:
 	g++ examples/SearchOnHibernateData.cpp -O2 $(CPPFLAGS) $(LDFLAGS) -o SearchOnHibernateData.exe
 

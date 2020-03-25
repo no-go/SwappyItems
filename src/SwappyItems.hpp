@@ -24,10 +24,8 @@
 namespace filesys = std::experimental::filesystem;
 
 #include <execution> // c++17 and you need  -ltbb
-#include <mutex> // for std::lock_guard and mutex
+#include <mutex> // for mutex
 #include <thread> // you need -lpthread
-
-#include "Buffer.hpp"
 
 
 /**
@@ -101,14 +99,8 @@ private:
     const char _prefix[7] = "./temp";
     char _swappypath[256];
 
-    // -----------------------------------------
-    std::mutex  mu_FsearchSuccess;
-    bool           fsearchSuccess;
-    
-    Buffer<Fid>   * fsearchBuffer;
-    bool              killFsearch;
-    int                    _cores;
-    // -----------------------------------------
+    std::mutex mu_FsearchSuccess;
+    bool fsearchSuccess;
     
 public:
 
@@ -297,7 +289,6 @@ public:
      * @param id parameter identifies the instance
      */
     SwappyItems (int swappyId) {
-        _cores = std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency()-1 : 1;
         
         statistic.size   = 0;
         statistic.fileKB = 0;
@@ -514,25 +505,13 @@ private:
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * search a key in all (maybe) relevant files and load it to ram
      *
      * @return false, if not exists
      */
     bool loadFromFiles (const TKEY & key) {
-        std::set<Fid> candidates;
+        std::vector<Fid> candidates;
         std::mutex m;
         Fingerprint fp = getFingerprint(key);
         fsearchSuccess = false;
@@ -559,7 +538,7 @@ private:
                     }
                     if (success) {
                         m.lock();
-                        candidates.insert(finfo.fid);
+                        candidates.push_back(finfo.fid);
                         m.unlock();
                     }
                 }
@@ -568,30 +547,16 @@ private:
         });
         
         if (candidates.size() > 0) {
-            fsearchBuffer = new Buffer<Fid>();
-            killFsearch = false;
-            
             // start workers
             std::vector<std::thread *> workers;
-            for (int i = 0; i < _cores; ++i) {
-                workers.push_back( new std::thread(&SwappyItems::fsearch, this, key) );
+            for (unsigned i = 0; i < candidates.size(); ++i) {
+                workers.push_back( new std::thread(&SwappyItems::loadFromFile, this, candidates[i], key) );
             }
-            // fill job buffer
-            for (auto fid : candidates) fsearchBuffer->push(fid);
-
             // wait for workers
-            for (auto w : workers) {
-                if (w->joinable()) w->join();
-            }
+            for (auto w : workers) if (w->joinable()) w->join();
+            // cleanup
             for (auto w : workers) delete w;
-
-            // fill in some dummy jobs, to let the other fsearchers continue and stop
-            for (int i = 0; i < _cores; ++i) fsearchBuffer->push(0);
-
-            delete fsearchBuffer;
         }
-        
-
         
         if (fsearchSuccess) return true;
         
@@ -612,7 +577,7 @@ private:
      * @param key the key we are searching for
      * @ return true, if key is loaded into ram
      */
-    void fsearch (TKEY key) {
+    void loadFromFile (Fid fid, TKEY key) {
         Ram temp;
         Id length;
         TKEY loadedKey;
@@ -621,68 +586,57 @@ private:
         
         bool result = false;
         
-        while (true) {
-            Fid fid = fsearchBuffer->pop();
-            if (killFsearch == true) return;
-            
-            char filename[512];
-            snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, fid);
-            std::ifstream file(filename, std::ios::in | std::ios::binary);
-            
-            for (Id c = 0; c < EACHFILE; ++c) {
-                std::vector<TKEY> vecdata(0);
-                file.read((char *) &loadedKey, sizeof(TKEY));
-                file.read((char *) &loadedValue, sizeof(TVALUE));
-                // stored vector?
-                file.read((char *) &length, sizeof(Id));
-                for (Id j=0; j<length; ++j) {
-                    file.read((char *) &loadedKey2, sizeof(TKEY));
-                    vecdata.push_back(loadedKey2);
-                }
-                temp[loadedKey] = std::make_pair(loadedValue, vecdata);
-
-                if (loadedKey == key) {
-                    result = true;
-                    mu_FsearchSuccess.lock();
-                    fsearchSuccess = true;
-                    killFsearch = true;
-                    ++statistic.fileLoads;
-                    mu_FsearchSuccess.unlock();
-                }
-                if ((result == false) && killFsearch) {
-                    file.close();
-                    return;
-                }
+        char filename[512];
+        snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, fid);
+        std::ifstream file(filename, std::ios::in | std::ios::binary);
+        
+        for (Id c = 0; c < EACHFILE; ++c) {
+            std::vector<TKEY> vecdata(0);
+            file.read((char *) &loadedKey, sizeof(TKEY));
+            file.read((char *) &loadedValue, sizeof(TVALUE));
+            // stored vector?
+            file.read((char *) &length, sizeof(Id));
+            for (Id j=0; j<length; ++j) {
+                file.read((char *) &loadedKey2, sizeof(TKEY));
+                vecdata.push_back(loadedKey2);
             }
-            file.close();
-            
-            if (result) {
-                // fill in some dummy jobs, to let the other fsearchers continue and stop
-                for (int i = 1; i < _cores; ++i) fsearchBuffer->push(0);
+            temp[loadedKey] = std::make_pair(loadedValue, vecdata);
 
-                // store possible min/max for ram
-                TKEY omin = _buckets[fid].minimum;
-                TKEY omax = _buckets[fid].maximum;
-                
-                // ok, key exist. clean mask now, because we do not
-                // need the (still undeleted) file anymore
-                _buckets[fid].minimum = 0;
-                _buckets[fid].maximum = 0;
-
-                // we try to make place for the filecontent in RAM ...
-                maySwap(true);
-                
-                // ... and load the stuff
-                for (auto key_val : temp) {
-                    _ramList[key_val.first] = key_val.second;
-                    _prios.push_back(Qentry{key_val.first,false});
-                }
-                // update ram min/max
-                if (omax > _ramMaximum) _ramMaximum = omax;
-                if (omin < _ramMinimum) _ramMinimum = omin;
-                
+            if (loadedKey == key) {
+                result = true;
+                mu_FsearchSuccess.lock();
+                fsearchSuccess = true;
+                ++statistic.fileLoads;
+                mu_FsearchSuccess.unlock();
+            }
+            if ((result == false) && fsearchSuccess) {
+                file.close();
                 return;
             }
+        }
+        file.close();
+        
+        if (result) {
+            // store possible min/max for ram
+            TKEY omin = _buckets[fid].minimum;
+            TKEY omax = _buckets[fid].maximum;
+            
+            // ok, key exist. clean mask now, because we do not
+            // need the (still undeleted) file anymore
+            _buckets[fid].minimum = 0;
+            _buckets[fid].maximum = 0;
+
+            // we try to make place for the filecontent in RAM ...
+            maySwap(true);
+            
+            // ... and load the stuff
+            for (auto key_val : temp) {
+                _ramList[key_val.first] = key_val.second;
+                _prios.push_back(Qentry{key_val.first,false});
+            }
+            // update ram min/max
+            if (omax > _ramMaximum) _ramMaximum = omax;
+            if (omin < _ramMinimum) _ramMinimum = omin;
         }
     }
 
@@ -929,22 +883,25 @@ public:
                     
                     if ( (key < finfo.minimum) || (key > finfo.maximum) ) {
                         // key is smaller then the smallest or bigger than the biggest
-                        std::lock_guard lock(m);
+                        m.lock();
                         ++statistic.rangeSaysNo;
+                        m.unlock();
                     } else {
                         // check bloom (is it possible, that this key is in that file?)
                         bool success = true;
                         for (auto b : fp) {
                             if (finfo.bloomMask[b] == false) {
                                 success = false;
-                                std::lock_guard lock(m);
+                                m.lock();
                                 ++statistic.bloomSaysNotIn;
+                                m.unlock();
                                 break;
                             }
                         }
                         if (success) {
-                            std::lock_guard lock(m);
+                            m.lock();
                             candidates.insert(finfo.fid);
+                            m.unlock();
                         }
                     }
                 }

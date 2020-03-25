@@ -82,7 +82,6 @@ struct Routing {
         
         if (osmid < 145849) printf("hurra!\n");
         
-        /*
         if (nodeptr == nullptr) {
             NodeData nd;
             nd._used = 1;
@@ -96,7 +95,6 @@ struct Routing {
             nodes->set(osmid, nodeptr->first);
         }
         if ((nodes->getStatistic().size%4096 == 0)) logEntry();
-        */
     }
     
 };

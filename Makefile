@@ -3,7 +3,7 @@ CPPFLAGS = -Wall -mtune=native -std=c++17 -I./src/
 LDFLAGS = -lpthread -ltbb -lstdc++fs
 LDOSMFLAGS = -lz -losmpbf -lprotobuf
 
-all: osmread searchonhib
+all: osmread
 
 osmread:
 	g++ examples/ReadPbfData.cpp -O2 $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o ReadPbfData.exe
@@ -13,7 +13,6 @@ such:
 
 searchonhib:
 	g++ examples/SearchOnHibernateData.cpp -O2 $(CPPFLAGS) $(LDFLAGS) -o SearchOnHibernateData.exe
-
 
 docs: Doxyfile README.md
 	rm -rf docs

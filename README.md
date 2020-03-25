@@ -21,11 +21,12 @@ or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyI
 
 ### (constructor)
 
-It trys to wakeup from hibernate files. The id parameter identifies the SwappyItems Store (important for the file path!).
+It trys to SwappyItems::wakeup() from hibernate files. The id parameter identifies 
+the SwappyItems Store (important for the DISK/swap path!).
 
 ### (destructor)
 
-Makes a hibernate from ram to files.
+Makes a SwappyItems::hibernate() from RAM to DISK.
 
 ### bool = set(key, value)
 
@@ -61,7 +62,7 @@ deploy the SwappyItems Store.
 - gives a reference back to last processed data
 - returns `false` if the loop did not break and iterated through all items
 
-### bool = apply(back, lambda func)
+### bool = apply(back, key, lambda func)
 
 It is usable with a lambda function and similar to SwappyItems::get() and SwappyItems::set().
 It does not change the swap data and behavior and thus this access it a bit slow.

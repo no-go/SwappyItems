@@ -39,7 +39,7 @@ You can add a vector with additional keys in it.
 
 ### pair(value, vector<keys>) * = get(key)
 
-Get the values by key. Your get a pointer to that tuple. If it does not exist, you get a `nullptr`.
+Get the value by key. You get a pointer to that data pair. If it does not exist, you get a `nullptr`.
 
 ### del(key)
 
@@ -68,5 +68,5 @@ It is usable with a lambda function and similar to SwappyItems::get() and Swappy
 It does not change the swap data and behavior and thus this access it a bit slow.
 If you want to get or change data in the same SwappyItems store, where you
 iter through with SwappyItems::each(), then you must use SwappyItems::apply() in the lambda
-function of SwappyItems::each(). It returns `false` if the item did not exit.
+function of SwappyItems::each(). It returns `false` if the item does not exit.
 

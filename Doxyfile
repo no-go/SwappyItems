@@ -33,3 +33,5 @@ GENERATE_HTML          = YES
 HTML_OUTPUT            = docs
 HTML_FILE_EXTENSION    = .html
 GENERATE_LATEX         = NO
+
+SEARCHENGINE = NO

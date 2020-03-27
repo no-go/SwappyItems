@@ -90,11 +90,11 @@ $(function() {
 <div class="line"><span class="keyword">using namespace </span><a class="code" href="namespaceCanalTP.html">CanalTP</a>;</div>
 <div class="line"><span class="keyword">using namespace </span>std;</div>
 <div class="line"> </div>
-<div class="line"><span class="preprocessor">#define FILE_ITEMS           (   2*1024)</span></div>
-<div class="line"><span class="preprocessor">#define FILE_MULTI                    4</span></div>
-<div class="line"><span class="preprocessor">#define RAM_MULTI                     8</span></div>
-<div class="line"><span class="preprocessor">#define BBITS                         5</span></div>
-<div class="line"><span class="preprocessor">#define BMASK   ((BBITS+4)*  FILE_ITEMS)</span></div>
+<div class="line"><span class="preprocessor">#define FILE_ITEMS           (   7*1024) // 2*1024  // 64*1024</span></div>
+<div class="line"><span class="preprocessor">#define FILE_MULTI                    6  // 4       // 16</span></div>
+<div class="line"><span class="preprocessor">#define RAM_MULTI                     9  // 8</span></div>
+<div class="line"><span class="preprocessor">#define BBITS                         5  // 5</span></div>
+<div class="line"><span class="preprocessor">#define BMASK   ((BBITS+4)*  FILE_ITEMS) // +4</span></div>
 <div class="line"> </div>
 <div class="line"><span class="keyword">typedef</span> uint64_t <a name="a0"></a><a class="code" href="ReadPbfData_8cpp.html#a05f14885b17fed9d9c6274891dde9bee">Key</a>; <span class="comment">// for the key-value tuple, 8 byte</span></div>
 <div class="line"> </div>
@@ -175,7 +175,7 @@ $(function() {
 <div class="ttc" id="astructRouting_html"><div class="ttname"><a href="structRouting.html">Routing</a></div><div class="ttdef"><b>Definition:</b> Routing.hpp:2</div></div>
 <div class="ttc" id="aSwappyItems_8hpp_html"><div class="ttname"><a href="SwappyItems_8hpp.html">SwappyItems.hpp</a></div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="ReadPbfData_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:71</div></div>
-<div class="ttc" id="aclassSwappyItems_html"><div class="ttname"><a href="classSwappyItems.html">SwappyItems</a></div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:39</div></div>
+<div class="ttc" id="aclassSwappyItems_html"><div class="ttname"><a href="classSwappyItems.html">SwappyItems</a></div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:38</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_a5f002f7db81bd48fab159f622450bd2f"><div class="ttname"><a href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a></div><div class="ttdeci">double mseconds</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:61</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_a18260e731b3d4c7e3f074c9d64fdb0bf"><div class="ttname"><a href="ReadPbfData_8cpp.html#a18260e731b3d4c7e3f074c9d64fdb0bf">places</a></div><div class="ttdeci">SwappyItemsPLACES * places</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:56</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_aa01619249f139a661c2ef3ae7c4a87ad"><div class="ttname"><a href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a></div><div class="ttdeci">SwappyItemsNODES * nodes</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:55</div></div>

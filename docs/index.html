@@ -81,10 +81,10 @@ $(function() {
 API basics</h1>
 <h2><a class="anchor" id="autotoc_md2"></a>
 (constructor)</h2>
-<p>It trys to wakeup from hibernate files. The id parameter identifies the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store (important for the file path!).</p>
+<p>It trys to <a class="el" href="classSwappyItems.html#a0cc3bebb177ca89c286544b1391b67de">SwappyItems::wakeup()</a> from hibernate files. The id parameter identifies the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store (important for the DISK/swap path!).</p>
 <h2><a class="anchor" id="autotoc_md3"></a>
 (destructor)</h2>
-<p>Makes a hibernate from ram to files.</p>
+<p>Makes a <a class="el" href="classSwappyItems.html#a9f7ae3b8dd873e5dcd5a0fcdc63e5e92">SwappyItems::hibernate()</a> from RAM to DISK.</p>
 <h2><a class="anchor" id="autotoc_md4"></a>
 bool = set(key, value)</h2>
 <p>Set or create an item. It returns <code>false</code>, if the item is created (and not overwritten).</p>
@@ -113,7 +113,7 @@ bool = each(back, lambda func)</h2>
 <li>returns <code>false</code> if the loop did not break and iterated through all items</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md11"></a>
-bool = apply(back, lambda func)</h2>
+bool = apply(back, key, lambda func)</h2>
 <p>It is usable with a lambda function and similar to <a class="el" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get()</a> and <a class="el" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">SwappyItems::set()</a>. It does not change the swap data and behavior and thus this access it a bit slow. If you want to get or change data in the same <a class="el" href="classSwappyItems.html">SwappyItems</a> store, where you iter through with <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>, then you must use <a class="el" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems::apply()</a> in the lambda function of <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>. It returns <code>false</code> if the item did not exit. </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->

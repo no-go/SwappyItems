@@ -79,13 +79,19 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5f07c0c40ec1607bc544af626bd69289"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb45494519ce5c6501db7685994202a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structRouting.html#aeb45494519ce5c6501db7685994202a7">relation_callback</a> (uint64_t, const Tags &amp;, const References &amp;refs)</td></tr>
 <tr class="separator:aeb45494519ce5c6501db7685994202a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a379f51c390afded597cbafa2fa797ba3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structRouting.html#a379f51c390afded597cbafa2fa797ba3">way_callback</a> (uint64_t osmid, const <a class="el" href="namespaceCanalTP.html#a4f01523a1c3b0897ec8e357a68513217">Tags</a> &amp;tags, const vector&lt; uint64_t &gt; &amp;refs)</td></tr>
+<tr class="separator:a379f51c390afded597cbafa2fa797ba3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c57162a767dfc9c6c1a940c2069abf9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structRouting.html#a3c57162a767dfc9c6c1a940c2069abf9">relation_callback</a> (uint64_t osmid, const <a class="el" href="namespaceCanalTP.html#a4f01523a1c3b0897ec8e357a68513217">Tags</a> &amp;tags, const <a class="el" href="namespaceCanalTP.html#a090d83d412eb66517a72e002e0c583a6">References</a> &amp;refs)</td></tr>
+<tr class="separator:a3c57162a767dfc9c6c1a940c2069abf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f07c0c40ec1607bc544af626bd69289"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structRouting.html#a5f07c0c40ec1607bc544af626bd69289">node_callback</a> (uint64_t osmid, double lon, double lat, const <a class="el" href="namespaceCanalTP.html#a4f01523a1c3b0897ec8e357a68513217">Tags</a> &amp;tags)</td></tr>
+<tr class="separator:a5f07c0c40ec1607bc544af626bd69289"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section examples"><dt>Examples</dt><dd><a class="el" href="ReadPbfData_8cpp-example.html#_a15">ReadPbfData.cpp</a>.</dd>
 </dl>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a5f07c0c40ec1607bc544af626bd69289"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f07c0c40ec1607bc544af626bd69289">&#9670;&nbsp;</a></span>node_callback()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f07c0c40ec1607bc544af626bd69289">&#9670;&nbsp;</a></span>node_callback() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -144,17 +150,134 @@ Public Member Functions</h2></td></tr>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            nodeptr-&gt;first._used++;</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            nodeptr-&gt;first._lon = lon;</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            nodeptr-&gt;first._lat = lat;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">set</a>(osmid, nodeptr-&gt;first);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a> = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        }</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">if</span> ((<a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">getStatistic</a>().<a class="code" href="structSwappyItems_1_1statistic__s.html#ac502c1003ed0cee3d6257111b4a88fff">updates</a>%1024 == 0) &amp;&amp; (<a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a> == <span class="keyword">false</span>)) <a class="code" href="tools_8hpp.html#a4ddfddedc72a7785cab5daa9a9b38eb9">logEntry</a>(<a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>, <a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>, <a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a>);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    }</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            </div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="comment">// for testing ------------------------------------------------------</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="comment">//if (osmid%16 == 0) {</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="comment">//    nodes-&gt;del(osmid);</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            <span class="comment">//} else {</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            <a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">set</a>(osmid, nodeptr-&gt;first);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;            <span class="comment">//}</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a> = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        }</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">if</span> ((<a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">getStatistic</a>().<a class="code" href="structSwappyItems_1_1statistic__s.html#ac502c1003ed0cee3d6257111b4a88fff">updates</a>%1024 == 0) &amp;&amp; (<a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a> == <span class="keyword">false</span>)) <a class="code" href="such_8cpp.html#a6e74c84d7fa0d46a3a5eff14f37b59c6">logEntry</a>(<a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>, <a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>, <a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a>);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    }</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="a5f07c0c40ec1607bc544af626bd69289"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f07c0c40ec1607bc544af626bd69289">&#9670;&nbsp;</a></span>node_callback() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Routing::node_callback </td>
+          <td>(</td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>osmid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>lon</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>lat</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespaceCanalTP.html#a4f01523a1c3b0897ec8e357a68513217">Tags</a> &amp;&#160;</td>
+          <td class="paramname"><em>tags</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<div class="fragment"><div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                                                                                   {</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        pair&lt;NodeData, vector&lt;Key&gt; &gt; * nodeptr = <a class="code" href="such_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">get</a>(osmid);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="keywordflow">if</span> (osmid &lt; 145849) printf(<span class="stringliteral">&quot;hurra!\n&quot;</span>);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">if</span> (nodeptr == <span class="keyword">nullptr</span>) {</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <a class="code" href="structNodeData.html">NodeData</a> nd;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            nd.<a class="code" href="structNodeData.html#aa8c9caddec891302889716861be865cc">_used</a> = 1;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            nd.<a class="code" href="structNodeData.html#a802e45a0696d7c6475167c074b021f70">_lon</a> = lon;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            nd.<a class="code" href="structNodeData.html#abda575f79f887863bc7b475cfb5f9586">_lat</a> = lat;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <a class="code" href="such_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">set</a>(osmid, nd);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            nodeptr-&gt;first._used++;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keywordflow">if</span> (lon != 0) nodeptr-&gt;first._lon = lon;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            <span class="keywordflow">if</span> (lat != 0) nodeptr-&gt;first._lat = lat;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            <a class="code" href="such_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">set</a>(osmid, nodeptr-&gt;first);</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        }</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keywordflow">if</span> ((<a class="code" href="such_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">getStatistic</a>().<a class="code" href="structSwappyItems_1_1statistic__s.html#a56d044f52e445c802107beaef8c02573">size</a>%4096 == 0)) <a class="code" href="such_8cpp.html#a6e74c84d7fa0d46a3a5eff14f37b59c6">logEntry</a>();</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    }</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="a3c57162a767dfc9c6c1a940c2069abf9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c57162a767dfc9c6c1a940c2069abf9">&#9670;&nbsp;</a></span>relation_callback() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Routing::relation_callback </td>
+          <td>(</td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>osmid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespaceCanalTP.html#a4f01523a1c3b0897ec8e357a68513217">Tags</a> &amp;&#160;</td>
+          <td class="paramname"><em>tags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespaceCanalTP.html#a090d83d412eb66517a72e002e0c583a6">References</a> &amp;&#160;</td>
+          <td class="paramname"><em>refs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<div class="fragment"><div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;{}</div>
 </div><!-- fragment -->
 </div>
 </div>
 <a id="aeb45494519ce5c6501db7685994202a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb45494519ce5c6501db7685994202a7">&#9670;&nbsp;</a></span>relation_callback()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb45494519ce5c6501db7685994202a7">&#9670;&nbsp;</a></span>relation_callback() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -192,12 +315,12 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="fragment"><div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{}</div>
+<div class="fragment"><div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;{}</div>
 </div><!-- fragment -->
 </div>
 </div>
 <a id="a379f51c390afded597cbafa2fa797ba3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a379f51c390afded597cbafa2fa797ba3">&#9670;&nbsp;</a></span>way_callback()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a379f51c390afded597cbafa2fa797ba3">&#9670;&nbsp;</a></span>way_callback() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -259,30 +382,80 @@ Public Member Functions</h2></td></tr>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;            <span class="comment">// tests: osmid of the way is always new OR you read a 2nd time because of hibernate!</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            <a class="code" href="ReadPbfData_8cpp.html#af98694559e6e2a9513ef6d8ad6e3222c">ways</a>-&gt;<a class="code" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">set</a>(osmid, way.first, way.second);</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;            </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;            <span class="keywordflow">if</span> ((<a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">getStatistic</a>().<a class="code" href="structSwappyItems_1_1statistic__s.html#ac502c1003ed0cee3d6257111b4a88fff">updates</a>%1024 == 0) &amp;&amp; (<a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a> == <span class="keyword">false</span>)) <a class="code" href="tools_8hpp.html#a4ddfddedc72a7785cab5daa9a9b38eb9">logEntry</a>(<a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>, <a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>, <a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a>);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;            <span class="keywordflow">if</span> ((<a class="code" href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a>-&gt;<a class="code" href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">getStatistic</a>().<a class="code" href="structSwappyItems_1_1statistic__s.html#ac502c1003ed0cee3d6257111b4a88fff">updates</a>%1024 == 0) &amp;&amp; (<a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a> == <span class="keyword">false</span>)) <a class="code" href="such_8cpp.html#a6e74c84d7fa0d46a3a5eff14f37b59c6">logEntry</a>(<a class="code" href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a>, <a class="code" href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a>, <a class="code" href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a>);</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        }</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    }</div>
 </div><!-- fragment -->
 </div>
 </div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<a id="a379f51c390afded597cbafa2fa797ba3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a379f51c390afded597cbafa2fa797ba3">&#9670;&nbsp;</a></span>way_callback() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Routing::way_callback </td>
+          <td>(</td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>osmid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespaceCanalTP.html#a4f01523a1c3b0897ec8e357a68513217">Tags</a> &amp;&#160;</td>
+          <td class="paramname"><em>tags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const vector&lt; uint64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>refs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<div class="fragment"><div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;{}</div>
+</div><!-- fragment -->
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following files:<ul>
 <li>examples/<a class="el" href="Routing_8hpp_source.html">Routing.hpp</a></li>
+<li>examples/<a class="el" href="such_8cpp.html">such.cpp</a></li>
 </ul>
 </div><!-- contents -->
 <div class="ttc" id="aReadPbfData_8cpp_html_a3fdad36bb7cebcd287d05eb8a0570240"><div class="ttname"><a href="ReadPbfData_8cpp.html#a3fdad36bb7cebcd287d05eb8a0570240">isPrinted</a></div><div class="ttdeci">atomic&lt; bool &gt; isPrinted</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:62</div></div>
-<div class="ttc" id="aclassSwappyItems_html_ab76f2bf942b66c83213a1865e7260385"><div class="ttname"><a href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get</a></div><div class="ttdeci">Data * get(const TKEY &amp;key)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:180</div></div>
-<div class="ttc" id="aclassSwappyItems_html_ae7d87b8597b85dc8a84a6127952f5cf6"><div class="ttname"><a href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">SwappyItems::getStatistic</a></div><div class="ttdeci">struct statistic_s getStatistic(void)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:280</div></div>
+<div class="ttc" id="aclassSwappyItems_html_ab76f2bf942b66c83213a1865e7260385"><div class="ttname"><a href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get</a></div><div class="ttdeci">Data * get(const TKEY &amp;key)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:177</div></div>
+<div class="ttc" id="aclassSwappyItems_html_ae7d87b8597b85dc8a84a6127952f5cf6"><div class="ttname"><a href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">SwappyItems::getStatistic</a></div><div class="ttdeci">struct statistic_s getStatistic(void)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:277</div></div>
+<div class="ttc" id="astructNodeData_html_aa8c9caddec891302889716861be865cc"><div class="ttname"><a href="structNodeData.html#aa8c9caddec891302889716861be865cc">NodeData::_used</a></div><div class="ttdeci">uint8_t _used</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:34</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_a5f002f7db81bd48fab159f622450bd2f"><div class="ttname"><a href="ReadPbfData_8cpp.html#a5f002f7db81bd48fab159f622450bd2f">mseconds</a></div><div class="ttdeci">double mseconds</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:61</div></div>
+<div class="ttc" id="astructSwappyItems_1_1statistic__s_html_a56d044f52e445c802107beaef8c02573"><div class="ttname"><a href="structSwappyItems_1_1statistic__s.html#a56d044f52e445c802107beaef8c02573">SwappyItems::statistic_s::size</a></div><div class="ttdeci">uint64_t size</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:44</div></div>
 <div class="ttc" id="atools_8hpp_html_ae256aa1c0afd041405a13877f8d990c1"><div class="ttname"><a href="tools_8hpp.html#ae256aa1c0afd041405a13877f8d990c1">catchTown</a></div><div class="ttdeci">bool catchTown(PlaceData &amp;dummy, const uint64_t &amp;osmid, double &amp;lon, double &amp;lat, const Tags &amp;tags)</div><div class="ttdef"><b>Definition:</b> tools.hpp:128</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_a18260e731b3d4c7e3f074c9d64fdb0bf"><div class="ttname"><a href="ReadPbfData_8cpp.html#a18260e731b3d4c7e3f074c9d64fdb0bf">places</a></div><div class="ttdeci">SwappyItemsPLACES * places</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:56</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_aa01619249f139a661c2ef3ae7c4a87ad"><div class="ttname"><a href="ReadPbfData_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a></div><div class="ttdeci">SwappyItemsNODES * nodes</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:55</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_a05f14885b17fed9d9c6274891dde9bee"><div class="ttname"><a href="ReadPbfData_8cpp.html#a05f14885b17fed9d9c6274891dde9bee">Key</a></div><div class="ttdeci">uint64_t Key</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:31</div></div>
-<div class="ttc" id="atools_8hpp_html_a4ddfddedc72a7785cab5daa9a9b38eb9"><div class="ttname"><a href="tools_8hpp.html#a4ddfddedc72a7785cab5daa9a9b38eb9">logEntry</a></div><div class="ttdeci">void logEntry(double &amp;msec, std::chrono::time_point&lt; std::chrono::system_clock &gt; &amp;old, atomic&lt; bool &gt; &amp;isprnt)</div><div class="ttdef"><b>Definition:</b> tools.hpp:81</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_af98694559e6e2a9513ef6d8ad6e3222c"><div class="ttname"><a href="ReadPbfData_8cpp.html#af98694559e6e2a9513ef6d8ad6e3222c">ways</a></div><div class="ttdeci">SwappyItemsWAYS * ways</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:54</div></div>
 <div class="ttc" id="atools_8hpp_html_ad453d12698d067bb512274c4ddba8156"><div class="ttname"><a href="tools_8hpp.html#ad453d12698d067bb512274c4ddba8156">catchWay</a></div><div class="ttdeci">bool catchWay(WayData &amp;dummy, const uint64_t &amp;osmid, const Tags &amp;tags)</div><div class="ttdef"><b>Definition:</b> tools.hpp:158</div></div>
-<div class="ttc" id="aclassSwappyItems_html_af5a792fbb62a2e872a45e46cf072593c"><div class="ttname"><a href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">SwappyItems::set</a></div><div class="ttdeci">bool set(TKEY key, TVALUE value)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:115</div></div>
+<div class="ttc" id="asuch_8cpp_html_a6e74c84d7fa0d46a3a5eff14f37b59c6"><div class="ttname"><a href="such_8cpp.html#a6e74c84d7fa0d46a3a5eff14f37b59c6">logEntry</a></div><div class="ttdeci">void logEntry()</div><div class="ttdef"><b>Definition:</b> such.cpp:35</div></div>
+<div class="ttc" id="astructNodeData_html_a802e45a0696d7c6475167c074b021f70"><div class="ttname"><a href="structNodeData.html#a802e45a0696d7c6475167c074b021f70">NodeData::_lon</a></div><div class="ttdeci">double _lon</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:35</div></div>
+<div class="ttc" id="aclassSwappyItems_html_af5a792fbb62a2e872a45e46cf072593c"><div class="ttname"><a href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">SwappyItems::set</a></div><div class="ttdeci">bool set(TKEY key, TVALUE value)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:112</div></div>
+<div class="ttc" id="astructNodeData_html"><div class="ttname"><a href="structNodeData.html">NodeData</a></div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:33</div></div>
+<div class="ttc" id="asuch_8cpp_html_aa01619249f139a661c2ef3ae7c4a87ad"><div class="ttname"><a href="such_8cpp.html#aa01619249f139a661c2ef3ae7c4a87ad">nodes</a></div><div class="ttdeci">SwappyItemsNODES * nodes</div><div class="ttdef"><b>Definition:</b> such.cpp:33</div></div>
 <div class="ttc" id="aReadPbfData_8cpp_html_aee8571a3d7e27606d7ea00794059642f"><div class="ttname"><a href="ReadPbfData_8cpp.html#aee8571a3d7e27606d7ea00794059642f">start</a></div><div class="ttdeci">std::chrono::time_point&lt; std::chrono::system_clock &gt; start</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:60</div></div>
-<div class="ttc" id="astructSwappyItems_1_1statistic__s_html_ac502c1003ed0cee3d6257111b4a88fff"><div class="ttname"><a href="structSwappyItems_1_1statistic__s.html#ac502c1003ed0cee3d6257111b4a88fff">SwappyItems::statistic_s::updates</a></div><div class="ttdeci">uint64_t updates</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:49</div></div>
+<div class="ttc" id="astructSwappyItems_1_1statistic__s_html_ac502c1003ed0cee3d6257111b4a88fff"><div class="ttname"><a href="structSwappyItems_1_1statistic__s.html#ac502c1003ed0cee3d6257111b4a88fff">SwappyItems::statistic_s::updates</a></div><div class="ttdeci">uint64_t updates</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:48</div></div>
+<div class="ttc" id="astructNodeData_html_abda575f79f887863bc7b475cfb5f9586"><div class="ttname"><a href="structNodeData.html#abda575f79f887863bc7b475cfb5f9586">NodeData::_lat</a></div><div class="ttdeci">double _lat</div><div class="ttdef"><b>Definition:</b> ReadPbfData.cpp:36</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

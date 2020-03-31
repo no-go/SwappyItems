@@ -28,6 +28,10 @@ d) die Priority Queue bei der Suche kürzester Wege muss...
      einer Priorität einer Kante bieten
    - Verwaltungsstruktur sowie Daten müssen ggf. auch auf SSD ausgelagert
      werden können
+e) Konflikte im Pseudocode
+   - PrioQueue braucht Distanz als Priorität
+   - Distanz wird aber auch in einer anderen Struktur abgelegt und upgedatet
+   - das Update der Distanz/Prio in Queue zu einem gegebenen Knoten wird nicht beschrieben
 
 # Lösungsansätze und Herausforderungen
 
@@ -73,11 +77,17 @@ Most Frequently Used:
 probabilistisches Zählen: könnte man für "Most Frequently Used" nutzen,
 um Keys in eine "Häufigkeitsgruppe" abzulegen?
 
+Buckets
+
+- Bucket Grenzen updaten
+- ein Problem ist, nicht leere Buckets zu finden bei extractMin (Lösung: eigener Heap für die Keys)
+
 ## Adressable Priority Queue(s)
 
-- in der Regel neben Heap/Baum für PQ eine verlinkung
+- Konzepte eher parallel, also zusätzlich zur ext. PQ
 - wie ist diese Verkettung in externen sowie internen Datenstrukturen (?)
 - wie geht man bei der Verkettung mit "Updates" um (andere Prio) ?
+- Möglicherweise unvereinbar mit der Datenstruktur von Sequence Heaps (?)
 
 ### Lookup Tables
 
@@ -90,8 +100,64 @@ um Keys in eine "Häufigkeitsgruppe" abzulegen?
   als Vorteil erweisen
 - auf dem Papier können Algorithmen so schnell sein
 - diverse große Konstanten lassen an der praktischen Verwendung zweifeln
-- 
+- im Baum müssen Markierung gespeichert werden, was die Datenmenge aufbläht
 
 ### Pairing Heap
 
 - die leichtgewichtige form der Fibonacci Heaps
+
+# Probleme Forschung und Veröffentlichungen
+
+- oft wird "Dijkstra" nebensächlich genannt, wenn man sich nur mit PQ auseinander setzt.
+- das Ändern der Prio und speziell Finden eines Schlüssels, was im Dijkstra nötig ist,
+  wird nicht im Detail behandelt.
+- dass die Verwaltung der Daten bereits nicht in den Arbeitsspeicher passen, wird
+  nicht behandelt/umgangen.
+- oft theoretische Algorithmen Optimierung, welche auf Kosten des Speicherplatzes geht
+- oft wird die Verlangsamung von "externen Datenstruktur" nur auf "Cache faults" reduziert
+  und daher kein Fokus auf Dateien gelegt
+- Mangelnde Behandlung/Transparenz der Mischung aus
+  - viele Daten (externe Datenstrukturen nötig)
+  - theoritischer Effizienz und praktischer Umsetzung
+  - der Verbindung aus Dijkstra-Algorithmus und einer Priority Queue
+
+Daher ist es schwer Veröffentlichungen zu finden, die diese Bereiche abdecken,
+weil nur durch intensives lesen und testen erkennbar wird, welche der Bereiche
+wirklich akzeptable behandelt werden, um einen Mehrwert daraus schöpfen
+zu können.
+
+# Überlegungen
+
+Beispiele oft fragwürdig:
+
+- speichern (wie in vielen solcher Beispielen) der Distanz
+  nicht (nur) in der Priority Queue (PQ)
+- Update der Distanz außerhalb der PQ
+- extractMin() ohne weitere Details
+
+Das die PQ sich neu organisiert, sobald sich der Wert hinter einem
+Pointer auf die Distanz sich ändert, mag ja noch halbwegs realisierbar
+sind, aber was, wenn der Pointer ungültig wird durch das Auslagern
+der Daten in eine Datei? In dem Fall wird es schwer beide Daten
+getrennt zu behandeln - da kann ich mir was ausdenken. (xxxxxxxxxxxxxxxx)
+
+Alternativ kann man die Distanz einen Knotens natürlich in der PQ ablegen,
+allerdings brauche ich dann eine PQ, die...
+
+- schnell das Element X mit minimaler Prio liefert
+- schnell das Element Y auffindet, um dessen Prio zu ändern
+
+Was gut ist: die Y's sind die Nachbarn von X!
+
+Für den Dijkstra auf große Datenmengen brauche ich:
+
+- schnellen Zugriff auf Nachbarn eines gegebenen Knotens
+- schnellen Zugriff auf die Distanzen zu den Nachbarn
+- eine "Verarbeitungshaufen", in dem "angefasste" Knoten (Nachbarn) abgelegt sind
+  und diese sortiert sind nach ihrer Nähe(Prio) zum Startknoten
+- schnellen Zugriff auf einen (Nachbar)Knoten, um bei diesem die Nähe(Prio)
+  zum Startknoten auslesen und ggf. anpassen zu können (inkl. eines neuen Parents/Successors)
+- die Möglichkeit selten "angefasste" Daten in Dateien auslagern und bei
+  bedarf wieder einlesen zu können
+
+

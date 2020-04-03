@@ -153,11 +153,11 @@ struct Routing {
                 for (unsigned i=1; i < pathlength; ++i) {
                     nodeptr = nodes->get(refs[i]);
                     if (nodeptr == nullptr) {
-                        pair<NodeData, vector<Key> > node;
+                        std::pair<NodeData, std::vector<Key> > node;
                         node.first._used = 0;
                         node.first._lon = 0.0;
                         node.first._lat = 0.0;
-                        nodes->set(r, node.first);
+                        nodes->set(refs[i], node.first);
                     } else {
                         // node is also used in another way!
                         nodeptr->first._used++;
@@ -170,11 +170,11 @@ struct Routing {
                 for (unsigned i=0; i < pathlength; ++i) {
                     nodeptr = nodes->get(refs[i]);
                     if (nodeptr == nullptr) {
-                        pair<NodeData, vector<Key> > node;
+                        std::pair<NodeData, std::vector<Key> > node;
                         node.first._used = 0;
                         node.first._lon = 0.0;
                         node.first._lat = 0.0;
-                        nodes->set(r, node.first);
+                        nodes->set(refs[i], node.first);
                     } else {
                         // node is also used in another way!
                         nodeptr->first._used++;

@@ -3,7 +3,10 @@ CPPFLAGS = -Wall -mtune=native -std=c++17 -I./src/
 LDFLAGS = -lpthread -ltbb -lstdc++fs
 LDOSMFLAGS = -lz -losmpbf -lprotobuf
 
-all: osm such hib
+all: osm such hib gra
+
+gra:
+	g++ examples/osm2graph.cpp -O2 $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o osm2graph.exe
 
 osm:
 	g++ examples/ReadPbfData.cpp -O2 $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o ReadPbfData.exe

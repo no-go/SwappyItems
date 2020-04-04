@@ -25,8 +25,8 @@ using namespace CanalTP;
 //#define LAT_BOUND 35.0
 //#define LAT_BOUND_DIF 35.0
 
-// nrw:    lon   5.85..9.47
-//         lat  50.32..52.52
+// nrw:    lon   5.85..9.47   like x (0=London, 90=Bhutan)
+//         lat  50.32..52.52  like y (0=Equartor, 90=Nothpole)
 #define LON_BOUND 5.85
 #define LON_BOUND_DIF 3.62
 #define LAT_BOUND 50.32
@@ -279,6 +279,20 @@ int main(int argc, char** argv) {
         // all items, no stop
         return false;
     });
+    
+    // print verticies ------------------------------------------------
+    
+    SwappyItemsVERTICES::Data dummy;
+    verticies->each(dummy, [](Key id, SwappyItemsVERTICES::Data & v) {
+        printf("%ld (%f,%f) part of way %ld\n", id, v.first._lon, v.first._lat, v.first._way);
+        for (auto r : v.second) {
+            printf("%ld ", r);
+        }
+        printf("\n");
+        // all items, no stop
+        return false;
+    });
+    
 
     delete verticies;
     delete nodes;

@@ -13,7 +13,7 @@
 #include <set>            // a set of candidate files
 #include <unordered_set>  // a set of keys
 #include <unordered_map>  // for a key->data
-#include <deque>          // for key order (prio)
+#include <deque>          // for key order (mru)
 #include <map>            // for store keys in a sorted way
 
 // we need it for PRId32 in snprintf
@@ -89,8 +89,8 @@ private:
     TKEY _ramMinimum;
     TKEY _ramMaximum;
         
-    // a priority queue for the keys
-    Order _prios;
+    // a queue for the keys
+    Order _mru;
 
     // for each filenr we store min/max value and a bloom mask to filter
     Buckets _buckets;
@@ -113,13 +113,13 @@ public:
         if (load(key)) {
             // just update
             // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
+            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
                 [key] (const Qentry & qe) {
                     return (qe.key == key) && (qe.deleted == false);
                 }
             );
             it->deleted = true;
-            _prios.push_back(Qentry{key,false});
+            _mru.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, _ramList[key].second);
             ++statistic.updates;
             return false;
@@ -127,7 +127,7 @@ public:
             // key is new
             maySwap();
             ++statistic.size;
-            _prios.push_back(Qentry{key,false});
+            _mru.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, std::vector<TKEY>(0));
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
@@ -145,13 +145,13 @@ public:
         if (load(key)) {
             // just update
             // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
+            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
                 [key] (const Qentry & qe) {
                     return (qe.key == key) && (qe.deleted == false);
                 }
             );
             it->deleted = true;
-            _prios.push_back(Qentry{key,false});
+            _mru.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, refs);
             ++statistic.updates;
             return false;
@@ -159,7 +159,7 @@ public:
             // key is new
             maySwap();
             ++statistic.size;
-            _prios.push_back(Qentry{key,false});
+            _mru.push_back(Qentry{key,false});
             _ramList[key] = std::make_pair(value, refs);
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
@@ -177,14 +177,14 @@ public:
     Data * get (const TKEY & key) {
         if (load(key)) {
             // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
+            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
                 [key] (const Qentry & qe) {
                     return (qe.key == key) && (qe.deleted == false);
                 }
             );
             // every get fills the queue with "deleted = true" on this key, thus older entries are never equal false
             it->deleted = true;
-            _prios.push_back(Qentry{key,false});
+            _mru.push_back(Qentry{key,false});
             return &(_ramList[key]);
         } else {
             return nullptr;
@@ -200,7 +200,7 @@ public:
     bool del (const TKEY & key) {
         if (load(key)) {
             // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
+            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
                 [key] (const Qentry & qe) {
                     return (qe.key == key) && (qe.deleted == false);
                 }
@@ -276,7 +276,7 @@ public:
      */
     struct statistic_s getStatistic (void) {
         statistic.fileKB = (_buckets.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
-        statistic.queue = _prios.size();
+        statistic.queue = _mru.size();
         statistic.maxKey = this->max();
         statistic.minKey = this->min();
         return statistic;
@@ -387,14 +387,14 @@ private:
         file.read((char *) &_ramMaximum, sizeof(TKEY));
         file.close();
 
-        snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
+        snprintf(filename, 512, "%s/hibernate.mru", _swappypath);
         file.open(filename, std::ios::in | std::ios::binary);
         file.read((char *) &length, sizeof(Id));
         Qentry qe;
         for (Id c = 0; c < length; ++c) {
             file.read((char *) &(qe.key), sizeof(TKEY));
             file.read((char *) &(qe.deleted), sizeof(Qentry::deleted));
-            _prios.push_back(qe);
+            _mru.push_back(qe);
         }
         file.close();
         
@@ -453,11 +453,11 @@ private:
         file.write((char *) &_ramMaximum, sizeof(TKEY));
         file.close();
 
-        snprintf(filename, 512, "%s/hibernate.prios", _swappypath);
+        snprintf(filename, 512, "%s/hibernate.mru", _swappypath);
         file.open(filename, std::ios::out | std::ios::binary);
-        length = _prios.size();
+        length = _mru.size();
         file.write((char *) &length, sizeof(Id));
-        for (auto it = _prios.begin(); it != _prios.end(); ++it) {
+        for (auto it = _mru.begin(); it != _mru.end(); ++it) {
             file.write((char *) &(it->key), sizeof(TKEY));
             file.write((char *) &(it->deleted), sizeof(Qentry::deleted));
         }
@@ -632,7 +632,7 @@ private:
             // ... and load the stuff
             for (auto key_val : temp) {
                 _ramList[key_val.first] = key_val.second;
-                _prios.push_back(Qentry{key_val.first,false});
+                _mru.push_back(Qentry{key_val.first,false});
             }
             // update ram min/max
             if (omax > _ramMaximum) _ramMaximum = omax;
@@ -655,13 +655,13 @@ private:
         // no need to swap files?
         if ( (_ramList.size() + needed) < (RAMSIZE * EACHFILE * OLDIES) ) {
             // cleanup queue instead?
-            if ( _prios.size() > ( (RAMSIZE+2) * EACHFILE*OLDIES) ) {
-                Order newPrio;
+            if ( _mru.size() > ( (RAMSIZE+2) * EACHFILE*OLDIES) ) {
+                Order newMRU;
                 // remove some deleted items
-                for (auto it = _prios.begin(); it != _prios.end(); ++it) {
-                    if (it->deleted == false) newPrio.push_back(*it);
+                for (auto it = _mru.begin(); it != _mru.end(); ++it) {
+                    if (it->deleted == false) newMRU.push_back(*it);
                 }
-                _prios = newPrio;
+                _mru = newMRU;
             }
             return;
         }
@@ -676,8 +676,8 @@ private:
 
         // remove old items from front and move them into temp
         for (pos = 0; pos < (EACHFILE*OLDIES); ) {
-            Qentry qe = _prios.front();
-            _prios.pop_front();
+            Qentry qe = _mru.front();
+            _mru.pop_front();
             if (qe.deleted == false) {
                 temp[qe.key] = _ramList[qe.key];
                 _ramList.erase(qe.key);
@@ -835,7 +835,7 @@ public:
             // ... and load temp into ram ----------
             for (auto key_val : temp) {
                 _ramList[key_val.first] = key_val.second;
-                _prios.push_back(Qentry{key_val.first,false});
+                _mru.push_back(Qentry{key_val.first,false});
             }
             // 3.2) update ram min/max
             if (omax > _ramMaximum) _ramMaximum = omax;
@@ -856,7 +856,7 @@ public:
     /**
      * get a item (for use in a "each-loop" in the same SwappyItems instance)
      * 
-     * this method never touches the priority queue and never swaps or load data into RAM.
+     * this method never touches the MRU queue and never swaps or load data into RAM.
      * It does not create new items.
      *
      * @param back the value as copy

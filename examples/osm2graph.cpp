@@ -109,12 +109,12 @@ struct Routing {
         if (checklon > LON_BOUND_DIF || checklon < 0.0) return;
         if (checklat > LAT_BOUND_DIF || checklat < 0.0) return;
         
-        std::pair<NodeData, std::vector<Key> > * nodeptr = nodes->get(osmid);
+        SwappyItemsNODES::Data * nodeptr = nodes->get(osmid);
         // not a node of my ways (I read node ids from ways first
         if (nodeptr == nullptr) return;
         /// @todo instead of lat,lon store the complete distance SOMEWHERE
         // we only use nodes of connected ways? (ignore sackgasse and links in between -> fail on distance!)
-        //if (nodeptr->first._used == 0) return;
+        if (nodeptr->first._used == 0) return;
         nodeptr->first._lon = lon;
         nodeptr->first._lat = lat;
         nodes->set(osmid, nodeptr->first);
@@ -148,12 +148,12 @@ struct Routing {
                 if (refs[0] == refs[pathlength-1]) circle = true;
             }
             
-            std::pair<NodeData, std::vector<Key> > * nodeptr;
+            SwappyItemsNODES::Data * nodeptr;
             if (circle) {
                 for (unsigned i=1; i < pathlength; ++i) {
                     nodeptr = nodes->get(refs[i]);
                     if (nodeptr == nullptr) {
-                        std::pair<NodeData, std::vector<Key> > node;
+                        SwappyItemsNODES::Data node;
                         node.first._used = 0;
                         node.first._lon = 0.0;
                         node.first._lat = 0.0;
@@ -165,12 +165,12 @@ struct Routing {
                     }
                     path.push_back(refs[i]);
                 }
-                path.push_back(refs[1]);
+                path.push_back(refs[1]); // add the real firts node additionally to the end
             } else {
                 for (unsigned i=0; i < pathlength; ++i) {
                     nodeptr = nodes->get(refs[i]);
                     if (nodeptr == nullptr) {
-                        std::pair<NodeData, std::vector<Key> > node;
+                        SwappyItemsNODES::Data node;
                         node.first._used = 0;
                         node.first._lon = 0.0;
                         node.first._lat = 0.0;
@@ -203,9 +203,82 @@ int main(int argc, char** argv) {
 
     read_osm_pbf(argv[1], routing, false); // nodes und bedingungen
     
-    // create verticies
+    // create verticies ------------------------------------------------
     
-    
+    SwappyItemsWAYS::Data w;
+    ways->each(w, [](Key wayosmid, SwappyItemsWAYS::Data & way) {
+        bool firstItem = true;
+        Key last;
+
+        for (unsigned i=0; i < way.second.size(); ++i) {
+            Key ref = way.second[way.second.size()-1 - i];
+            SwappyItemsNODES::Data * nptr = nodes->get(ref);
+            if (nptr == nullptr) continue;
+            if (nptr->first._used == 0) continue;
+            SwappyItemsVERTICES::Data * vptr = verticies->get(ref);
+            
+            if (firstItem) {
+                firstItem = false;
+                if (vptr == nullptr) {
+                    SwappyItemsVERTICES::Data vertex;
+                    vertex.first._way = wayosmid;
+                    vertex.first._lon = nptr->first._lon;
+                    vertex.first._lat = nptr->first._lat;
+                    verticies->set(ref, vertex.first, vertex.second);
+                }
+            } else {
+                if (vptr == nullptr) {
+                    SwappyItemsVERTICES::Data vertex;
+                    vertex.first._way = wayosmid;
+                    vertex.first._lon = nptr->first._lon;
+                    vertex.first._lat = nptr->first._lat;
+                    vertex.second.push_back(last);
+                    verticies->set(ref, vertex.first, vertex.second);
+                } else {
+                    vptr->second.push_back(last);
+                    verticies->set(ref, vptr->first, vptr->second);
+                }
+            }
+            last = ref;
+        }
+        
+        firstItem = true;
+        if (way.first._oneway == false) {
+            for (unsigned i=0; i < way.second.size(); ++i) {
+                Key ref = way.second[i];
+                SwappyItemsNODES::Data * nptr = nodes->get(ref);
+                if (nptr == nullptr) continue;
+                if (nptr->first._used == 0) continue;
+                SwappyItemsVERTICES::Data * vptr = verticies->get(ref);
+                
+                if (firstItem) {
+                    firstItem = false;
+                    if (vptr == nullptr) {
+                        SwappyItemsVERTICES::Data vertex;
+                        vertex.first._way = wayosmid;
+                        vertex.first._lon = nptr->first._lon;
+                        vertex.first._lat = nptr->first._lat;
+                        verticies->set(ref, vertex.first, vertex.second);
+                    }
+                } else {
+                    if (vptr == nullptr) {
+                        SwappyItemsVERTICES::Data vertex;
+                        vertex.first._way = wayosmid;
+                        vertex.first._lon = nptr->first._lon;
+                        vertex.first._lat = nptr->first._lat;
+                        vertex.second.push_back(last);
+                        verticies->set(ref, vertex.first, vertex.second);
+                    } else {
+                        vptr->second.push_back(last);
+                        verticies->set(ref, vptr->first, vptr->second);
+                    }
+                }
+                last = ref;
+            }
+        }
+        // all items, no stop
+        return false;
+    });
 
     delete verticies;
     delete nodes;

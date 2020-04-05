@@ -1,6 +1,6 @@
 CC = g++
 CPPFLAGS = -Wall -mtune=native -std=c++17 -I./src/
-LDFLAGS = -lpthread -ltbb -lstdc++fs
+LDFLAGS = -lpthread -ltbb -lstdc++fs -lm
 LDOSMFLAGS = -lz -losmpbf -lprotobuf
 
 all: osm such hib gra

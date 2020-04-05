@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <vector>
 #include <cstring>
+#include <cmath> // acos
 #include <algorithm> // reverse
 #include "SwappyItems.hpp"
 
@@ -15,7 +16,7 @@ using namespace CanalTP;
 #define BBITS                         5  // 5
 #define BMASK   ((BBITS+4)*  FILE_ITEMS) // +4
 
-
+#define TORADI(angleDegrees) ((angleDegrees) * M_PI / 180.0)
 
 
 // europa: lon  -10..25
@@ -60,27 +61,28 @@ struct Vertex {
 };
 // + list of refs to other Vertex
 
+// + id = osmid of a osm node
+struct Distance {
+    uint8_t _dummy;
+};
+// + list of refs to store distances
+
+typedef SwappyItems<Key, WayData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> Ways_t;
+typedef SwappyItems<Key, NodeData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> Nodes_t;
+Ways_t * ways;
+Nodes_t * nodes;
 
 
+typedef SwappyItems<Key, Vertex, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> Vertices_t;
+Vertices_t * verticies;
+typedef SwappyItems<Key, Distance, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> Distance_t;
+Distance_t * distances;
 
-
-
-
-
-/// @todo wie soll ich am besten die Distanz von/nach speichern? Da lat/lon nichts bringt, wenn ich Knoten zwischendrin verschwinden lasse.
-// -> als refs in einem eigenem SwappyItems!!!
-
-
-
-
-
-
-typedef SwappyItems<Key, WayData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsWAYS;
-typedef SwappyItems<Key, NodeData, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsNODES;
-typedef SwappyItems<Key, Vertex, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> SwappyItemsVERTICES;
-SwappyItemsWAYS * ways;
-SwappyItemsNODES * nodes;
-SwappyItemsVERTICES * verticies;
+uint64_t calcDist(double lon1, double lat1, double lon2, double lat2) {
+    double dist = 6378388.0 * std::acos(std::sin(TORADI(lat1)) * std::sin(TORADI(lat2)) + std::cos(TORADI(lat1)) * std::cos(TORADI(lat2)) * std::cos(TORADI(lon2 - lon1)));
+    if (dist < 0) dist *=-1;
+    return dist;
+}
 
 uint8_t relevance(const std::string & wt) {
     if (wt.compare("motorway") == 0) return 1;
@@ -109,7 +111,7 @@ struct Routing {
         if (checklon > LON_BOUND_DIF || checklon < 0.0) return;
         if (checklat > LAT_BOUND_DIF || checklat < 0.0) return;
         
-        SwappyItemsNODES::Data * nodeptr = nodes->get(osmid);
+        Nodes_t::Data * nodeptr = nodes->get(osmid);
         // not a node of my ways (I read node ids from ways first
         if (nodeptr == nullptr) return;
         /// @todo instead of lat,lon store the complete distance SOMEWHERE
@@ -148,12 +150,12 @@ struct Routing {
                 if (refs[0] == refs[pathlength-1]) circle = true;
             }
             
-            SwappyItemsNODES::Data * nodeptr;
+            Nodes_t::Data * nodeptr;
             if (circle) {
                 for (unsigned i=1; i < pathlength; ++i) {
                     nodeptr = nodes->get(refs[i]);
                     if (nodeptr == nullptr) {
-                        SwappyItemsNODES::Data node;
+                        Nodes_t::Data node;
                         node.first._used = 0;
                         node.first._lon = 0.0;
                         node.first._lat = 0.0;
@@ -170,7 +172,7 @@ struct Routing {
                 for (unsigned i=0; i < pathlength; ++i) {
                     nodeptr = nodes->get(refs[i]);
                     if (nodeptr == nullptr) {
-                        SwappyItemsNODES::Data node;
+                        Nodes_t::Data node;
                         node.first._used = 0;
                         node.first._lon = 0.0;
                         node.first._lat = 0.0;
@@ -189,89 +191,133 @@ struct Routing {
         }
     }
 
-    // We don't care about relations
+    // today We don't care about relations
     void relation_callback(uint64_t /*osmid*/, const Tags &/*tags*/, const References & /*refs*/){}
 };
 
 int main(int argc, char** argv) {
     Routing routing;
-    ways = new SwappyItemsWAYS(1);
-    nodes = new SwappyItemsNODES(2);
-    verticies = new SwappyItemsVERTICES(3);
+    ways = new Ways_t(1);
+    nodes = new Nodes_t(2);
+    
+    verticies = new Vertices_t(3);
+    distances = new Distance_t(4);
     
     read_osm_pbf(argv[1], routing, true); // ways
 
     read_osm_pbf(argv[1], routing, false); // nodes und bedingungen
     
-    // create verticies ------------------------------------------------
+    // create verticies -------------------------------------------------------------------------------------
     
-    SwappyItemsWAYS::Data w;
-    ways->each(w, [](Key wayosmid, SwappyItemsWAYS::Data & way) {
+    Ways_t::Data w;
+    ways->each(w, [](Key wayosmid, Ways_t::Data & way) {
         bool firstItem = true;
         Key last;
+        double lastLon = 0.0;
+        double lastLat = 0.0;
 
+        // create verticies from refs: a->b->c->d->e
+        // d link to e(=last)
+        // c link to d(=last)
+        // ...
         for (unsigned i=0; i < way.second.size(); ++i) {
-            Key ref = way.second[way.second.size()-1 - i];
-            SwappyItemsNODES::Data * nptr = nodes->get(ref);
+            Key ref = way.second[way.second.size()-1 - i]; // add actually ref to the last ref (from backward)
+            Nodes_t::Data * nptr = nodes->get(ref);
+            
             if (nptr == nullptr) continue;
             if (nptr->first._used == 0) continue;
-            SwappyItemsVERTICES::Data * vptr = verticies->get(ref);
+            if (nptr->first._lon == 0 && nptr->first._lat == 0) continue;
+            
+            Vertices_t::Data * vptr = verticies->get(ref);
+            Distance_t::Data * dptr = distances->get(ref);
             
             if (firstItem) {
                 firstItem = false;
                 if (vptr == nullptr) {
-                    SwappyItemsVERTICES::Data vertex;
+                    // create e
+                    Vertices_t::Data vertex;
+                    Distance_t::Data distance;
                     vertex.first._way = wayosmid;
                     vertex.first._lon = nptr->first._lon;
                     vertex.first._lat = nptr->first._lat;
+                    lastLon = vertex.first._lon;
+                    lastLat = vertex.first._lat;
                     verticies->set(ref, vertex.first, vertex.second);
+                    distances->set(ref, distance.first, distance.second); // empty dummy
                 }
             } else {
                 if (vptr == nullptr) {
-                    SwappyItemsVERTICES::Data vertex;
+                    Vertices_t::Data vertex;
+                    Distance_t::Data distance;
                     vertex.first._way = wayosmid;
                     vertex.first._lon = nptr->first._lon;
                     vertex.first._lat = nptr->first._lat;
                     vertex.second.push_back(last);
+                    uint64_t dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
+                    distance.second.push_back(dist);
+                    lastLon = vertex.first._lon;
+                    lastLat = vertex.first._lat;
                     verticies->set(ref, vertex.first, vertex.second);
+                    distances->set(ref, distance.first, distance.second);
                 } else {
                     vptr->second.push_back(last);
+                    uint64_t dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
+                    dptr->second.push_back(dist);
+                    lastLon = vptr->first._lon;
+                    lastLat = vptr->first._lat;
                     verticies->set(ref, vptr->first, vptr->second);
+                    distances->set(ref, dptr->first, dptr->second);
                 }
             }
             last = ref;
         }
         
+        // Not a oneway. create verticies from refs in the direction: a<-b<-c<-d<-e
+        // b link to a(=last)
+        // c link to b(=last)
+        // ...
         firstItem = true;
         if (way.first._oneway == false) {
             for (unsigned i=0; i < way.second.size(); ++i) {
                 Key ref = way.second[i];
-                SwappyItemsNODES::Data * nptr = nodes->get(ref);
+                Nodes_t::Data * nptr = nodes->get(ref);
+                
                 if (nptr == nullptr) continue;
                 if (nptr->first._used == 0) continue;
-                SwappyItemsVERTICES::Data * vptr = verticies->get(ref);
+                if (nptr->first._lon == 0 && nptr->first._lat == 0) continue;
                 
-                if (firstItem) {
-                    firstItem = false;
-                    if (vptr == nullptr) {
-                        SwappyItemsVERTICES::Data vertex;
-                        vertex.first._way = wayosmid;
-                        vertex.first._lon = nptr->first._lon;
-                        vertex.first._lat = nptr->first._lat;
-                        verticies->set(ref, vertex.first, vertex.second);
-                    }
-                } else {
-                    if (vptr == nullptr) {
-                        SwappyItemsVERTICES::Data vertex;
-                        vertex.first._way = wayosmid;
-                        vertex.first._lon = nptr->first._lon;
-                        vertex.first._lat = nptr->first._lat;
-                        vertex.second.push_back(last);
-                        verticies->set(ref, vertex.first, vertex.second);
+                Vertices_t::Data * vptr = verticies->get(ref);
+                Distance_t::Data * dptr = distances->get(ref);
+
+                if (vptr == nullptr) {
+                    Vertices_t::Data vertex;
+                    Distance_t::Data distance;
+                    vertex.first._way = wayosmid;
+                    vertex.first._lon = nptr->first._lon;
+                    vertex.first._lat = nptr->first._lat;
+                    if (firstItem) {
+                        firstItem = false;
                     } else {
-                        vptr->second.push_back(last);
-                        verticies->set(ref, vptr->first, vptr->second);
+                        uint64_t dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
+                        vertex.second.push_back(last);
+                        distance.second.push_back(dist);
                     }
+                    verticies->set(ref, vertex.first, vertex.second);
+                    distances->set(ref, distance.first, distance.second);
+                    lastLon = vertex.first._lon;
+                    lastLat = vertex.first._lat;
+                } else {
+                    if (firstItem) {
+                        firstItem = false;
+                    } else {
+                        uint64_t dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
+                        vptr->second.push_back(last);
+                        dptr->second.push_back(dist);
+                    }
+                    verticies->set(ref, vptr->first, vptr->second);
+                    distances->set(ref, dptr->first, dptr->second);
+                    lastLon = vptr->first._lon;
+                    lastLat = vptr->first._lat;
                 }
                 last = ref;
             }
@@ -282,11 +328,16 @@ int main(int argc, char** argv) {
     
     // print verticies ------------------------------------------------
     
-    SwappyItemsVERTICES::Data dummy;
-    verticies->each(dummy, [](Key id, SwappyItemsVERTICES::Data & v) {
+    Vertices_t::Data dummy;
+    verticies->each(dummy, [](Key id, Vertices_t::Data & v) {
         printf("%ld (%f,%f) part of way %ld\n", id, v.first._lon, v.first._lat, v.first._way);
-        for (auto r : v.second) {
-            printf("%ld ", r);
+        for (Key r : v.second) {
+            printf(" %" PRId64, r);
+        }
+        printf("\n");
+        Distance_t::Data * dptr = distances->get(id);
+        for (uint64_t r : dptr->second) {
+            printf(" %" PRId64, r);
         }
         printf("\n");
         // all items, no stop

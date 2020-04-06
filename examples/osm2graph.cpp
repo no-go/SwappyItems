@@ -196,6 +196,11 @@ struct Routing {
     void relation_callback(uint64_t /*osmid*/, const Tags &/*tags*/, const References & /*refs*/){}
 };
 
+/** @example osm2graph.cpp
+ * This is a example, how to store osm street data into a graph structure.
+ * in the future I will do a Dijkstra with this data. */
+
+
 int main(int argc, char** argv) {
     Routing routing;
     ways = new Ways_t(1);

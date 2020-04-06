@@ -286,7 +286,7 @@ public:
      * It trys to wakeup from hibernate files. The id parameter identifies the 
      * SwappyItems Store (important for the file path!).
      * 
-     * @param id parameter identifies the instance
+     * @param swappyId parameter identifies the instance
      */
     SwappyItems (int swappyId) {
         
@@ -573,7 +573,7 @@ private:
      * if key exists, then load the file into _ramlist (did not delete the file, but
      * file may be overwritten), may save old data in a new file (swap).
      *
-     * @param filenr the index of the file and bitmask id
+     * @param fid the index of the file (and its bitmask id)
      * @param key the key we are searching for
      * @ return true, if key is loaded into ram
      */
@@ -861,6 +861,7 @@ public:
      *
      * @param back the value as copy
      * @param key the unique key
+     * @param foo the function you wish to apply to the data
      * 
      * @return true, if exists
      */

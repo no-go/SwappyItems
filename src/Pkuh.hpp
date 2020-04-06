@@ -28,6 +28,19 @@ namespace filesys = std::experimental::filesystem;
 #include <thread> // you need -lpthread
 
 
+
+
+/**
+ * this code is a simple version of SwappyItems. It is the baremetal version
+ * and the first step to a external+internal priorety queue.
+ * 
+ * this code is never used or tested!
+ */
+ 
+ 
+ 
+ 
+ 
 template <
     class TKEY, class TVALUE,
     int EACHFILE = 16384, int OLDIES = 5, int RAMSIZE = 3, int BLOOMBITS = 4, int MASKLENGTH = (2* 4*16384)

@@ -17,7 +17,7 @@ such:
 hib:
 	g++ examples/SearchOnHibernateData.cpp -O2 $(CPPFLAGS) $(LDFLAGS) -o SearchOnHibernateData.exe
 
-docs: Doxyfile README.md
+docs: Doxyfile README.md examples/* src/*
 	rm -rf docs
 	doxygen Doxyfile
 

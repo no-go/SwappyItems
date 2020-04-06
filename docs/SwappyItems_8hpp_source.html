@@ -61,7 +61,7 @@ $(function() {
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#include &lt;set&gt;</span>            <span class="comment">// a set of candidate files</span></div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &lt;unordered_set&gt;</span>  <span class="comment">// a set of keys</span></div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="preprocessor">#include &lt;unordered_map&gt;</span>  <span class="comment">// for a key-&gt;data</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &lt;deque&gt;</span>          <span class="comment">// for key order (prio)</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#include &lt;deque&gt;</span>          <span class="comment">// for key order (mru)</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#include &lt;map&gt;</span>            <span class="comment">// for store keys in a sorted way</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment">// we need it for PRId32 in snprintf</span></div>
@@ -134,8 +134,8 @@ $(function() {
 <div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a3494cb59b2b3d922f0bd8693ca1cea3c">   89</a></span>&#160;    TKEY <a class="code" href="classSwappyItems.html#a3494cb59b2b3d922f0bd8693ca1cea3c">_ramMinimum</a>;</div>
 <div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a3f920b0a62a315e3b7a5da94ecf07fec">   90</a></span>&#160;    TKEY <a class="code" href="classSwappyItems.html#a3f920b0a62a315e3b7a5da94ecf07fec">_ramMaximum</a>;</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="comment">// a priority queue for the keys</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a31ba1db01f5f349ad03410a6478904f7">   93</a></span>&#160;    <a class="code" href="classSwappyItems.html#a7a358a935bc81011269d51fe3df1b5c7">Order</a> <a class="code" href="classSwappyItems.html#a31ba1db01f5f349ad03410a6478904f7">_prios</a>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="comment">// a queue for the keys</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a4be798276a4f109d2d06e5bb79ab79e2">   93</a></span>&#160;    <a class="code" href="classSwappyItems.html#a7a358a935bc81011269d51fe3df1b5c7">Order</a> <a class="code" href="classSwappyItems.html#a4be798276a4f109d2d06e5bb79ab79e2">_mru</a>;</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="comment">// for each filenr we store min/max value and a bloom mask to filter</span></div>
 <div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classSwappyItems.html#aa310fce675750d4f531af3420cbd23b0">   96</a></span>&#160;    <a class="code" href="classSwappyItems.html#a6c06ae050172d22db33393133be396bb">Buckets</a> <a class="code" href="classSwappyItems.html#aa310fce675750d4f531af3420cbd23b0">_buckets</a>;</div>
@@ -153,13 +153,13 @@ $(function() {
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <span class="keywordflow">if</span> (load(key)) {</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <span class="comment">// just update</span></div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            <span class="comment">// reverse search should be faster</span></div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), </div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                [key] (<span class="keyword">const</span> <a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a> &amp; qe) {</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                    return (qe.key == key) &amp;&amp; (qe.deleted == false);</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                }</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            );</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            it-&gt;deleted = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            _prios.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            _mru.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            _ramList[key] = std::make_pair(value, _ramList[key].second);</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            ++statistic.updates;</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
@@ -167,7 +167,7 @@ $(function() {
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="comment">// key is new</span></div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            maySwap();</div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            ++statistic.size;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            _prios.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            _mru.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            _ramList[key] = std::make_pair(value, std::vector&lt;TKEY&gt;(0));</div>
 <div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;            <span class="comment">// update min/max of RAM</span></div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            <span class="keywordflow">if</span> (key &gt; _ramMaximum) _ramMaximum = key;</div>
@@ -180,13 +180,13 @@ $(function() {
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keywordflow">if</span> (load(key)) {</div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;            <span class="comment">// just update</span></div>
 <div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            <span class="comment">// reverse search should be faster</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), </div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), </div>
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                [key] (<span class="keyword">const</span> <a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a> &amp; qe) {</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                    return (qe.key == key) &amp;&amp; (qe.deleted == false);</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                }</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            );</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            it-&gt;deleted = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            _prios.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            _mru.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            _ramList[key] = std::make_pair(value, refs);</div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            ++statistic.updates;</div>
 <div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
@@ -194,7 +194,7 @@ $(function() {
 <div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            <span class="comment">// key is new</span></div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            maySwap();</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            ++statistic.size;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            _prios.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            _mru.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
 <div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            _ramList[key] = std::make_pair(value, refs);</div>
 <div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            <span class="comment">// update min/max of RAM</span></div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            <span class="keywordflow">if</span> (key &gt; _ramMaximum) _ramMaximum = key;</div>
@@ -206,14 +206,14 @@ $(function() {
 <div class="line"><a name="l00177"></a><span class="lineno"><a class="line" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">  177</a></span>&#160;    <a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> * <a class="code" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">get</a> (<span class="keyword">const</span> TKEY &amp; key) {</div>
 <div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;        <span class="keywordflow">if</span> (load(key)) {</div>
 <div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            <span class="comment">// reverse search should be faster</span></div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), </div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), </div>
 <div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                [key] (<span class="keyword">const</span> <a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a> &amp; qe) {</div>
 <div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                    return (qe.key == key) &amp;&amp; (qe.deleted == false);</div>
 <div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                }</div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            );</div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            <span class="comment">// every get fills the queue with &quot;deleted = true&quot; on this key, thus older entries are never equal false</span></div>
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;            it-&gt;deleted = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            _prios.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            _mru.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key,<span class="keyword">false</span>});</div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            <span class="keywordflow">return</span> &amp;(_ramList[key]);</div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;        } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
@@ -223,7 +223,7 @@ $(function() {
 <div class="line"><a name="l00200"></a><span class="lineno"><a class="line" href="classSwappyItems.html#ae4668e9e4f738075d6a1c299eecb6f07">  200</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classSwappyItems.html#ae4668e9e4f738075d6a1c299eecb6f07">del</a> (<span class="keyword">const</span> TKEY &amp; key) {</div>
 <div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="keywordflow">if</span> (load(key)) {</div>
 <div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;            <span class="comment">// reverse search should be faster</span></div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), </div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            <span class="keyword">auto</span> it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), </div>
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;                [key] (<span class="keyword">const</span> <a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a> &amp; qe) {</div>
 <div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;                    return (qe.key == key) &amp;&amp; (qe.deleted == false);</div>
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;                }</div>
@@ -286,7 +286,7 @@ $(function() {
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    </div>
 <div class="line"><a name="l00277"></a><span class="lineno"><a class="line" href="classSwappyItems.html#ae7d87b8597b85dc8a84a6127952f5cf6">  277</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structSwappyItems_1_1statistic__s.html">statistic_s</a> getStatistic (void) {</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;        statistic.<a class="code" href="structSwappyItems_1_1statistic__s.html#abc8646f104b6c04326ea56e07898b029">fileKB</a> = (_buckets.size() * EACHFILE * (<span class="keyword">sizeof</span>(TKEY) + <span class="keyword">sizeof</span>(TVALUE))/1000);</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        statistic.queue = _prios.size();</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;        statistic.queue = _mru.size();</div>
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;        statistic.maxKey = this-&gt;max();</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        statistic.minKey = this-&gt;min();</div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;        <span class="keywordflow">return</span> statistic;</div>
@@ -383,14 +383,14 @@ $(function() {
 <div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;        file.read((<span class="keywordtype">char</span> *) &amp;_ramMaximum, <span class="keyword">sizeof</span>(TKEY));</div>
 <div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;        file.close();</div>
 <div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160; </div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        snprintf(filename, 512, <span class="stringliteral">&quot;%s/hibernate.prios&quot;</span>, _swappypath);</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        snprintf(filename, 512, <span class="stringliteral">&quot;%s/hibernate.mru&quot;</span>, _swappypath);</div>
 <div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        file.open(filename, std::ios::in | std::ios::binary);</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        file.read((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
 <div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a> qe;</div>
 <div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> c = 0; c &lt; length; ++c) {</div>
 <div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            file.read((<span class="keywordtype">char</span> *) &amp;(qe.<a class="code" href="structSwappyItems_1_1Qentry.html#ae426e484ed955555a868c49d5939771b">key</a>), <span class="keyword">sizeof</span>(TKEY));</div>
 <div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            file.read((<span class="keywordtype">char</span> *) &amp;(qe.<a class="code" href="structSwappyItems_1_1Qentry.html#a84457cba632eac7faf51745de531e6ba">deleted</a>), <span class="keyword">sizeof</span>(Qentry::deleted));</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            _prios.push_back(qe);</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;            _mru.push_back(qe);</div>
 <div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;        }</div>
 <div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;        file.close();</div>
 <div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;        </div>
@@ -444,11 +444,11 @@ $(function() {
 <div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;        file.write((<span class="keywordtype">char</span> *) &amp;_ramMaximum, <span class="keyword">sizeof</span>(TKEY));</div>
 <div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;        file.close();</div>
 <div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160; </div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        snprintf(filename, 512, <span class="stringliteral">&quot;%s/hibernate.prios&quot;</span>, _swappypath);</div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;        snprintf(filename, 512, <span class="stringliteral">&quot;%s/hibernate.mru&quot;</span>, _swappypath);</div>
 <div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;        file.open(filename, std::ios::out | std::ios::binary);</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;        length = _prios.size();</div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;        length = _mru.size();</div>
 <div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;        file.write((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = _prios.begin(); it != _prios.end(); ++it) {</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = _mru.begin(); it != _mru.end(); ++it) {</div>
 <div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;            file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;key), <span class="keyword">sizeof</span>(TKEY));</div>
 <div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;            file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;deleted), <span class="keyword">sizeof</span>(Qentry::deleted));</div>
 <div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;        }</div>
@@ -603,7 +603,7 @@ $(function() {
 <div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;            <span class="comment">// ... and load the stuff</span></div>
 <div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> key_val : temp) {</div>
 <div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;                _ramList[key_val.first] = key_val.second;</div>
-<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;                _prios.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key_val.first,<span class="keyword">false</span>});</div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;                _mru.push_back(<a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a>{key_val.first,<span class="keyword">false</span>});</div>
 <div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;            }</div>
 <div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;            <span class="comment">// update ram min/max</span></div>
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;            <span class="keywordflow">if</span> (omax &gt; _ramMaximum) _ramMaximum = omax;</div>
@@ -618,13 +618,13 @@ $(function() {
 <div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        <span class="comment">// no need to swap files?</span></div>
 <div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;        <span class="keywordflow">if</span> ( (_ramList.size() + needed) &lt; (RAMSIZE * EACHFILE * OLDIES) ) {</div>
 <div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            <span class="comment">// cleanup queue instead?</span></div>
-<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;            <span class="keywordflow">if</span> ( _prios.size() &gt; ( (RAMSIZE+2) * EACHFILE*OLDIES) ) {</div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;                <a class="code" href="classSwappyItems.html#a7a358a935bc81011269d51fe3df1b5c7">Order</a> newPrio;</div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;            <span class="keywordflow">if</span> ( _mru.size() &gt; ( (RAMSIZE+2) * EACHFILE*OLDIES) ) {</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;                <a class="code" href="classSwappyItems.html#a7a358a935bc81011269d51fe3df1b5c7">Order</a> newMRU;</div>
 <div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;                <span class="comment">// remove some deleted items</span></div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = _prios.begin(); it != _prios.end(); ++it) {</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;                    <span class="keywordflow">if</span> (it-&gt;deleted == <span class="keyword">false</span>) newPrio.push_back(*it);</div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = _mru.begin(); it != _mru.end(); ++it) {</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;                    <span class="keywordflow">if</span> (it-&gt;deleted == <span class="keyword">false</span>) newMRU.push_back(*it);</div>
 <div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;                }</div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;                _prios = newPrio;</div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;                _mru = newMRU;</div>
 <div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;            }</div>
 <div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;            <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;        }</div>
@@ -639,8 +639,8 @@ $(function() {
 <div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160; </div>
 <div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;        <span class="comment">// remove old items from front and move them into temp</span></div>
 <div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;        <span class="keywordflow">for</span> (pos = 0; pos &lt; (EACHFILE*OLDIES); ) {</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;            <a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a> qe = _prios.front();</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;            _prios.pop_front();</div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;            <a class="code" href="structSwappyItems_1_1Qentry.html">Qentry</a> qe = _mru.front();</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;            _mru.pop_front();</div>
 <div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;            <span class="keywordflow">if</span> (qe.<a class="code" href="structSwappyItems_1_1Qentry.html#a84457cba632eac7faf51745de531e6ba">deleted</a> == <span class="keyword">false</span>) {</div>
 <div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                temp[qe.<a class="code" href="structSwappyItems_1_1Qentry.html#ae426e484ed955555a868c49d5939771b">key</a>] = _ramList[qe.<a class="code" href="structSwappyItems_1_1Qentry.html#ae426e484ed955555a868c49d5939771b">key</a>];</div>
 <div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                _ramList.erase(qe.<a class="code" href="structSwappyItems_1_1Qentry.html#ae426e484ed955555a868c49d5939771b">key</a>);</div>
@@ -786,7 +786,7 @@ $(function() {
 <div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;            <span class="comment">// ... and load temp into ram ----------</span></div>
 <div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> key_val : temp) {</div>
 <div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;                _ramList[key_val.first] = key_val.second;</div>
-<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;                _prios.push_back(Qentry{key_val.first,<span class="keyword">false</span>});</div>
+<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;                _mru.push_back(Qentry{key_val.first,<span class="keyword">false</span>});</div>
 <div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;            }</div>
 <div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;            <span class="comment">// 3.2) update ram min/max</span></div>
 <div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;            <span class="keywordflow">if</span> (omax &gt; _ramMaximum) _ramMaximum = omax;</div>
@@ -804,163 +804,164 @@ $(function() {
 <div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;    }</div>
 <div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;    </div>
-<div class="line"><a name="l00867"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">  867</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">apply</a> (<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp; back, <span class="keyword">const</span> TKEY &amp; key, std::function&lt;<span class="keywordtype">void</span>(<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> *)&gt; foo) {</div>
-<div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;        </div>
-<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;        <span class="keywordflow">try</span> {</div>
-<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160;            back = _ramList.at(key);</div>
-<div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160;            foo(&amp;back);</div>
-<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;            _ramList[key] = back;</div>
-<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160;            </div>
-<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;        } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::out_of_range &amp; oor) {</div>
-<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;            </div>
-<div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160;            std::set&lt;Fid&gt; candidates;</div>
-<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;            std::mutex m;</div>
-<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;            <a class="code" href="classSwappyItems.html#a5a7883c7ab22478ac045c376f379651e">Fingerprint</a> fp = getFingerprint(key);</div>
-<div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160;            </div>
-<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;            std::for_each (std::execution::par, _buckets.begin(), _buckets.end(), [&amp;](<a class="code" href="structSwappyItems_1_1Detail.html">Detail</a> finfo) {</div>
-<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;                if ( finfo.minimum != finfo.maximum ) { <span class="comment">// it is not deleted!</span></div>
-<div class="line"><a name="l00883"></a><span class="lineno">  883</span>&#160;                    </div>
-<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;                    if ( (key &lt; finfo.minimum) || (key &gt; finfo.maximum) ) {</div>
-<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;                        <span class="comment">// key is smaller then the smallest or bigger than the biggest</span></div>
-<div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;                        m.lock();</div>
-<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;                        ++statistic.rangeSaysNo;</div>
-<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;                        m.unlock();</div>
-<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;                    } else {</div>
-<div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;                        <span class="comment">// check bloom (is it possible, that this key is in that file?)</span></div>
-<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;                        bool success = true;</div>
-<div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160;                        for (auto b : fp) {</div>
-<div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;                            if (finfo.bloomMask[b] == false) {</div>
-<div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160;                                success = false;</div>
-<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;                                m.lock();</div>
-<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;                                ++statistic.bloomSaysNotIn;</div>
-<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;                                m.unlock();</div>
-<div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;                                break;</div>
-<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;                            }</div>
-<div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;                        }</div>
-<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;                        if (success) {</div>
-<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;                            m.lock();</div>
-<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;                            candidates.insert(finfo.fid);</div>
-<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;                            m.unlock();</div>
-<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;                        }</div>
-<div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;                    }</div>
-<div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;                }</div>
-<div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;            });</div>
-<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;            </div>
-<div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160;            <span class="keywordtype">bool</span> success = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;            <a class="code" href="classSwappyItems.html#a83793159a485243c055836adf2990fd8">Fid</a> successFid = 0;</div>
-<div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;            std::streampos startpos;</div>
-<div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;            std::map&lt;TKEY,Data&gt; temp; <span class="comment">// map is sorted by key!</span></div>
-<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;            <span class="keywordtype">char</span> filename[512];</div>
-<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;                            </div>
-<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> fid : candidates) {</div>
-<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160; </div>
-<div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;                <a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> length;</div>
-<div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;                TKEY loadedKey;</div>
-<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;                TKEY loadedKey2;</div>
-<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;                TVALUE loadedValue;</div>
-<div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160;                </div>
-<div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;                snprintf(filename, 512, <span class="stringliteral">&quot;%s/%&quot;</span> PRId32 <span class="stringliteral">&quot;.bucket&quot;</span>, _swappypath, fid);</div>
-<div class="line"><a name="l00924"></a><span class="lineno">  924</span>&#160;                std::ifstream file(filename, std::ios::in | std::ios::binary);</div>
-<div class="line"><a name="l00925"></a><span class="lineno">  925</span>&#160; </div>
-<div class="line"><a name="l00926"></a><span class="lineno">  926</span>&#160;                <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> c = 0; c &lt; EACHFILE; ++c) {</div>
-<div class="line"><a name="l00927"></a><span class="lineno">  927</span>&#160;                    <span class="keywordflow">if</span>(!success) startpos = file.tellg();</div>
-<div class="line"><a name="l00928"></a><span class="lineno">  928</span>&#160;                    file.read((<span class="keywordtype">char</span> *) &amp;loadedKey, <span class="keyword">sizeof</span>(TKEY));</div>
-<div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160; </div>
-<div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160;                    <span class="keywordflow">if</span> (loadedKey == key) {</div>
-<div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160;                        success = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;                        successFid = fid;</div>
-<div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160;                        </div>
-<div class="line"><a name="l00934"></a><span class="lineno">  934</span>&#160;                        std::vector&lt;TKEY&gt; vecdata(0);</div>
-<div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;                        file.read((<span class="keywordtype">char</span> *) &amp;loadedValue, <span class="keyword">sizeof</span>(TVALUE));</div>
-<div class="line"><a name="l00936"></a><span class="lineno">  936</span>&#160;                        <span class="comment">// stored vector?</span></div>
-<div class="line"><a name="l00937"></a><span class="lineno">  937</span>&#160;                        file.read((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
-<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;                        <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;length; ++j) {</div>
-<div class="line"><a name="l00939"></a><span class="lineno">  939</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;loadedKey2, <span class="keyword">sizeof</span>(TKEY));</div>
-<div class="line"><a name="l00940"></a><span class="lineno">  940</span>&#160;                            vecdata.push_back(loadedKey2);</div>
-<div class="line"><a name="l00941"></a><span class="lineno">  941</span>&#160;                        }</div>
-<div class="line"><a name="l00942"></a><span class="lineno">  942</span>&#160;                        <span class="comment">// remember data and end position</span></div>
-<div class="line"><a name="l00943"></a><span class="lineno">  943</span>&#160;                        back = std::make_pair(loadedValue, vecdata);</div>
-<div class="line"><a name="l00944"></a><span class="lineno">  944</span>&#160;                    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00945"></a><span class="lineno">  945</span>&#160;                        <span class="keywordflow">if</span> (success) {</div>
-<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160;                            <span class="comment">// store data from behind the relevant key-value pair</span></div>
-<div class="line"><a name="l00947"></a><span class="lineno">  947</span>&#160;                            std::vector&lt;TKEY&gt; vecdata(0);</div>
-<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;loadedValue, <span class="keyword">sizeof</span>(TVALUE));</div>
-<div class="line"><a name="l00949"></a><span class="lineno">  949</span>&#160;                            <span class="comment">// stored vector?</span></div>
-<div class="line"><a name="l00950"></a><span class="lineno">  950</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
-<div class="line"><a name="l00951"></a><span class="lineno">  951</span>&#160;                            <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;length; ++j) {</div>
-<div class="line"><a name="l00952"></a><span class="lineno">  952</span>&#160;                                file.read((<span class="keywordtype">char</span> *) &amp;loadedKey2, <span class="keyword">sizeof</span>(TKEY));</div>
-<div class="line"><a name="l00953"></a><span class="lineno">  953</span>&#160;                                vecdata.push_back(loadedKey2);</div>
-<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;                            }</div>
-<div class="line"><a name="l00955"></a><span class="lineno">  955</span>&#160;                            <span class="comment">// remember data</span></div>
-<div class="line"><a name="l00956"></a><span class="lineno">  956</span>&#160;                            temp[loadedKey] = std::make_pair(loadedValue, vecdata);</div>
-<div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160;                        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160;                            <span class="comment">// ignore</span></div>
-<div class="line"><a name="l00960"></a><span class="lineno">  960</span>&#160;<span class="comment"></span>                            file.read((<span class="keywordtype">char</span> *) &amp;loadedValue, <span class="keyword">sizeof</span>(TVALUE));</div>
-<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;                            <span class="comment">// stored vector?</span></div>
-<div class="line"><a name="l00962"></a><span class="lineno">  962</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
-<div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;                            <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;length; ++j) file.read((<span class="keywordtype">char</span> *) &amp;loadedKey2, <span class="keyword">sizeof</span>(TKEY));</div>
-<div class="line"><a name="l00964"></a><span class="lineno">  964</span>&#160;                        }</div>
-<div class="line"><a name="l00965"></a><span class="lineno">  965</span>&#160;                    }</div>
-<div class="line"><a name="l00966"></a><span class="lineno">  966</span>&#160;                }</div>
-<div class="line"><a name="l00967"></a><span class="lineno">  967</span>&#160;                file.close();</div>
-<div class="line"><a name="l00968"></a><span class="lineno">  968</span>&#160;                <span class="comment">// do not load other candidates, because we find the key!</span></div>
-<div class="line"><a name="l00969"></a><span class="lineno">  969</span>&#160;                <span class="keywordflow">if</span> (success) <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00970"></a><span class="lineno">  970</span>&#160;            }</div>
-<div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160; </div>
-<div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160;            <span class="keywordflow">if</span> (success) {</div>
-<div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160;                <span class="comment">// apply lambda function to the data with relevant key</span></div>
-<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;                foo(&amp;back);</div>
-<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;                temp[key] = back;</div>
-<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160;                </div>
-<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;                <span class="comment">// reopen file to renew data</span></div>
-<div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;                snprintf(filename, 512, <span class="stringliteral">&quot;%s/%&quot;</span> PRId32 <span class="stringliteral">&quot;.bucket&quot;</span>, _swappypath, successFid);</div>
-<div class="line"><a name="l00979"></a><span class="lineno">  979</span>&#160;                <span class="comment">//printf(&quot;%s\n&quot;, filename);</span></div>
-<div class="line"><a name="l00980"></a><span class="lineno">  980</span>&#160;                std::fstream file(filename, std::ios::in | std::ios::out | std::ios::binary);</div>
-<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160;                </div>
-<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160;                <span class="comment">// got to place, where we have to renew</span></div>
-<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;                file.seekg(startpos);</div>
-<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160; </div>
-<div class="line"><a name="l00985"></a><span class="lineno">  985</span>&#160;                <span class="comment">// overwrite data to the file</span></div>
-<div class="line"><a name="l00986"></a><span class="lineno">  986</span>&#160;                <span class="keyword">typename</span> std::map&lt;TKEY,Data&gt;::iterator it;</div>
-<div class="line"><a name="l00987"></a><span class="lineno">  987</span>&#160;                </div>
-<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;                <span class="keywordflow">for</span> (it=temp.begin(); it!=temp.end(); ++it) {</div>
-<div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;                    <span class="comment">// store data</span></div>
-<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;                    file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;first), <span class="keyword">sizeof</span>(TKEY));</div>
-<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;                    file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;second.first), <span class="keyword">sizeof</span>(TVALUE));</div>
-<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;                    </div>
-<div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160;                    <span class="comment">// store vector?</span></div>
-<div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;                    <a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> le = it-&gt;second.second.size();</div>
-<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;                    file.write((<span class="keywordtype">char</span> *) &amp;le, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
-<div class="line"><a name="l00996"></a><span class="lineno">  996</span>&#160;                    <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;le; ++j) {</div>
-<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;                        file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;second.second[j]), <span class="keyword">sizeof</span>(TKEY));</div>
-<div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;                    }</div>
-<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;                }</div>
-<div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160;                file.close();</div>
-<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160;                </div>
-<div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160;                ++statistic.fileLoads;</div>
-<div class="line"><a name="l01003"></a><span class="lineno"> 1003</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a name="l01004"></a><span class="lineno"> 1004</span>&#160;            } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l01005"></a><span class="lineno"> 1005</span>&#160;                <span class="keywordflow">if</span> (candidates.size() &gt; 0) {</div>
-<div class="line"><a name="l01006"></a><span class="lineno"> 1006</span>&#160;                    <span class="comment">// many candidates, but finaly not found in file</span></div>
-<div class="line"><a name="l01007"></a><span class="lineno"> 1007</span>&#160;                    ++statistic.rangeFails;</div>
-<div class="line"><a name="l01008"></a><span class="lineno"> 1008</span>&#160;                }</div>
-<div class="line"><a name="l01009"></a><span class="lineno"> 1009</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a name="l01010"></a><span class="lineno"> 1010</span>&#160;            }</div>
-<div class="line"><a name="l01011"></a><span class="lineno"> 1011</span>&#160;        }</div>
-<div class="line"><a name="l01012"></a><span class="lineno"> 1012</span>&#160;    }</div>
-<div class="line"><a name="l01013"></a><span class="lineno"> 1013</span>&#160; </div>
+<div class="line"><a name="l00868"></a><span class="lineno"><a class="line" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">  868</a></span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">apply</a> (<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> &amp; back, <span class="keyword">const</span> TKEY &amp; key, std::function&lt;<span class="keywordtype">void</span>(<a class="code" href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">Data</a> *)&gt; foo) {</div>
+<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;        </div>
+<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160;        <span class="keywordflow">try</span> {</div>
+<div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160;            back = _ramList.at(key);</div>
+<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;            foo(&amp;back);</div>
+<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;            _ramList[key] = back;</div>
+<div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160;            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;            </div>
+<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;        } <span class="keywordflow">catch</span> (<span class="keyword">const</span> std::out_of_range &amp; oor) {</div>
+<div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160;            </div>
+<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;            std::set&lt;Fid&gt; candidates;</div>
+<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;            std::mutex m;</div>
+<div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160;            <a class="code" href="classSwappyItems.html#a5a7883c7ab22478ac045c376f379651e">Fingerprint</a> fp = getFingerprint(key);</div>
+<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;            </div>
+<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;            std::for_each (std::execution::par, _buckets.begin(), _buckets.end(), [&amp;](<a class="code" href="structSwappyItems_1_1Detail.html">Detail</a> finfo) {</div>
+<div class="line"><a name="l00883"></a><span class="lineno">  883</span>&#160;                if ( finfo.minimum != finfo.maximum ) { <span class="comment">// it is not deleted!</span></div>
+<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;                    </div>
+<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;                    if ( (key &lt; finfo.minimum) || (key &gt; finfo.maximum) ) {</div>
+<div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;                        <span class="comment">// key is smaller then the smallest or bigger than the biggest</span></div>
+<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;                        m.lock();</div>
+<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;                        ++statistic.rangeSaysNo;</div>
+<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;                        m.unlock();</div>
+<div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160;                    } else {</div>
+<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;                        <span class="comment">// check bloom (is it possible, that this key is in that file?)</span></div>
+<div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160;                        bool success = true;</div>
+<div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;                        for (auto b : fp) {</div>
+<div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160;                            if (finfo.bloomMask[b] == false) {</div>
+<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;                                success = false;</div>
+<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;                                m.lock();</div>
+<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;                                ++statistic.bloomSaysNotIn;</div>
+<div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;                                m.unlock();</div>
+<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;                                break;</div>
+<div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;                            }</div>
+<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;                        }</div>
+<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;                        if (success) {</div>
+<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;                            m.lock();</div>
+<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;                            candidates.insert(finfo.fid);</div>
+<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;                            m.unlock();</div>
+<div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;                        }</div>
+<div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;                    }</div>
+<div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;                }</div>
+<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;            });</div>
+<div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160;            </div>
+<div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;            <span class="keywordtype">bool</span> success = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;            <a class="code" href="classSwappyItems.html#a83793159a485243c055836adf2990fd8">Fid</a> successFid = 0;</div>
+<div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;            std::streampos startpos;</div>
+<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;            std::map&lt;TKEY,Data&gt; temp; <span class="comment">// map is sorted by key!</span></div>
+<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;            <span class="keywordtype">char</span> filename[512];</div>
+<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;                            </div>
+<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> fid : candidates) {</div>
+<div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160; </div>
+<div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;                <a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> length;</div>
+<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;                TKEY loadedKey;</div>
+<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;                TKEY loadedKey2;</div>
+<div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160;                TVALUE loadedValue;</div>
+<div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;                </div>
+<div class="line"><a name="l00924"></a><span class="lineno">  924</span>&#160;                snprintf(filename, 512, <span class="stringliteral">&quot;%s/%&quot;</span> PRId32 <span class="stringliteral">&quot;.bucket&quot;</span>, _swappypath, fid);</div>
+<div class="line"><a name="l00925"></a><span class="lineno">  925</span>&#160;                std::ifstream file(filename, std::ios::in | std::ios::binary);</div>
+<div class="line"><a name="l00926"></a><span class="lineno">  926</span>&#160; </div>
+<div class="line"><a name="l00927"></a><span class="lineno">  927</span>&#160;                <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> c = 0; c &lt; EACHFILE; ++c) {</div>
+<div class="line"><a name="l00928"></a><span class="lineno">  928</span>&#160;                    <span class="keywordflow">if</span>(!success) startpos = file.tellg();</div>
+<div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160;                    file.read((<span class="keywordtype">char</span> *) &amp;loadedKey, <span class="keyword">sizeof</span>(TKEY));</div>
+<div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160; </div>
+<div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160;                    <span class="keywordflow">if</span> (loadedKey == key) {</div>
+<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;                        success = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160;                        successFid = fid;</div>
+<div class="line"><a name="l00934"></a><span class="lineno">  934</span>&#160;                        </div>
+<div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;                        std::vector&lt;TKEY&gt; vecdata(0);</div>
+<div class="line"><a name="l00936"></a><span class="lineno">  936</span>&#160;                        file.read((<span class="keywordtype">char</span> *) &amp;loadedValue, <span class="keyword">sizeof</span>(TVALUE));</div>
+<div class="line"><a name="l00937"></a><span class="lineno">  937</span>&#160;                        <span class="comment">// stored vector?</span></div>
+<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;                        file.read((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
+<div class="line"><a name="l00939"></a><span class="lineno">  939</span>&#160;                        <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;length; ++j) {</div>
+<div class="line"><a name="l00940"></a><span class="lineno">  940</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;loadedKey2, <span class="keyword">sizeof</span>(TKEY));</div>
+<div class="line"><a name="l00941"></a><span class="lineno">  941</span>&#160;                            vecdata.push_back(loadedKey2);</div>
+<div class="line"><a name="l00942"></a><span class="lineno">  942</span>&#160;                        }</div>
+<div class="line"><a name="l00943"></a><span class="lineno">  943</span>&#160;                        <span class="comment">// remember data and end position</span></div>
+<div class="line"><a name="l00944"></a><span class="lineno">  944</span>&#160;                        back = std::make_pair(loadedValue, vecdata);</div>
+<div class="line"><a name="l00945"></a><span class="lineno">  945</span>&#160;                    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160;                        <span class="keywordflow">if</span> (success) {</div>
+<div class="line"><a name="l00947"></a><span class="lineno">  947</span>&#160;                            <span class="comment">// store data from behind the relevant key-value pair</span></div>
+<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160;                            std::vector&lt;TKEY&gt; vecdata(0);</div>
+<div class="line"><a name="l00949"></a><span class="lineno">  949</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;loadedValue, <span class="keyword">sizeof</span>(TVALUE));</div>
+<div class="line"><a name="l00950"></a><span class="lineno">  950</span>&#160;                            <span class="comment">// stored vector?</span></div>
+<div class="line"><a name="l00951"></a><span class="lineno">  951</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
+<div class="line"><a name="l00952"></a><span class="lineno">  952</span>&#160;                            <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;length; ++j) {</div>
+<div class="line"><a name="l00953"></a><span class="lineno">  953</span>&#160;                                file.read((<span class="keywordtype">char</span> *) &amp;loadedKey2, <span class="keyword">sizeof</span>(TKEY));</div>
+<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;                                vecdata.push_back(loadedKey2);</div>
+<div class="line"><a name="l00955"></a><span class="lineno">  955</span>&#160;                            }</div>
+<div class="line"><a name="l00956"></a><span class="lineno">  956</span>&#160;                            <span class="comment">// remember data</span></div>
+<div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160;                            temp[loadedKey] = std::make_pair(loadedValue, vecdata);</div>
+<div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160;                        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00959"></a><span class="lineno">  959</span>&#160;                            <span class="comment">// ignore</span></div>
+<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;<span class="comment"></span>                            file.read((<span class="keywordtype">char</span> *) &amp;loadedValue, <span class="keyword">sizeof</span>(TVALUE));</div>
+<div class="line"><a name="l00962"></a><span class="lineno">  962</span>&#160;                            <span class="comment">// stored vector?</span></div>
+<div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;                            file.read((<span class="keywordtype">char</span> *) &amp;length, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
+<div class="line"><a name="l00964"></a><span class="lineno">  964</span>&#160;                            <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;length; ++j) file.read((<span class="keywordtype">char</span> *) &amp;loadedKey2, <span class="keyword">sizeof</span>(TKEY));</div>
+<div class="line"><a name="l00965"></a><span class="lineno">  965</span>&#160;                        }</div>
+<div class="line"><a name="l00966"></a><span class="lineno">  966</span>&#160;                    }</div>
+<div class="line"><a name="l00967"></a><span class="lineno">  967</span>&#160;                }</div>
+<div class="line"><a name="l00968"></a><span class="lineno">  968</span>&#160;                file.close();</div>
+<div class="line"><a name="l00969"></a><span class="lineno">  969</span>&#160;                <span class="comment">// do not load other candidates, because we find the key!</span></div>
+<div class="line"><a name="l00970"></a><span class="lineno">  970</span>&#160;                <span class="keywordflow">if</span> (success) <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160;            }</div>
+<div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160; </div>
+<div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160;            <span class="keywordflow">if</span> (success) {</div>
+<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;                <span class="comment">// apply lambda function to the data with relevant key</span></div>
+<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;                foo(&amp;back);</div>
+<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160;                temp[key] = back;</div>
+<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;                </div>
+<div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;                <span class="comment">// reopen file to renew data</span></div>
+<div class="line"><a name="l00979"></a><span class="lineno">  979</span>&#160;                snprintf(filename, 512, <span class="stringliteral">&quot;%s/%&quot;</span> PRId32 <span class="stringliteral">&quot;.bucket&quot;</span>, _swappypath, successFid);</div>
+<div class="line"><a name="l00980"></a><span class="lineno">  980</span>&#160;                <span class="comment">//printf(&quot;%s\n&quot;, filename);</span></div>
+<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160;                std::fstream file(filename, std::ios::in | std::ios::out | std::ios::binary);</div>
+<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160;                </div>
+<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;                <span class="comment">// got to place, where we have to renew</span></div>
+<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160;                file.seekg(startpos);</div>
+<div class="line"><a name="l00985"></a><span class="lineno">  985</span>&#160; </div>
+<div class="line"><a name="l00986"></a><span class="lineno">  986</span>&#160;                <span class="comment">// overwrite data to the file</span></div>
+<div class="line"><a name="l00987"></a><span class="lineno">  987</span>&#160;                <span class="keyword">typename</span> std::map&lt;TKEY,Data&gt;::iterator it;</div>
+<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;                </div>
+<div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;                <span class="keywordflow">for</span> (it=temp.begin(); it!=temp.end(); ++it) {</div>
+<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;                    <span class="comment">// store data</span></div>
+<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;                    file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;first), <span class="keyword">sizeof</span>(TKEY));</div>
+<div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160;                    file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;second.first), <span class="keyword">sizeof</span>(TVALUE));</div>
+<div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160;                    </div>
+<div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;                    <span class="comment">// store vector?</span></div>
+<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;                    <a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> le = it-&gt;second.second.size();</div>
+<div class="line"><a name="l00996"></a><span class="lineno">  996</span>&#160;                    file.write((<span class="keywordtype">char</span> *) &amp;le, <span class="keyword">sizeof</span>(<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a>));</div>
+<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;                    <span class="keywordflow">for</span> (<a class="code" href="classSwappyItems.html#afcb18477c22c76c7dd8f27d02da23f7d">Id</a> j=0; j&lt;le; ++j) {</div>
+<div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;                        file.write((<span class="keywordtype">char</span> *) &amp;(it-&gt;second.second[j]), <span class="keyword">sizeof</span>(TKEY));</div>
+<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;                    }</div>
+<div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160;                }</div>
+<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160;                file.close();</div>
+<div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160;                </div>
+<div class="line"><a name="l01003"></a><span class="lineno"> 1003</span>&#160;                ++statistic.fileLoads;</div>
+<div class="line"><a name="l01004"></a><span class="lineno"> 1004</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a name="l01005"></a><span class="lineno"> 1005</span>&#160;            } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l01006"></a><span class="lineno"> 1006</span>&#160;                <span class="keywordflow">if</span> (candidates.size() &gt; 0) {</div>
+<div class="line"><a name="l01007"></a><span class="lineno"> 1007</span>&#160;                    <span class="comment">// many candidates, but finaly not found in file</span></div>
+<div class="line"><a name="l01008"></a><span class="lineno"> 1008</span>&#160;                    ++statistic.rangeFails;</div>
+<div class="line"><a name="l01009"></a><span class="lineno"> 1009</span>&#160;                }</div>
+<div class="line"><a name="l01010"></a><span class="lineno"> 1010</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a name="l01011"></a><span class="lineno"> 1011</span>&#160;            }</div>
+<div class="line"><a name="l01012"></a><span class="lineno"> 1012</span>&#160;        }</div>
+<div class="line"><a name="l01013"></a><span class="lineno"> 1013</span>&#160;    }</div>
 <div class="line"><a name="l01014"></a><span class="lineno"> 1014</span>&#160; </div>
-<div class="line"><a name="l01015"></a><span class="lineno"> 1015</span>&#160;};</div>
-<div class="line"><a name="l01016"></a><span class="lineno"> 1016</span>&#160; </div>
-<div class="line"><a name="l01017"></a><span class="lineno"> 1017</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l01015"></a><span class="lineno"> 1015</span>&#160; </div>
+<div class="line"><a name="l01016"></a><span class="lineno"> 1016</span>&#160;};</div>
+<div class="line"><a name="l01017"></a><span class="lineno"> 1017</span>&#160; </div>
+<div class="line"><a name="l01018"></a><span class="lineno"> 1018</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassSwappyItems_html_a42836644c087e3c1d77d9173ddf760d2"><div class="ttname"><a href="classSwappyItems.html#a42836644c087e3c1d77d9173ddf760d2">SwappyItems::Bid</a></div><div class="ttdeci">uint32_t Bid</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:80</div></div>
 <div class="ttc" id="aclassSwappyItems_html_ab76f2bf942b66c83213a1865e7260385"><div class="ttname"><a href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get</a></div><div class="ttdeci">Data * get(const TKEY &amp;key)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:177</div></div>
-<div class="ttc" id="aclassSwappyItems_html_a8fdb5bac81d5aff26621ef0b625d3967"><div class="ttname"><a href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems::apply</a></div><div class="ttdeci">bool apply(Data &amp;back, const TKEY &amp;key, std::function&lt; void(Data *)&gt; foo)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:867</div></div>
+<div class="ttc" id="aclassSwappyItems_html_a8fdb5bac81d5aff26621ef0b625d3967"><div class="ttname"><a href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems::apply</a></div><div class="ttdeci">bool apply(Data &amp;back, const TKEY &amp;key, std::function&lt; void(Data *)&gt; foo)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:868</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a1bb7b02b59b5e3facc4d180111f7cbd6"><div class="ttname"><a href="classSwappyItems.html#a1bb7b02b59b5e3facc4d180111f7cbd6">SwappyItems::fsearchSuccess</a></div><div class="ttdeci">bool fsearchSuccess</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:103</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a7a358a935bc81011269d51fe3df1b5c7"><div class="ttname"><a href="classSwappyItems.html#a7a358a935bc81011269d51fe3df1b5c7">SwappyItems::Order</a></div><div class="ttdeci">std::deque&lt; Qentry &gt; Order</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:85</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a3c14dcad6cdfedc2870a4f4ff2a26b43"><div class="ttname"><a href="classSwappyItems.html#a3c14dcad6cdfedc2870a4f4ff2a26b43">SwappyItems::max</a></div><div class="ttdeci">TKEY max(void)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:261</div></div>
+<div class="ttc" id="aclassSwappyItems_html_a4be798276a4f109d2d06e5bb79ab79e2"><div class="ttname"><a href="classSwappyItems.html#a4be798276a4f109d2d06e5bb79ab79e2">SwappyItems::_mru</a></div><div class="ttdeci">Order _mru</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:93</div></div>
 <div class="ttc" id="aclassSwappyItems_html_ae290796b6aba78f75dfe572672d99e96"><div class="ttname"><a href="classSwappyItems.html#ae290796b6aba78f75dfe572672d99e96">SwappyItems::load</a></div><div class="ttdeci">bool load(const TKEY &amp;key)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:499</div></div>
 <div class="ttc" id="aclassSwappyItems_html_ad435934836fba9541979039ec53d3a2c"><div class="ttname"><a href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each</a></div><div class="ttdeci">bool each(Data &amp;back, std::function&lt; bool(TKEY, Data &amp;)&gt; foo)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:779</div></div>
 <div class="ttc" id="aclassSwappyItems_html_aa3900d7209b4fa7ddf9dfbd76b5a4843"><div class="ttname"><a href="classSwappyItems.html#aa3900d7209b4fa7ddf9dfbd76b5a4843">SwappyItems::set</a></div><div class="ttdeci">bool set(TKEY key, TVALUE value, std::vector&lt; TKEY &gt; refs)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:144</div></div>
@@ -994,7 +995,6 @@ $(function() {
 <div class="ttc" id="aclassSwappyItems_html_a9675c2b85e6d45b49ab87a45ef4210b2"><div class="ttname"><a href="classSwappyItems.html#a9675c2b85e6d45b49ab87a45ef4210b2">SwappyItems::getFingerprint</a></div><div class="ttdeci">Fingerprint getFingerprint(const TKEY &amp;key)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:485</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a3494cb59b2b3d922f0bd8693ca1cea3c"><div class="ttname"><a href="classSwappyItems.html#a3494cb59b2b3d922f0bd8693ca1cea3c">SwappyItems::_ramMinimum</a></div><div class="ttdeci">TKEY _ramMinimum</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:89</div></div>
 <div class="ttc" id="astructSwappyItems_1_1Detail_html_a4d6d68ff955402f9961d4a4236af1fb3"><div class="ttname"><a href="structSwappyItems_1_1Detail.html#a4d6d68ff955402f9961d4a4236af1fb3">SwappyItems::Detail::bloomMask</a></div><div class="ttdeci">std::vector&lt; bool &gt; bloomMask</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:71</div></div>
-<div class="ttc" id="aclassSwappyItems_html_a31ba1db01f5f349ad03410a6478904f7"><div class="ttname"><a href="classSwappyItems.html#a31ba1db01f5f349ad03410a6478904f7">SwappyItems::_prios</a></div><div class="ttdeci">Order _prios</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:93</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a4cac260a1680c1b81004f6e80cd9e29d"><div class="ttname"><a href="classSwappyItems.html#a4cac260a1680c1b81004f6e80cd9e29d">SwappyItems::SwappyItems</a></div><div class="ttdeci">SwappyItems(int swappyId)</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:291</div></div>
 <div class="ttc" id="aclassSwappyItems_html_a8014ff3b0bf09f36b56ddf4d31960180"><div class="ttname"><a href="classSwappyItems.html#a8014ff3b0bf09f36b56ddf4d31960180">SwappyItems::Data</a></div><div class="ttdeci">std::pair&lt; TVALUE, std::vector&lt; TKEY &gt; &gt; Data</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:41</div></div>
 <div class="ttc" id="astructSwappyItems_1_1Qentry_html_a84457cba632eac7faf51745de531e6ba"><div class="ttname"><a href="structSwappyItems_1_1Qentry.html#a84457cba632eac7faf51745de531e6ba">SwappyItems::Qentry::deleted</a></div><div class="ttdeci">bool deleted</div><div class="ttdef"><b>Definition:</b> SwappyItems.hpp:77</div></div>

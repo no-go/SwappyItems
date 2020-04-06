@@ -6,13 +6,9 @@
 #include <cmath> // acos
 #include <algorithm> // reverse
 #include "SwappyItems.hpp"
-#include "Bmp.hpp"
 
 #include "osmpbfreader.hpp"
 using namespace CanalTP;
-
-#define IMAGE_WIDTH         1200
-#define IMAGE_HEIGHT        2000
 
 #define FILE_ITEMS           (   7*1024) // 2*1024  // 64*1024
 #define FILE_MULTI                    6  // 4       // 16
@@ -21,6 +17,7 @@ using namespace CanalTP;
 #define BMASK   ((BBITS+4)*  FILE_ITEMS) // +4
 
 #define TORADI(angleDegrees) ((angleDegrees) * M_PI / 180.0)
+
 
 // europa: lon  -10..25
 //         lat   35..70
@@ -31,21 +28,10 @@ using namespace CanalTP;
 
 // nrw:    lon   5.85..9.47   like x (0=London, 90=Bhutan)
 //         lat  50.32..52.52  like y (0=Equartor, 90=Nothpole)
-//#define LON_BOUND 5.85
-//#define LON_BOUND_DIF 3.62
-//#define LAT_BOUND 50.32
-//#define LAT_BOUND_DIF 2.2
-
-// krefeld-mg
-#define LON_BOUND 6.4
-#define LON_BOUND_DIF 0.30
-#define LAT_BOUND 51.1
-#define LAT_BOUND_DIF 0.30
-
-
-#define MAX_NODES 27672 // krefeld-mg result!
-
-
+#define LON_BOUND 5.85
+#define LON_BOUND_DIF 3.62
+#define LAT_BOUND 50.32
+#define LAT_BOUND_DIF 2.2
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
@@ -93,9 +79,6 @@ typedef SwappyItems<Key, Distance, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMA
 Distance_t * distances;
 
 
-
-
-
 Key calcDist(double lon1, double lat1, double lon2, double lat2) {
     double dist = 6378388.0 * std::acos(std::sin(TORADI(lat1)) * std::sin(TORADI(lat2)) + std::cos(TORADI(lat1)) * std::cos(TORADI(lat2)) * std::cos(TORADI(lon2 - lon1)));
     if (dist < 0) dist *=-1;
@@ -117,56 +100,6 @@ uint8_t relevance(const std::string & wt) {
     if (wt.compare("residential") == 0) return 1;
     return 0;
 }
-
-
-Bmp bild;
-Color c;
-
-double pos = 0.0;
-
-Color toColor(double id) {
-    Color col;
-    col.red = 0; col.green = 0; col.blue = 0;
-    if( id >= MAX_NODES ) return col;
-    double hi,q,t,coef;
-
-    coef = 7.0 * (id/MAX_NODES);
-    hi = floor(coef);
-    t = coef - hi;
-    q = 1 - t;
-
-    if (hi == 0.0) {
-        col.red   = 0;
-        col.green = t*255; //immer mehr green und blau -> dunkelblau zu cyan
-        col.blue  = t*127 + 128;
-    } else if (hi == 1.0) {
-        col.red   = t*255; //immer mehr rot -> cyan zu weiss
-        col.green = 255;
-        col.blue  = 255;
-    } else if (hi == 2.0) {
-        col.red   = 255;
-        col.green = 255;
-        col.blue  = q*255; // immer weniger blau -> weiss zu gelb
-    } else if (hi == 3.0) {
-        col.red   = 255;
-        col.green = q*127 + 128; // immer weniger green -> gelb zu orange
-        col.blue  = 0;
-    } else if (hi == 4.0) {
-        col.red   = q*127 + 128; // orange wird dunkler -> orange zu braun
-        col.green = q*63 + 64;
-        col.blue  = 0;
-    } else if (hi == 5.0) {
-        col.red   = 128;
-        col.green = 64;
-        col.blue  = t*128; // mehr blau -> braun zu violett
-    } else if (hi == 6.0) {
-        col.red   = t*127 + 128; // weniger blau und green, mehr rot -> violett wird rot
-        col.green = q*64;
-        col.blue  = q*128;
-    }
-    return col;
-}
-
 
 struct Routing {
 
@@ -415,33 +348,22 @@ int main(int argc, char** argv) {
     
     // print verticies ------------------------------------------------
     
-    bild.init(IMAGE_WIDTH, IMAGE_HEIGHT);
-
     Vertices_t::Data dummy;
     verticies->each(dummy, [](Key id, Vertices_t::Data & v) {
-        pos += 1.0;
-        
-        // europa: lon  -10..25
-        //         lat   35..70
-        // projektion: 1000px to 35 grad
-        
-        double lon = v.first._lon - LON_BOUND;
-        double lat = v.first._lat - LAT_BOUND;
-        int x = IMAGE_WIDTH*(lon/LON_BOUND_DIF);
-        int y = IMAGE_HEIGHT - IMAGE_HEIGHT*(lat/LAT_BOUND_DIF);
-        c = bild.get(x, y);
-        
-        // set color only if nothing set there before
-        if (c.red == 0 && c.green ==0 && c.blue == 0) {
-            bild.get(x, y) = toColor(pos);
+        printf("%ld (%f,%f) part of way %ld\n", id, v.first._lon, v.first._lat, v.first._way);
+        for (Key r : v.second) {
+            printf(" %" PRId64, r);
         }
-
+        printf("\n");
+        Distance_t::Data * dptr = distances->get(id);
+        for (Key r : dptr->second) {
+            printf(" %" PRId64, r);
+        }
+        printf("\n");
         // all items, no stop
         return false;
     });
-
-    bild.write("graphnodes.bmp");
-
+    
     delete distances;
     delete verticies;
     delete nodes;

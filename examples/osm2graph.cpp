@@ -63,7 +63,7 @@ struct Vertex {
 
 // + id = osmid of a osm node
 struct Distance {
-    uint8_t _dummy;
+    char _dummy;
 };
 // + list of refs to store distances
 
@@ -78,7 +78,8 @@ Vertices_t * verticies;
 typedef SwappyItems<Key, Distance, FILE_ITEMS, FILE_MULTI, RAM_MULTI, BBITS, BMASK> Distance_t;
 Distance_t * distances;
 
-uint64_t calcDist(double lon1, double lat1, double lon2, double lat2) {
+
+Key calcDist(double lon1, double lat1, double lon2, double lat2) {
     double dist = 6378388.0 * std::acos(std::sin(TORADI(lat1)) * std::sin(TORADI(lat2)) + std::cos(TORADI(lat1)) * std::cos(TORADI(lat2)) * std::cos(TORADI(lon2 - lon1)));
     if (dist < 0) dist *=-1;
     return dist;
@@ -216,10 +217,12 @@ int main(int argc, char** argv) {
         double lastLon = 0.0;
         double lastLat = 0.0;
 
+
         // create verticies from refs: a->b->c->d->e
         // d link to e(=last)
         // c link to d(=last)
         // ...
+
         for (unsigned i=0; i < way.second.size(); ++i) {
             Key ref = way.second[way.second.size()-1 - i]; // add actually ref to the last ref (from backward)
             Nodes_t::Data * nptr = nodes->get(ref);
@@ -230,44 +233,36 @@ int main(int argc, char** argv) {
             
             Vertices_t::Data * vptr = verticies->get(ref);
             Distance_t::Data * dptr = distances->get(ref);
-            
-            if (firstItem) {
-                firstItem = false;
-                if (vptr == nullptr) {
-                    // create e
-                    Vertices_t::Data vertex;
-                    Distance_t::Data distance;
-                    vertex.first._way = wayosmid;
-                    vertex.first._lon = nptr->first._lon;
-                    vertex.first._lat = nptr->first._lat;
-                    lastLon = vertex.first._lon;
-                    lastLat = vertex.first._lat;
-                    verticies->set(ref, vertex.first, vertex.second);
-                    distances->set(ref, distance.first, distance.second); // empty dummy
-                }
-            } else {
-                if (vptr == nullptr) {
-                    Vertices_t::Data vertex;
-                    Distance_t::Data distance;
-                    vertex.first._way = wayosmid;
-                    vertex.first._lon = nptr->first._lon;
-                    vertex.first._lat = nptr->first._lat;
-                    vertex.second.push_back(last);
-                    uint64_t dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
-                    distance.second.push_back(dist);
-                    lastLon = vertex.first._lon;
-                    lastLat = vertex.first._lat;
-                    verticies->set(ref, vertex.first, vertex.second);
-                    distances->set(ref, distance.first, distance.second);
+
+            if (vptr == nullptr) {
+                Vertices_t::Data vertex;
+                Distance_t::Data distance;
+                vertex.first._way = wayosmid;
+                vertex.first._lon = nptr->first._lon;
+                vertex.first._lat = nptr->first._lat;
+                if (firstItem) {
+                    firstItem = false;
                 } else {
-                    vptr->second.push_back(last);
-                    uint64_t dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
-                    dptr->second.push_back(dist);
-                    lastLon = vptr->first._lon;
-                    lastLat = vptr->first._lat;
-                    verticies->set(ref, vptr->first, vptr->second);
-                    distances->set(ref, dptr->first, dptr->second);
+                    Key dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
+                    vertex.second.push_back(last);
+                    distance.second.push_back(dist);
                 }
+                lastLon = nptr->first._lon;
+                lastLat = nptr->first._lat;
+                verticies->set(ref, vertex.first, vertex.second);
+                distances->set(ref, distance.first, distance.second);
+            } else {
+                if (firstItem) {
+                    firstItem = false;
+                } else {
+                    Key dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
+                    vptr->second.push_back(last);
+                    dptr->second.push_back(dist);
+                }
+                lastLon = nptr->first._lon;
+                lastLat = nptr->first._lat;
+                verticies->set(ref, vptr->first, vptr->second);
+                distances->set(ref, dptr->first, dptr->second);
             }
             last = ref;
         }
@@ -298,26 +293,26 @@ int main(int argc, char** argv) {
                     if (firstItem) {
                         firstItem = false;
                     } else {
-                        uint64_t dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
+                        Key dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
                         vertex.second.push_back(last);
                         distance.second.push_back(dist);
                     }
+                    lastLon = nptr->first._lon;
+                    lastLat = nptr->first._lat;
                     verticies->set(ref, vertex.first, vertex.second);
                     distances->set(ref, distance.first, distance.second);
-                    lastLon = vertex.first._lon;
-                    lastLat = vertex.first._lat;
                 } else {
                     if (firstItem) {
                         firstItem = false;
                     } else {
-                        uint64_t dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
+                        Key dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
                         vptr->second.push_back(last);
                         dptr->second.push_back(dist);
                     }
+                    lastLon = nptr->first._lon;
+                    lastLat = nptr->first._lat;
                     verticies->set(ref, vptr->first, vptr->second);
                     distances->set(ref, dptr->first, dptr->second);
-                    lastLon = vptr->first._lon;
-                    lastLat = vptr->first._lat;
                 }
                 last = ref;
             }
@@ -336,7 +331,7 @@ int main(int argc, char** argv) {
         }
         printf("\n");
         Distance_t::Data * dptr = distances->get(id);
-        for (uint64_t r : dptr->second) {
+        for (Key r : dptr->second) {
             printf(" %" PRId64, r);
         }
         printf("\n");

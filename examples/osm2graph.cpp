@@ -117,7 +117,7 @@ struct Routing {
         if (nodeptr == nullptr) return;
         /// @todo instead of lat,lon store the complete distance SOMEWHERE
         // we only use nodes of connected ways? (ignore sackgasse and links in between -> fail on distance!)
-        if (nodeptr->first._used == 0) return;
+        //if (nodeptr->first._used == 0) return;
         nodeptr->first._lon = lon;
         nodeptr->first._lat = lat;
         nodes->set(osmid, nodeptr->first);
@@ -216,20 +216,27 @@ int main(int argc, char** argv) {
         Key last;
         double lastLon = 0.0;
         double lastLat = 0.0;
-
+        Key dist = 0;
 
         // create verticies from refs: a->b->c->d->e
         // d link to e(=last)
         // c link to d(=last)
         // ...
-
         for (unsigned i=0; i < way.second.size(); ++i) {
             Key ref = way.second[way.second.size()-1 - i]; // add actually ref to the last ref (from backward)
             Nodes_t::Data * nptr = nodes->get(ref);
             
             if (nptr == nullptr) continue;
-            if (nptr->first._used == 0) continue;
             if (nptr->first._lon == 0 && nptr->first._lat == 0) continue;
+            
+            if (nptr->first._used == 0) {
+                if (firstItem == false) {
+                    dist += calcDist(nptr->first._lon, nptr->first._lat, lastLon, lastLat);
+                    lastLon = nptr->first._lon;
+                    lastLat = nptr->first._lat;
+                }
+                continue;
+            }
             
             Vertices_t::Data * vptr = verticies->get(ref);
             Distance_t::Data * dptr = distances->get(ref);
@@ -243,7 +250,7 @@ int main(int argc, char** argv) {
                 if (firstItem) {
                     firstItem = false;
                 } else {
-                    Key dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
+                    dist += calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
                     vertex.second.push_back(last);
                     distance.second.push_back(dist);
                 }
@@ -255,7 +262,7 @@ int main(int argc, char** argv) {
                 if (firstItem) {
                     firstItem = false;
                 } else {
-                    Key dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
+                    dist += calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
                     vptr->second.push_back(last);
                     dptr->second.push_back(dist);
                 }
@@ -264,6 +271,7 @@ int main(int argc, char** argv) {
                 verticies->set(ref, vptr->first, vptr->second);
                 distances->set(ref, dptr->first, dptr->second);
             }
+            dist = 0;
             last = ref;
         }
         
@@ -272,14 +280,25 @@ int main(int argc, char** argv) {
         // c link to b(=last)
         // ...
         firstItem = true;
+        lastLon = 0.0;
+        lastLat = 0.0;
+        dist = 0;
         if (way.first._oneway == false) {
             for (unsigned i=0; i < way.second.size(); ++i) {
                 Key ref = way.second[i];
                 Nodes_t::Data * nptr = nodes->get(ref);
                 
                 if (nptr == nullptr) continue;
-                if (nptr->first._used == 0) continue;
                 if (nptr->first._lon == 0 && nptr->first._lat == 0) continue;
+            
+                if (nptr->first._used == 0) {
+                    if (firstItem == false) {
+                        dist += calcDist(nptr->first._lon, nptr->first._lat, lastLon, lastLat);
+                        lastLon = nptr->first._lon;
+                        lastLat = nptr->first._lat;
+                    }
+                    continue;
+                }
                 
                 Vertices_t::Data * vptr = verticies->get(ref);
                 Distance_t::Data * dptr = distances->get(ref);
@@ -293,7 +312,7 @@ int main(int argc, char** argv) {
                     if (firstItem) {
                         firstItem = false;
                     } else {
-                        Key dist = calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
+                        dist += calcDist(vertex.first._lon, vertex.first._lat, lastLon, lastLat);
                         vertex.second.push_back(last);
                         distance.second.push_back(dist);
                     }
@@ -305,7 +324,7 @@ int main(int argc, char** argv) {
                     if (firstItem) {
                         firstItem = false;
                     } else {
-                        Key dist = calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
+                        dist += calcDist(vptr->first._lon, vptr->first._lat, lastLon, lastLat);
                         vptr->second.push_back(last);
                         dptr->second.push_back(dist);
                     }
@@ -314,6 +333,7 @@ int main(int argc, char** argv) {
                     verticies->set(ref, vptr->first, vptr->second);
                     distances->set(ref, dptr->first, dptr->second);
                 }
+                dist = 0;
                 last = ref;
             }
         }

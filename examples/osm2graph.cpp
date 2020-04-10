@@ -379,15 +379,20 @@ int main(int argc, char** argv) {
     
     
     Vertices_t::Data dummy;
+
+    // all nodes to the beginning!!!
     verticies->each(dummy, [](Key id, Vertices_t::Data & v) {
-        
         //if (v.second.size() > 0) { // no. it could be a single point, where many oneways result in!
-        
         fprintf (pFile, 
             "<node id='%" PRIu64 "'" DEFAULTATTR " lat='%f' lon='%f'/>\n",
             id, v.first._lat, v.first._lon
         );
-        
+        // all items, no stop
+        return false;
+    });
+
+    // create the new ways
+    verticies->each(dummy, [](Key id, Vertices_t::Data & v) {
         Distance_t::Data * dptr = distances->get(id);
         for (unsigned i=0; i < v.second.size(); ++i) {
             fprintf (pFile, 

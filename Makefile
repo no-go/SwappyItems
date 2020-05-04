@@ -3,7 +3,10 @@ CPPFLAGS = -Wall -mtune=native -std=c++17 -I./src/
 LDFLAGS = -lpthread -ltbb -lstdc++fs -lm
 LDOSMFLAGS = -lz -losmpbf -lprotobuf
 
-all: osm such hib gra
+all: osm such hib gra pkuh
+
+pkuh:
+	g++ examples/pkuhtest.cpp -O6 $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o pkuhtest.exe
 
 gra:
 	g++ examples/osm2graph.cpp -O6 -DDEBUG $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o osm2graph.exe

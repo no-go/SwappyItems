@@ -88,30 +88,28 @@ private:
     
 public:
 
-    bool set (uint64_t key, Element value) {
-        // make it safe!
-        value.key = key;
+    bool set (Element value) {
         
-        if (load(key)) {
+        if (load(value.key)) {
             // just update
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
-                [key] (const Qentry & qe) {
-                    return (qe.key == key) && (qe.deleted == false);
+                [value] (const Qentry & qe) {
+                    return (qe.key == value.key) && (qe.deleted == false);
                 }
             );
             it->deleted = true;
-            _prios.push_back(Qentry{key,false});
-            _ramList[key] = value;
+            _prios.push_back(Qentry{value.key,false});
+            _ramList[value.key] = value;
             return false;
         } else {
             // key is new
             maySwap();
-            _prios.push_back(Qentry{key,false});
-            _ramList[key] = value;
+            _prios.push_back(Qentry{value.key,false});
+            _ramList[value.key] = value;
             // update min/max of RAM
-            if (key > _ramMaximum) _ramMaximum = key;
-            if (key < _ramMinimum) _ramMinimum = key;
+            if (value.key > _ramMaximum) _ramMaximum = value.key;
+            if (value.key < _ramMinimum) _ramMinimum = value.key;
             return true;
         }
     }
@@ -135,7 +133,7 @@ public:
     }
 
     uint64_t min (void) {
-        uint64_t val = std::numeric_limits<TKEY>::max();
+        uint64_t val = std::numeric_limits<uint64_t>::max();
         std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
             if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                 if (finfo.minimum < val) val = finfo.minimum;
@@ -147,7 +145,7 @@ public:
     }
 
     uint64_t max (void) {
-        uint64_t val = std::numeric_limits<TKEY>::min();
+        uint64_t val = std::numeric_limits<uint64_t>::min();
         std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
             if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                 if (finfo.maximum > val) val = finfo.maximum;
@@ -163,12 +161,20 @@ public:
         _ramMaximum = std::numeric_limits<uint64_t>::min();
 
         snprintf(
-            _swappypath, 512,
+            _swappypath, 256,
             "%s-"
             "%d-%d-%d-%d-%d",
             _prefix,
             EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH
         );
+
+        if (filesys::exists(_swappypath)) {
+            fprintf(stderr, "folder '%s' still exists! Please delete or rename it!\n", _swappypath);
+            exit(0);
+        } else {
+            filesys::create_directory(_swappypath);
+        }
+
     }
 
 private:
@@ -236,9 +242,7 @@ private:
 
     void loadFromFile (Fid fid, uint64_t key) {
         Ram temp;
-        Id length;
         uint64_t loadedKey;
-        uint64_t loadedKey2;
         Element loadedValue;
         
         bool result = false;
@@ -279,9 +283,9 @@ private:
             maySwap(true);
             
             // ... and load the stuff
-            for (auto element : temp) {
-                _ramList[element.key] = element;
-                _prios.push_back(Qentry{element.key,false});
+            for (auto key_val : temp) {
+                _ramList[key_val.first] = key_val.second;
+                _prios.push_back(Qentry{key_val.first,false});
             }
             // update ram min/max
             if (omax > _ramMaximum) _ramMaximum = omax;
@@ -353,16 +357,16 @@ private:
                 char filename[512];
                 snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, pos);
                 file.open(filename, std::ios::out | std::ios::binary);
-                detail.minimum = it->key;
+                detail.minimum = it->first;
                 detail.bloomMask = std::vector<bool>(MASKLENGTH, false);
             }
 
             // store data
-            file.write((char *) &(it->key), sizeof(uint64_t));
+            file.write((char *) &(it->first), sizeof(uint64_t));
             file.write((char *) &(*it), sizeof(Element));
             
             // remember key in bloom mask
-            fp = getFingerprint(it->key);
+            fp = getFingerprint(it->first);
             for (auto b : fp) {
                 detail.bloomMask[b] = true;
             }
@@ -373,7 +377,7 @@ private:
             if ((written%(EACHFILE)) == 0) {
                 // store bucket
                 detail.fid = pos;
-                detail.maximum = it->key;
+                detail.maximum = it->first;
                 _buckets[pos] = detail;
                 file.close();
             }
@@ -385,13 +389,13 @@ private:
         auto result = std::minmax_element(
                 std::execution::par, _ramList.begin(), _ramList.end(), [](auto lhs, auto rhs
             ) {
-            return (lhs.key < rhs.key); // compare the keys
+            return (lhs.first < rhs.first); // compare the keys
         });
         //                    .------------ the min
         //                    v    v------- the key of the unordered_map entry
-        _ramMinimum = result.first->key;
+        _ramMinimum = result.first->first;
         //                    v------------ the max
-        _ramMaximum = result.second->key;
+        _ramMaximum = result.second->first;
     }
 
 };

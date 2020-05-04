@@ -7,5 +7,6 @@
 *.exe
 a.out
 
+pkuh*/*.bucket
 temp*/*.bucket
 temp*/hibernate.*

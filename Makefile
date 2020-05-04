@@ -6,7 +6,7 @@ LDOSMFLAGS = -lz -losmpbf -lprotobuf
 all: osm such hib gra
 
 gra:
-	g++ examples/osm2graph.cpp -O2 -DDEBUG $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o osm2graph.exe
+	g++ examples/osm2graph.cpp -O6 -DDEBUG $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o osm2graph.exe
 
 osm:
 	g++ examples/ReadPbfData.cpp -O2 $(CPPFLAGS) $(LDFLAGS) $(LDOSMFLAGS) -o ReadPbfData.exe

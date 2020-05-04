@@ -1,5 +1,5 @@
-#ifndef __SWAPPY_ITEMS_HPP__
-#define __SWAPPY_ITEMS_HPP__ 1
+#ifndef __PKUH_HPP__
+#define __PKUH_HPP__ 1
 
 #include <inttypes.h>  // uintX_t stuff
 #include <iostream>    // sizeof and ios namespace
@@ -28,55 +28,51 @@ namespace filesys = std::experimental::filesystem;
 #include <thread> // you need -lpthread
 
 
-
-
 /**
  * this code is a simple version of SwappyItems. It is the baremetal version
  * and the first step to a external+internal priorety queue.
  * 
  * this code is never used or tested!
  */
- 
- 
- 
- 
- 
-template <
-    class TKEY, class TVALUE,
-    int EACHFILE = 16384, int OLDIES = 5, int RAMSIZE = 3, int BLOOMBITS = 4, int MASKLENGTH = (2* 4*16384)
->
+
+template <int EACHFILE = 1024, int OLDIES = 4, int RAMSIZE = 3, int BLOOMBITS = 5, int MASKLENGTH = ((5+4)*1024)>
 class Pkuh {
 
 public:
-    typedef std::pair<TVALUE, std::vector<TKEY> >  Data; // just for simplifing next line
-    
+
+    struct Element {
+        uint64_t key;
+        uint64_t prio;
+        uint64_t successor;
+    };
+
 private:
-    typedef uint32_t                                 Id;
-    typedef uint32_t                                Fid; // File id
+    typedef uint32_t                                     Id;
+    typedef uint32_t                                    Fid; // File id
 
     struct Detail {
-        TKEY minimum;
-        TKEY maximum;
+        uint64_t minimum;
+        uint64_t maximum;
         std::vector<bool> bloomMask;
         Fid fid;
     };
     
     struct Qentry {
-        TKEY key;
+        uint64_t key;
         bool deleted;
     };
     
     typedef uint32_t                                   Bid;
     typedef std::set<Bid>                      Fingerprint;
     
-    typedef std::unordered_map<TKEY,Data>              Ram;
+    typedef std::unordered_map<uint64_t,Element>       Ram;
     typedef std::vector<Detail>                    Buckets;
     typedef std::deque<Qentry>                       Order;
 
     // the item store in RAM
     Ram _ramList;
-    TKEY _ramMinimum;
-    TKEY _ramMaximum;
+    uint64_t _ramMinimum;
+    uint64_t _ramMaximum;
         
     // a priority queue for the keys
     Order _prios;
@@ -92,7 +88,10 @@ private:
     
 public:
 
-    bool set (TKEY key, TVALUE value, std::vector<TKEY> refs) {
+    bool set (uint64_t key, Element value) {
+        // make it safe!
+        value.key = key;
+        
         if (load(key)) {
             // just update
             // reverse search should be faster
@@ -103,13 +102,13 @@ public:
             );
             it->deleted = true;
             _prios.push_back(Qentry{key,false});
-            _ramList[key] = std::make_pair(value, refs);
+            _ramList[key] = value;
             return false;
         } else {
             // key is new
             maySwap();
             _prios.push_back(Qentry{key,false});
-            _ramList[key] = std::make_pair(value, refs);
+            _ramList[key] = value;
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
             if (key < _ramMinimum) _ramMinimum = key;
@@ -117,7 +116,7 @@ public:
         }
     }
 
-    Data * get (const TKEY & key) {
+    Element * get (const uint64_t & key) {
         if (load(key)) {
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
@@ -125,7 +124,8 @@ public:
                     return (qe.key == key) && (qe.deleted == false);
                 }
             );
-            // every get fills the queue with "deleted = true" on this key, thus older entries are never equal false
+            // every get fills the queue with "deleted = true" on this key, thus older entries 
+            // are never equal false
             it->deleted = true;
             _prios.push_back(Qentry{key,false});
             return &(_ramList[key]);
@@ -133,28 +133,9 @@ public:
             return nullptr;
         }
     }
-    
-    bool del (const TKEY & key) {
-        if (load(key)) {
-            // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _prios.rbegin(), _prios.rend(), 
-                [key] (const Qentry & qe) {
-                    return (qe.key == key) && (qe.deleted == false);
-                }
-            );
-            it->deleted = true;
-            // we really have to delete it in ram, because load() search key initialy in ram!
-            _ramList.erase(key);
-            
-            if (key == _ramMaximum || key == _ramMinimum) ramMinMax();
-            return true;
-        } else {
-            return false;
-        }
-    }
 
-    TKEY min (void) {
-        TKEY val = std::numeric_limits<TKEY>::max();
+    uint64_t min (void) {
+        uint64_t val = std::numeric_limits<TKEY>::max();
         std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
             if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                 if (finfo.minimum < val) val = finfo.minimum;
@@ -165,8 +146,8 @@ public:
         return val;
     }
 
-    TKEY max (void) {
-        TKEY val = std::numeric_limits<TKEY>::min();
+    uint64_t max (void) {
+        uint64_t val = std::numeric_limits<TKEY>::min();
         std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
             if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                 if (finfo.maximum > val) val = finfo.maximum;
@@ -178,8 +159,8 @@ public:
     }
 
     Pkuh () {
-        _ramMinimum = std::numeric_limits<TKEY>::max();
-        _ramMaximum = std::numeric_limits<TKEY>::min();
+        _ramMinimum = std::numeric_limits<uint64_t>::max();
+        _ramMaximum = std::numeric_limits<uint64_t>::min();
 
         snprintf(
             _swappypath, 512,
@@ -192,7 +173,7 @@ public:
 
 private:
 
-    Fingerprint getFingerprint (const TKEY & key) {
+    Fingerprint getFingerprint (const uint64_t & key) {
         srand(key);
         Fingerprint fp;
         for(int i=0; i < BLOOMBITS; ++i) {
@@ -201,7 +182,7 @@ private:
         return fp;
     }
 
-    bool load (const TKEY & key) {
+    bool load (const uint64_t & key) {
         try {
             _ramList.at(key);
             return true;
@@ -210,7 +191,7 @@ private:
         }
     }
 
-    bool loadFromFiles (const TKEY & key) {
+    bool loadFromFiles (const uint64_t & key) {
         std::vector<Fid> candidates;
         std::mutex m;
         Fingerprint fp = getFingerprint(key);
@@ -253,12 +234,12 @@ private:
         return fsearchSuccess;
     }
 
-    void loadFromFile (Fid fid, TKEY key) {
+    void loadFromFile (Fid fid, uint64_t key) {
         Ram temp;
         Id length;
-        TKEY loadedKey;
-        TKEY loadedKey2;
-        TVALUE loadedValue;
+        uint64_t loadedKey;
+        uint64_t loadedKey2;
+        Element loadedValue;
         
         bool result = false;
         
@@ -267,16 +248,9 @@ private:
         std::ifstream file(filename, std::ios::in | std::ios::binary);
         
         for (Id c = 0; c < EACHFILE; ++c) {
-            std::vector<TKEY> vecdata(0);
-            file.read((char *) &loadedKey, sizeof(TKEY));
-            file.read((char *) &loadedValue, sizeof(TVALUE));
-            // stored vector?
-            file.read((char *) &length, sizeof(Id));
-            for (Id j=0; j<length; ++j) {
-                file.read((char *) &loadedKey2, sizeof(TKEY));
-                vecdata.push_back(loadedKey2);
-            }
-            temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+            file.read((char *) &loadedKey, sizeof(uint64_t));
+            file.read((char *) &loadedValue, sizeof(Element));
+            temp[loadedKey] = loadedValue;
 
             if (loadedKey == key) {
                 result = true;
@@ -293,8 +267,8 @@ private:
         
         if (result) {
             // store possible min/max for ram
-            TKEY omin = _buckets[fid].minimum;
-            TKEY omax = _buckets[fid].maximum;
+            uint64_t omin = _buckets[fid].minimum;
+            uint64_t omax = _buckets[fid].maximum;
             
             // ok, key exist. clean mask now, because we do not
             // need the (still undeleted) file anymore
@@ -305,9 +279,9 @@ private:
             maySwap(true);
             
             // ... and load the stuff
-            for (auto key_val : temp) {
-                _ramList[key_val.first] = key_val.second;
-                _prios.push_back(Qentry{key_val.first,false});
+            for (auto element : temp) {
+                _ramList[element.key] = element;
+                _prios.push_back(Qentry{element.key,false});
             }
             // update ram min/max
             if (omax > _ramMaximum) _ramMaximum = omax;
@@ -336,7 +310,7 @@ private:
         Detail detail{0, 0};
         Fingerprint fp;
         
-        std::map<TKEY,Data> temp; // map is sorted by key!
+        std::map<uint64_t,Element> temp; // map is sorted by key!
         bool success;
 
         // remove old items from front and move them into temp
@@ -353,7 +327,7 @@ private:
         // run through sorted items
         Id written = 0;
         std::ofstream file;
-        typename std::map<TKEY,Data>::iterator it;
+        typename std::map<uint64_t,Element>::iterator it;
 
         for (it=temp.begin(); it!=temp.end(); ++it) {
 
@@ -379,23 +353,16 @@ private:
                 char filename[512];
                 snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, pos);
                 file.open(filename, std::ios::out | std::ios::binary);
-                detail.minimum = it->first;
+                detail.minimum = it->key;
                 detail.bloomMask = std::vector<bool>(MASKLENGTH, false);
             }
 
             // store data
-            file.write((char *) &(it->first), sizeof(TKEY));
-            file.write((char *) &(it->second.first), sizeof(TVALUE));
-            
-            // store vector?
-            Id length = it->second.second.size();
-            file.write((char *) &length, sizeof(Id));
-            for (Id j=0; j<length; ++j) {
-                file.write((char *) &(it->second.second[j]), sizeof(TKEY));
-            }
+            file.write((char *) &(it->key), sizeof(uint64_t));
+            file.write((char *) &(*it), sizeof(Element));
             
             // remember key in bloom mask
-            fp = getFingerprint(it->first);
+            fp = getFingerprint(it->key);
             for (auto b : fp) {
                 detail.bloomMask[b] = true;
             }
@@ -406,7 +373,7 @@ private:
             if ((written%(EACHFILE)) == 0) {
                 // store bucket
                 detail.fid = pos;
-                detail.maximum = it->first;
+                detail.maximum = it->key;
                 _buckets[pos] = detail;
                 file.close();
             }
@@ -415,14 +382,16 @@ private:
     }
     
     void ramMinMax(void) {
-        auto result = std::minmax_element(std::execution::par, _ramList.begin(), _ramList.end(), [](auto lhs, auto rhs) {
-            return (lhs.first < rhs.first); // compare the keys
+        auto result = std::minmax_element(
+                std::execution::par, _ramList.begin(), _ramList.end(), [](auto lhs, auto rhs
+            ) {
+            return (lhs.key < rhs.key); // compare the keys
         });
         //                    .------------ the min
         //                    v    v------- the key of the unordered_map entry
-        _ramMinimum = result.first->first;
+        _ramMinimum = result.first->key;
         //                    v------------ the max
-        _ramMaximum = result.second->first;
+        _ramMaximum = result.second->key;
     }
 
 };

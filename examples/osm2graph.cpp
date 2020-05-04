@@ -10,9 +10,9 @@
 #include "osmpbfreader.hpp"
 using namespace CanalTP;
 
-#define FILE_ITEMS           (   7*1024) // 2*1024  // 64*1024
-#define FILE_MULTI                    6  // 4       // 16
-#define RAM_MULTI                     9  // 8
+#define FILE_ITEMS           (   2*1024) // 2*1024  // 64*1024
+#define FILE_MULTI                    4  // 4       // 16
+#define RAM_MULTI                     8  // 8
 #define BBITS                         5  // 5
 #define BMASK   ((BBITS+4)*  FILE_ITEMS) // +4
 
@@ -27,23 +27,23 @@ using namespace CanalTP;
 
 // nrw:    lon   5.85..9.47   like x (0=London, 90=Bhutan)
 //         lat  50.32..52.52  like y (0=Equartor, 90=Nothpole)
-//#define LON_BOUND 5.85
-//#define LON_BOUND_DIF 3.62
-//#define LAT_BOUND 50.32
-//#define LAT_BOUND_DIF 2.2
+#define LON_BOUND 5.85
+#define LON_BOUND_DIF 3.62
+#define LAT_BOUND 50.32
+#define LAT_BOUND_DIF 2.2
 
 // krefeld-mg
-#define LON_BOUND 6.4
-#define LON_BOUND_DIF 0.30
-#define LAT_BOUND 51.1
-#define LAT_BOUND_DIF 0.30
+//#define LON_BOUND 6.4
+//#define LON_BOUND_DIF 0.30
+//#define LAT_BOUND 51.1
+//#define LAT_BOUND_DIF 0.30
+
 //#define MAX_NODES 27672 // krefeld-mg result!
 
 /// build a map file with osmosis: ../osmosis/bin/osmosis --read-xml file=graph.osm --mw file=krefeld_mg.map zoom-interval-conf=7,5,8,11,9,13 threads=2
 
 #define DEFAULTATTR " version='1' timestamp='2019-12-20T14:59:00Z' visible='true'"
-uint64_t wayOsmId = 1;
-FILE * pFile;
+
 
 typedef uint64_t Key; // for the key-value tuple, 8 byte
 
@@ -75,7 +75,7 @@ struct Vertex {
 
 // + id = osmid of a osm node
 struct Distance {
-    char _dummy;
+    uint8_t _dummy;
 };
 // + list of refs to store distances
 
@@ -367,6 +367,8 @@ int main(int argc, char** argv) {
     
     // verticies to osm ------------------------------------------------
     
+    uint64_t wayOsmId = 1;
+    FILE * pFile;
     pFile = fopen ("graph.osm","w");
 
     fprintf (pFile, 
@@ -381,7 +383,7 @@ int main(int argc, char** argv) {
     Vertices_t::Data dummy;
 
     // all nodes to the beginning!!!
-    verticies->each(dummy, [](Key id, Vertices_t::Data & v) {
+    verticies->each(dummy, [&wayOsmId, &pFile](Key id, Vertices_t::Data & v) {
         //if (v.second.size() > 0) { // no. it could be a single point, where many oneways result in!
         fprintf (pFile, 
             "<node id='%" PRIu64 "'" DEFAULTATTR " lat='%f' lon='%f'/>\n",
@@ -392,7 +394,7 @@ int main(int argc, char** argv) {
     });
 
     // create the new ways
-    verticies->each(dummy, [](Key id, Vertices_t::Data & v) {
+    verticies->each(dummy, [&wayOsmId, &pFile](Key id, Vertices_t::Data & v) {
         Distance_t::Data * dptr = distances->get(id);
         for (unsigned i=0; i < v.second.size(); ++i) {
             fprintf (pFile, 

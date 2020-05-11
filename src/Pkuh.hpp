@@ -13,7 +13,7 @@
 #include <set>            // a set of candidate files
 #include <unordered_set>  // a set of keys
 #include <unordered_map>  // for a key->data
-#include <deque>          // for key order (prio)
+#include <queue>          // for key order (prio)
 #include <map>            // for store keys in a sorted way
 
 // we need it for PRId32 in snprintf
@@ -26,7 +26,6 @@ namespace filesys = std::experimental::filesystem;
 #include <execution> // c++17 and you need  -ltbb
 #include <mutex> // for mutex
 #include <thread> // you need -lpthread
-
 
 /**
  * this code is a simple version of SwappyItems. It is the baremetal version
@@ -51,29 +50,42 @@ private:
     typedef uint32_t                                    Fid; // File id
 
     struct Detail {
+        uint64_t prioMinimum;
+        uint64_t prioMaximum;
         uint64_t minimum;
         uint64_t maximum;
         std::vector<bool> bloomMask;
         Fid fid;
     };
     
-    struct Qentry {
-        uint64_t key;
-        bool deleted;
-    };
     
     typedef uint32_t                                   Bid;
     typedef std::set<Bid>                      Fingerprint;
     
     typedef std::unordered_map<uint64_t,Element>       Ram;
     typedef std::vector<Detail>                    Buckets;
-    typedef std::deque<Qentry>                       Order;
+
 
     // the item store in RAM
     Ram _ramList;
+    uint64_t _ramPrioMinimum;
+    uint64_t _ramPrioMaximum;
+
     uint64_t _ramMinimum;
     uint64_t _ramMaximum;
+
+
+    struct Qentry {
+        uint64_t key;
+        bool deleted;
         
+        bool operator() (const Qentry & lhs, const Qentry & rhs) const {
+            return (_ramList[lhs.key].prio < _ramList[rhs.key].prio);
+        }
+    };
+    
+    typedef std::priority_queue<Qentry, std::vector<Qentry>> Order;
+
     // a priority queue for the keys
     Order _prios;
 
@@ -99,14 +111,14 @@ public:
                 }
             );
             it->deleted = true;
-            _prios.push_back(Qentry{value.key,false});
             _ramList[value.key] = value;
+            _prios.push(Qentry{value.key,false});
             return false;
         } else {
             // key is new
             maySwap();
-            _prios.push_back(Qentry{value.key,false});
             _ramList[value.key] = value;
+            _prios.push(Qentry{value.key,false});
             // update min/max of RAM
             if (value.key > _ramMaximum) _ramMaximum = value.key;
             if (value.key < _ramMinimum) _ramMinimum = value.key;
@@ -125,7 +137,7 @@ public:
             // every get fills the queue with "deleted = true" on this key, thus older entries 
             // are never equal false
             it->deleted = true;
-            _prios.push_back(Qentry{key,false});
+            _prios.push(Qentry{key,false});
             return &(_ramList[key]);
         } else {
             return nullptr;
@@ -285,7 +297,7 @@ private:
             // ... and load the stuff
             for (auto key_val : temp) {
                 _ramList[key_val.first] = key_val.second;
-                _prios.push_back(Qentry{key_val.first,false});
+                _prios.push(Qentry{key_val.first,false});
             }
             // update ram min/max
             if (omax > _ramMaximum) _ramMaximum = omax;
@@ -301,10 +313,10 @@ private:
         if ( (_ramList.size() + needed) < (RAMSIZE * EACHFILE * OLDIES) ) {
             // cleanup queue instead?
             if ( _prios.size() > ( (RAMSIZE+2) * EACHFILE*OLDIES) ) {
-                Order newPrio;
+                Order newPrio; //////////////////////////////////////////////////////// where is this stored?
                 // remove some deleted items
                 for (auto it = _prios.begin(); it != _prios.end(); ++it) {
-                    if (it->deleted == false) newPrio.push_back(*it);
+                    if (it->deleted == false) newPrio.push(*it);
                 }
                 _prios = newPrio;
             }
@@ -317,9 +329,21 @@ private:
         std::map<uint64_t,Element> temp; // map is sorted by key!
         bool success;
 
+
+
+
+
+
+
+
+
+
+
+
+
         // remove old items from front and move them into temp
         for (pos = 0; pos < (EACHFILE*OLDIES); ) {
-            Qentry qe = _prios.front();
+            Qentry qe = _prios.front(); ////////////////////////////////////////////////////// ???????
             _prios.pop_front();
             if (qe.deleted == false) {
                 temp[qe.key] = _ramList[qe.key];
@@ -327,6 +351,18 @@ private:
                 ++pos; // we only count undeleted stuff!
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
 
         // run through sorted items
         Id written = 0;

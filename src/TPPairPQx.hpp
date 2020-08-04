@@ -1,4 +1,4 @@
-/** Two Pass Pairing based Priority Queue eXtended (prio 1 = high)
+/** Two Pass Pairing Heap based Priority Queue eXtended (prio 1 = high)
  * 
  * - change priority is possible
  * 

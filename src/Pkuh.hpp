@@ -22,6 +22,13 @@
  * - private: store Element and additional date (see above) of the Top Element
  *   always in RAM
  * - maybe a additional heap check after xy inserts or before a swapp event
+ *
+ * Erster entwurf soll:
+ * 
+* Das RAM nach HDD swappen soll ausserdem eine modifikation erfahren, damit erstmal elemente 
+* vor dem auslagern übersprungen werden, deren prio einen bestimmten prozentualen wert nicht 
+* überschreiten. wird dann jedoch nicht genug ausgelagert, sind wieder alte elemente dran.
+
  **/
 
 #include <inttypes.h>  // uintX_t stuff

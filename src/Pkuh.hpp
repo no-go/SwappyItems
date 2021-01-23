@@ -5,9 +5,10 @@
  * This Code is like SwappyItems, but additionaly (ALL TO DO!!)
  * 
  * - pop(void) gets and removes Element with MIN prio
- * - get(void) gets Element with MIN prio
+ * - top(void) gets Element with MIN prio
+ * - update(..) change prio
  * 
- * - every Element needs a prio value
+ * - every Element needs a prio value (uint64_t)
  * - a prio config: above (100+X)% of actual MIN prio should be swapped
  *   to HDD.
  * 
@@ -19,8 +20,7 @@
  *   in the background:
  *   - a 2nd (key, prio) info of a "leftmost node"
  *   - a 2nd vector of keys to "sibling nodes"
- * - private: store Element and additional date (see above) of the Top Element
- *   always in RAM
+ * - private: store Element and additional date (see above) of the Top Element always in RAM
  * - maybe a additional heap check after xy inserts or before a swapp event
  *
  * Erster entwurf soll:
@@ -28,16 +28,34 @@
 * Das RAM nach HDD swappen soll ausserdem eine modifikation erfahren, damit erstmal elemente 
 * vor dem auslagern übersprungen werden, deren prio einen bestimmten prozentualen wert nicht 
 * überschreiten. wird dann jedoch nicht genug ausgelagert, sind wieder alte elemente dran.
-
+*
+* next TODOs
+* ----------
+* 0) Define as default prio infiniti!                                                  OK
+* 1) RAM Data is 3tuple and not pair.                                                  OK
+* 2) update prio method                                                                OK
+* 3.1) Make a config parameter in template to define a nice to have prio limit in RAM. OK
+* 3.2) use additional config parameter in swapping methods.                            
+* 4) Make a top element additionaly to RAM and HDD storage.                            
+* 5.1) Add additional data leftmost.                              
+* 5.2) Add additional data vector sibling.                        
+* 6) implement merge()                                            
+* 7) implement mergePair()                                        
+* 8) place merge() and mergePair() at right place.                
+* 9) implement pop(void)                                          
+* 10) imlement top(void)                                          
+* 11) Test via example. e.g. minimum spanning tree.      
+* 12) make more statistics.                              OK
  **/
 
 #include <inttypes.h>  // uintX_t stuff
 #include <iostream>    // sizeof and ios namespace
 #include <algorithm>   // find, minmax
 #include <stdexcept>   // std::out_of_range
-#include <utility>     // make_pair
 #include <cstdlib>     // srand, rand, exit
 #include <limits>      // min max of int... etc
+
+constexpr auto PKUH_INFINITI = std::numeric_limits<std::uint64_t>::max();
 
 #include <vector>         // store file information
 #include <set>            // a set of candidate files
@@ -57,26 +75,29 @@ namespace filesys = std::experimental::filesystem;
 #include <mutex> // for mutex
 #include <thread> // you need -lpthread
 
+#include <tuple>
 
 /**
  * @todo still "TKEY = uint64_t" is expected ?
  */
 template <
     class TKEY, class TVALUE,
+    int PRIOLIMIT = 20,
     int EACHFILE = 16384, int OLDIES = 5, int RAMSIZE = 3, int BLOOMBITS = 4, int MASKLENGTH = (2* 4*16384)
 >
 class Pkuh {
 
 public:
-    typedef std::pair<TVALUE, std::vector<TKEY> >  Data; // just for simplifing next line
+    typedef std::tuple<TVALUE, std::vector<TKEY>, uint64_t> Data; // just for simplifing next lines
     
     struct statistic_s {
         uint64_t size    = 0;
         uint64_t fileKB  = 0;
         uint64_t queue   = 0;
         
-        uint64_t updates = 0;
-        uint64_t deletes = 0;
+        uint64_t priochanges = 0;
+        uint64_t updates     = 0;
+        uint64_t deletes     = 0;
 
         uint64_t bloomSaysNotIn = 0;
         uint64_t bloomFails = 0;
@@ -150,7 +171,7 @@ public:
             );
             it->deleted = true;
             _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_pair(value, _ramList[key].second);
+            _ramList[key] = std::make_tuple(value, std::get<1>(_ramList[key].second), std::get<2>(_ramList[key].second));
             ++statistic.updates;
             return false;
         } else {
@@ -158,11 +179,35 @@ public:
             maySwap();
             ++statistic.size;
             _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_pair(value, std::vector<TKEY>(0));
+            _ramList[key] = std::make_tuple(value, std::vector<TKEY>(0), PKUH_INFINITI);
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
             if (key < _ramMinimum) _ramMinimum = key;
             return true;
+        }
+    }
+    
+    /**
+     * update prio
+     *
+     * @return false if it does not exists
+     */
+    bool update (TKEY key, uint64_t prio) {
+        if (load(key)) {
+            // just update
+            // reverse search should be faster
+            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
+                [key] (const Qentry & qe) {
+                    return (qe.key == key) && (qe.deleted == false);
+                }
+            );
+            it->deleted = true;
+            _mru.push_back(Qentry{key,false});
+            _ramList[key] = std::make_tuple(std::get<0>(_ramList[key].second), std::get<1>(_ramList[key].second), prio);
+            ++statistic.priochanges;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -182,7 +227,7 @@ public:
             );
             it->deleted = true;
             _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_pair(value, refs);
+            _ramList[key] = std::make_tuple(value, refs, std::get<2>(_ramList[key].second));
             ++statistic.updates;
             return false;
         } else {
@@ -190,7 +235,7 @@ public:
             maySwap();
             ++statistic.size;
             _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_pair(value, refs);
+            _ramList[key] = std::make_tuple(value, refs, std::get<2>(_ramList[key].second));
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
             if (key < _ramMinimum) _ramMinimum = key;
@@ -248,38 +293,6 @@ public:
             return false;
         }
     }
-
-    /**
-     * return the smallest key
-     */
-    TKEY min (void) {
-        TKEY val = std::numeric_limits<TKEY>::max();
-        /// @todo makes multithread sense here? maybe collect mins from threads and get min of them?
-        std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
-            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
-                if (finfo.minimum < val) val = finfo.minimum;
-            }
-        });
-        
-        if (_ramMinimum < val) val = _ramMinimum;
-        return val;
-    }
-
-    /**
-     * return the biggest key
-     */
-    TKEY max (void) {
-        TKEY val = std::numeric_limits<TKEY>::min();
-        /// @todo makes multithread sense here? maybe collect mins from threads and get min of them?
-        std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
-            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
-                if (finfo.maximum > val) val = finfo.maximum;
-            }
-        });
-        
-        if (_ramMaximum > val) val = _ramMaximum;
-        return val;
-    }
     
     /**
      * get a struct with many statistic values
@@ -304,8 +317,9 @@ public:
         statistic.fileKB = 0;
         statistic.queue  = 0;
         
-        statistic.updates = 0;
-        statistic.deletes = 0;
+        statistic.priochanges = 0;
+        statistic.updates     = 0;
+        statistic.deletes     = 0;
 
         statistic.bloomSaysNotIn = 0;
         statistic.rangeSaysNo = 0;
@@ -325,10 +339,10 @@ public:
         snprintf(
             _swappypath, 512,
             "%s%d-"
-            "%d-%d-%d-%d-%d",
+            "%d-%d-%d-%d-%d-%d",
             _prefix,
             swappyId,
-            EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH
+            PRIOLIMIT, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH
         );
         
         if (filesys::exists(_swappypath)) {
@@ -338,9 +352,10 @@ public:
                 exit(0);
             } else {
                 printf(
-                    "# wakeup on items, updates, deletes: "
-                    "%10ld %10" PRId64 " %10" PRId64 "\n",
+                    "# wakeup on items, priochanges, updates, deletes: "
+                    "%10ld %10" PRId64 " %10" PRId64 " %10" PRId64 "\n",
                     statistic.size,
+                    statistic.priochanges,
                     statistic.updates,
                     statistic.deletes
                 );
@@ -360,6 +375,38 @@ public:
 private:
 
     /**
+     * return the smallest key (just for statistic)
+     */
+    TKEY min (void) {
+        TKEY val = std::numeric_limits<TKEY>::max();
+        /// @todo makes multithread sense here? maybe collect mins from threads and get min of them?
+        std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                if (finfo.minimum < val) val = finfo.minimum;
+            }
+        });
+        
+        if (_ramMinimum < val) val = _ramMinimum;
+        return val;
+    }
+
+    /**
+     * return the biggest key (just for statistic)
+     */
+    TKEY max (void) {
+        TKEY val = std::numeric_limits<TKEY>::min();
+        /// @todo makes multithread sense here? maybe collect mins from threads and get min of them?
+        std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
+            if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
+                if (finfo.maximum > val) val = finfo.maximum;
+            }
+        });
+        
+        if (_ramMaximum > val) val = _ramMaximum;
+        return val;
+    }
+    
+    /**
      * load all hibernate content into RAM
      * 
      * @todo return on fail
@@ -369,6 +416,7 @@ private:
         TKEY loadedKey;
         TKEY loadedKey2;
         TVALUE loadedValue;
+        uint64_t loadedPrio;
         std::ifstream file;
 
         snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
@@ -380,13 +428,14 @@ private:
             std::vector<TKEY> vecdata(0);
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedValue, sizeof(TVALUE));
+            file.read((char *) &loadedPrio, sizeof(uint64_t));
             // stored vector?
             file.read((char *) &lengthVec, sizeof(Id));
             for (Id j=0; j<lengthVec; ++j) {
                 file.read((char *) &loadedKey2, sizeof(TKEY));
                 vecdata.push_back(loadedKey2);
             }
-            _ramList[loadedKey] = std::make_pair(loadedValue, vecdata);
+            _ramList[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio);
         }
         file.close();
 
@@ -446,12 +495,13 @@ private:
         file.write((char *) &length, sizeof(Id));
         for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
             file.write((char *) &(it->first), sizeof(TKEY));
-            file.write((char *) &(it->second.first), sizeof(TVALUE));
+            file.write((char *) &(std::get<0>(it->second)), sizeof(TVALUE));
+            file.write((char *) &(std::get<2>(it->second)), sizeof(uint64_t));
             // stored vector?
-            length = it->second.second.size();
+            length = std::get<1>(it->second).size();
             file.write((char *) &length, sizeof(Id));
             for (Id j=0; j<length; ++j) {
-                file.write((char *) &(it->second.second[j]), sizeof(TKEY));
+                file.write((char *) &(std::get<1>(it->second)[j]), sizeof(TKEY));
             }
         }
         file.close();
@@ -592,6 +642,7 @@ private:
         Id length;
         TKEY loadedKey;
         TKEY loadedKey2;
+        uint64_t loadedPrio;
         TVALUE loadedValue;
         
         bool result = false;
@@ -604,13 +655,14 @@ private:
             std::vector<TKEY> vecdata(0);
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedValue, sizeof(TVALUE));
+            file.read((char *) &loadedPrio, sizeof(uint64_t));
             // stored vector?
             file.read((char *) &length, sizeof(Id));
             for (Id j=0; j<length; ++j) {
                 file.read((char *) &loadedKey2, sizeof(TKEY));
                 vecdata.push_back(loadedKey2);
             }
-            temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+            temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio);
 
             if (loadedKey == key) {
                 result = true;
@@ -730,13 +782,14 @@ private:
 
             // store data
             file.write((char *) &(it->first), sizeof(TKEY));
-            file.write((char *) &(it->second.first), sizeof(TVALUE));
+            file.write((char *) &(std::get<0>(it->second)), sizeof(TVALUE));
+            file.write((char *) &(std::get<2>(it->second)), sizeof(uint64_t));
             
             // store vector?
-            Id length = it->second.second.size();
+            Id length = std::get<1>(it->second).size();
             file.write((char *) &length, sizeof(Id));
             for (Id j=0; j<length; ++j) {
-                file.write((char *) &(it->second.second[j]), sizeof(TKEY));
+                file.write((char *) &(std::get<1>(it->second)[j]), sizeof(TKEY));
             }
             
             // remember key in bloom mask
@@ -782,8 +835,13 @@ public:
      * This "for_each" catches all items and runs a function on each item.
      * If this function returns true, the "for_each" stops.
      * 
+     * !!! Attention on prio changes!!
+     * 
+     * @todo WAS PASSIERT, WENN die lambda Funktion an der PRIO herumfuscht !!!!
+     *       ----------------> Heap wird leider verändert und muss angepasst werden -------------------
+     * 
      * @param back is pointer to the value, were the each loop breaks
-     * @param foo is a lambda function, which gets each key and value(pair). if foo return true, the each-loop breaks
+     * @param foo is a lambda function, which gets each key and value(tuple). if foo return true, the each-loop breaks
      * @return if it is false, the loop did not break
      */
     bool each (Data & back, std::function<bool(TKEY, Data &)> foo) {
@@ -812,6 +870,7 @@ public:
             Id length;
             TKEY loadedKey;
             TKEY loadedKey2;
+            uint64_t loadedPrio;
             TVALUE loadedValue;
 
             char filename[512];
@@ -822,6 +881,7 @@ public:
                 std::vector<TKEY> vecdata(0);
                 file.read((char *) &loadedKey, sizeof(TKEY));
                 file.read((char *) &loadedValue, sizeof(TVALUE));
+                file.read((char *) &loadedPrio, sizeof(uint64_t));
                 keys.insert(loadedKey);
                 // stored vector?
                 file.read((char *) &length, sizeof(Id));
@@ -831,7 +891,7 @@ public:
                         vecdata.push_back(loadedKey2);
                     }
                 }
-                temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+                temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio);
             }
             file.close();
             // 1.2) store possible min/max for ram
@@ -868,6 +928,11 @@ public:
      * 
      * this method never touches the MRU queue and never swaps or load data into RAM.
      * It does not create new items.
+     * 
+     * !!! Attention on prio changes!!
+     * 
+     * @todo WAS PASSIERT, WENN die lambda Funktion an der PRIO herumfuscht !!!!
+     *       ----------------> Heap wird leider verändert und muss angepasst werden -------------------
      *
      * @param back the value as copy
      * @param key the unique key
@@ -929,6 +994,7 @@ public:
                 Id length;
                 TKEY loadedKey;
                 TKEY loadedKey2;
+                uint64_t loadedPrio;
                 TVALUE loadedValue;
                 
                 snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, fid);
@@ -944,6 +1010,7 @@ public:
                         
                         std::vector<TKEY> vecdata(0);
                         file.read((char *) &loadedValue, sizeof(TVALUE));
+                        file.read((char *) &loadedPrio, sizeof(uint64_t));
                         // stored vector?
                         file.read((char *) &length, sizeof(Id));
                         for (Id j=0; j<length; ++j) {
@@ -951,12 +1018,13 @@ public:
                             vecdata.push_back(loadedKey2);
                         }
                         // remember data and end position
-                        back = std::make_pair(loadedValue, vecdata);
+                        back = std::make_tuple(loadedValue, vecdata, loadedPrio);
                     } else {
                         if (success) {
                             // store data from behind the relevant key-value pair
                             std::vector<TKEY> vecdata(0);
                             file.read((char *) &loadedValue, sizeof(TVALUE));
+                            file.read((char *) &loadedPrio, sizeof(uint64_t));
                             // stored vector?
                             file.read((char *) &length, sizeof(Id));
                             for (Id j=0; j<length; ++j) {
@@ -964,11 +1032,12 @@ public:
                                 vecdata.push_back(loadedKey2);
                             }
                             // remember data
-                            temp[loadedKey] = std::make_pair(loadedValue, vecdata);
+                            temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio);
                         } else {
                             // ignore
                             /// @todo a better way to set the filepointer to the next key-value pair!
                             file.read((char *) &loadedValue, sizeof(TVALUE));
+                            file.read((char *) &loadedPrio, sizeof(uint64_t));
                             // stored vector?
                             file.read((char *) &length, sizeof(Id));
                             for (Id j=0; j<length; ++j) file.read((char *) &loadedKey2, sizeof(TKEY));
@@ -999,13 +1068,14 @@ public:
                 for (it=temp.begin(); it!=temp.end(); ++it) {
                     // store data
                     file.write((char *) &(it->first), sizeof(TKEY));
-                    file.write((char *) &(it->second.first), sizeof(TVALUE));
+                    file.write((char *) &(std::get<0>(it->second)), sizeof(TVALUE));
+                    file.write((char *) &(std::get<2>(it->second)), sizeof(uint64_t));
                     
                     // store vector?
-                    Id le = it->second.second.size();
+                    Id le = std::get<1>(it->second).size();
                     file.write((char *) &le, sizeof(Id));
                     for (Id j=0; j<le; ++j) {
-                        file.write((char *) &(it->second.second[j]), sizeof(TKEY));
+                        file.write((char *) &(std::get<1>(it->second)[j]), sizeof(TKEY));
                     }
                 }
                 file.close();

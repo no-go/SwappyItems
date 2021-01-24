@@ -32,7 +32,7 @@
 * next TODOs
 * ----------
 * 0) Define as default prio infiniti!                                                  OK
-* 1) RAM Data is 3tuple and not pair.                                                  OK
+* 1) RAM Data is tuple and not pair.                                                   OK
 * 2) update prio method                                                                OK
 * 3.1) Make a config parameter in template to define a nice to have prio limit in RAM. OK
 * 3.2) use additional config parameter in swapping methods.                            
@@ -88,8 +88,8 @@ template <
 class Pkuh {
 
 public:
-//                     nodedata          neighbors      prio  leftmost            sibling
-    typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t,     TKEY, std::vector<TKEY> > Data; // just for simplifing next lines
+//                     nodedata          neighbors      prio
+    typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t> Data;
     
     struct statistic_s {
         uint64_t size    = 0;
@@ -114,6 +114,9 @@ public:
     };
     
 private:
+//                     nodedata          neighbors      prio  leftmost            sibling
+    typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t,     TKEY, std::vector<TKEY> > InternalData;
+
     typedef uint32_t                                 Id;
     typedef uint32_t                                Fid; // File id
 
@@ -132,7 +135,7 @@ private:
     typedef uint32_t                                   Bid;
     typedef std::set<Bid>                      Fingerprint;
     
-    typedef std::unordered_map<TKEY,Data>              Ram;
+    typedef std::unordered_map<TKEY,InternalData>      Ram;
     typedef std::vector<Detail>                    Buckets;
     typedef std::deque<Qentry>                       Order;
 
@@ -278,9 +281,10 @@ public:
      * get a item
      *
      * @param key the unique key
-     * @return nullptr if item not exists
+     * @param result the reference, where you get a copy of the stored data
+     * @return false, if key not exists
      */
-    Data * get (const TKEY & key) {
+    bool get (const TKEY & key, Data & result) {
         if (load(key)) {
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
@@ -291,9 +295,12 @@ public:
             // every get fills the queue with "deleted = true" on this key, thus older entries are never equal false
             it->deleted = true;
             _mru.push_back(Qentry{key,false});
-            return &(_ramList[key]);
+            std::get<0>(result) = std::get<0>(_ramList[key]);
+            std::get<1>(result) = std::get<1>(_ramList[key]);
+            std::get<2>(result) = std::get<2>(_ramList[key]);
+            return true;
         } else {
-            return nullptr;
+            return false;
         }
     }
     
@@ -750,7 +757,7 @@ private:
         Detail detail{0, 0};
         Fingerprint fp;
         
-        std::map<TKEY,Data> temp; // map is sorted by key!
+        std::map<TKEY,InternalData> temp; // map is sorted by key!
         bool success;
         
         ++statistic.swaps;
@@ -769,7 +776,7 @@ private:
         // run through sorted items
         Id written = 0;
         std::ofstream file;
-        typename std::map<TKEY,Data>::iterator it;
+        typename std::map<TKEY,InternalData>::iterator it;
 
         for (it=temp.begin(); it!=temp.end(); ++it) {
 

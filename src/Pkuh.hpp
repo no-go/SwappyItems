@@ -35,17 +35,18 @@
 * 1) RAM Data is tuple and not pair.                                                         OK
 * 2) update prio method                                                                      OK
 * 3.1) Make a config parameter in template to define a nice to have prio limit in RAM.       OK
-* 5.1) Add additional data leftmost.                                                   OK
-* 5.2) Add additional data vector sibling.                                             OK
-* 5.3) change leftmost to "parent", because makes more sense                           OK
-*
-* 4) Make a top element additionaly to RAM and HDD storage. (do not forget hibernate/wakeup)     OK
+* 5.1) Add additional data leftmost.                                                         OK
+* 5.2) Add additional data vector sibling.                                                   OK
+* 5.3) change leftmost to "parent", because makes more sense                                 OK
+* 4) Make a top element additionaly to RAM and HDD storage. (do not forget hibernate/wakeup) OK
+* 9) implement pop(void)                                                                     OK
+* 10) imlement top(void)                                                                     OK
 * 
 * 6) implement merge()                                                                 
 * 7) implement mergePair()                                                             
-* 8) place merge() and mergePair() at right place.                                     
-* 9) implement pop(void)                                                               
-* 10) imlement top(void)                                                               
+* 8) place merge() and mergePair() at right place!!!                                   
+*    TODO added in del() and update() because only these methods (+pop) change PRIO content (= change heap min property)
+* 
 * 3.2) use additional config parameter in swapping methods.                            
 * 
 * 11) Test via example. e.g. minimum spanning tree.                                    
@@ -175,7 +176,35 @@ public:
      * @return true if it is new
      */
     bool set (TKEY key, TVALUE value) {
-        if (load(key)) {
+        if (_headKey != _KEYMAX) {
+            // is top empty? = Priority Queue is empty!
+            
+            _headKey = key;
+            _headData = std::make_tuple(
+                value,
+                std::vector<TKEY>(0),
+                _PRIOMAX,
+                key,                      // inital it is its own parent
+                std::vector<TKEY>(0)
+            );
+            ++statistic.size;
+            return true;
+            
+        } else if (key == _headKey) {
+            // is key = top?
+
+            _headData = std::make_tuple(
+                value,
+                std::get<1>(_headData),
+                std::get<2>(_headData),
+                std::get<3>(_headData),
+                std::get<4>(_headData)
+            );
+            
+            ++statistic.updates;
+            return false;
+            
+        } else if (load(key)) {
             // just update
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
@@ -206,6 +235,7 @@ public:
                 key,                      // inital it is its own parent
                 std::vector<TKEY>(0)
             );
+            
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
             if (key < _ramMinimum) _ramMinimum = key;
@@ -214,42 +244,40 @@ public:
     }
     
     /**
-     * update prio
-     *
-     * @return false if it does not exists
-     */
-    bool update (TKEY key, uint64_t prio) {
-        if (load(key)) {
-            // just update
-            // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
-                [key] (const Qentry & qe) {
-                    return (qe.key == key) && (qe.deleted == false);
-                }
-            );
-            it->deleted = true;
-            _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_tuple(
-                std::get<0>(_ramList[key].second),
-                std::get<1>(_ramList[key].second),
-                prio,
-                std::get<3>(_ramList[key].second),
-                std::get<4>(_ramList[key].second)
-            );
-            ++statistic.priochanges;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
      * set (create or update)
      *
      * @return true if it is new
      */
     bool set (TKEY key, TVALUE value, std::vector<TKEY> refs) {
-        if (load(key)) {
+        if (_headKey != _KEYMAX) {
+            // is top empty? = Priority Queue is empty!
+            
+            _headKey = key;
+            _headData = std::make_tuple(
+                value,
+                refs,
+                _PRIOMAX,
+                key,                      // inital it is its own parent
+                std::vector<TKEY>(0)
+            );
+            ++statistic.size;
+            return true;
+            
+        } else if (key == _headKey) {
+            // is key = top?
+
+            _headData = std::make_tuple(
+                value,
+                refs,
+                std::get<2>(_headData),
+                std::get<3>(_headData),
+                std::get<4>(_headData)
+            );
+            
+            ++statistic.updates;
+            return false;
+            
+        } else if (load(key)) {
             // just update
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
@@ -288,6 +316,58 @@ public:
     }
 
     /**
+     * update prio
+     *
+     * @return false if it does not exists
+     */
+    bool update (TKEY key, uint64_t prio) {
+        // is key = top?
+        if (key == _headKey) {
+
+            /**
+             * @todo
+             * - run through sibling and...
+             * - correct sibling and parents via merge and mergePair
+             * - place new top in headKey and headData (and remove from RAM/HDD?)
+             */
+            
+            ++statistic.priochanges;
+            return true;
+            
+        } else if (load(key)) {
+            // just update
+            // reverse search should be faster
+            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
+                [key] (const Qentry & qe) {
+                    return (qe.key == key) && (qe.deleted == false);
+                }
+            );
+            it->deleted = true;
+            _mru.push_back(Qentry{key,false});
+            _ramList[key] = std::make_tuple(
+                std::get<0>(_ramList[key].second),
+                std::get<1>(_ramList[key].second),
+                prio,
+                std::get<3>(_ramList[key].second),
+                std::get<4>(_ramList[key].second)
+            );
+            
+            /**
+             * @todo
+             * - find sibling vector of parent
+             * - run through sibling and...
+             * - correct sibling and parents via merge and mergePair
+             * - place new top in headKey and headData (and remove from RAM/HDD?)
+             */
+
+            ++statistic.priochanges;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * get a item
      *
      * @param key the unique key
@@ -295,7 +375,14 @@ public:
      * @return false, if key not exists
      */
     bool get (const TKEY & key, Data & result) {
-        if (load(key)) {
+        if (key == _headKey) {
+            // is key = top?
+            std::get<0>(result) = std::get<0>(_headData);
+            std::get<1>(result) = std::get<1>(_headData);
+            std::get<2>(result) = std::get<2>(_headData);
+            return true;
+            
+        } else if (load(key)) {
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
                 [key] (const Qentry & qe) {
@@ -315,13 +402,66 @@ public:
     }
     
     /**
+     * get the top item
+     *
+     * @param resultkey is the reference, where you get a copy of the key value
+     * @param result the reference, where you get a copy of the stored data
+     * @return false, if top not exists
+     */
+    bool top (TKEY & resultkey, Data & result) {
+        if (_headKey != _KEYMAX) {
+            resultkey = _headKey;
+            std::get<0>(result) = std::get<0>(_headData);
+            std::get<1>(result) = std::get<1>(_headData);
+            std::get<2>(result) = std::get<2>(_headData);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    /**
+     * get and remove the top item
+     *
+     * @param resultkey is the reference, where you get a copy of the key value
+     * @param result the reference, where you get a copy of the stored data
+     * @return false, if top not exists
+     */
+    bool pop (TKEY & resultkey, Data & result) {
+        if (_headKey != _KEYMAX) {
+            resultkey = _headKey;
+            std::get<0>(result) = std::get<0>(_headData);
+            std::get<1>(result) = std::get<1>(_headData);
+            std::get<2>(result) = std::get<2>(_headData);
+            del(resultkey);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    /**
      * delete a item
      *
      * @param key the unique key
      * @return false if item not exists
      */
     bool del (const TKEY & key) {
-        if (load(key)) {
+        // is key = top?
+        if (key == _headKey) {
+
+            /**
+             * @todo
+             * - run through sibling and...
+             * - correct sibling and parents via merge and mergePair
+             * - place new top in headKey and headData (and remove from RAM/HDD?)
+             */
+            
+            --statistic.size;
+            ++statistic.deletes;
+            
+            return true;
+        } else if (load(key)) {
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
                 [key] (const Qentry & qe) {
@@ -331,6 +471,14 @@ public:
             it->deleted = true;
             // we really have to delete it in ram, because load() search key initialy in ram!
             _ramList.erase(key);
+
+            /**
+             * @todo
+             * - find sibling vector of parent
+             * - run through sibling and...
+             * - correct sibling and parents via merge and mergePair
+             * - place new top in headKey and headData (and remove from RAM/HDD?)
+             */
             
             --statistic.size;
             ++statistic.deletes;
@@ -351,7 +499,7 @@ public:
 
         statistic.minKey = std::numeric_limits<TKEY>::max();
         statistic.maxKey = std::numeric_limits<TKEY>::min();
-        /// @todo makes multithread sense here? maybe collect mins and maxs from threads and get min of them?
+        // @todo makes multithread sense here? maybe collect mins and maxs from threads and get min of them?
         std::for_each (_buckets.begin(), _buckets.end(), [&](Detail finfo) {
             if ( finfo.minimum != finfo.maximum ) { // it is not deleted!
                 if (finfo.minimum < statistic.minKey) statistic.minKey = finfo.minimum;

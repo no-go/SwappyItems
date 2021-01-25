@@ -37,15 +37,16 @@
 * 3.1) Make a config parameter in template to define a nice to have prio limit in RAM. OK
 * 3.2) use additional config parameter in swapping methods.                            
 * 4) Make a top element additionaly to RAM and HDD storage.                            
-* 5.1) Add additional data leftmost.                              
-* 5.2) Add additional data vector sibling.                        
-* 6) implement merge()                                            
-* 7) implement mergePair()                                        
-* 8) place merge() and mergePair() at right place.                
-* 9) implement pop(void)                                          
-* 10) imlement top(void)                                          
-* 11) Test via example. e.g. minimum spanning tree.      
-* 12) make more statistics.                              OK
+* 5.1) Add additional data leftmost.                                                   OK
+* 5.2) Add additional data vector sibling.                                             OK
+* 6) implement merge()                                                                 
+* 7) implement mergePair()                                                             
+* 8) place merge() and mergePair() at right place.                                     
+* 9) implement pop(void)                                                               
+* 10) imlement top(void)                                                               
+* 11) Test via example. e.g. minimum spanning tree.                                    
+* 12) make more statistics.                                                            OK
+* 13) refactoring: load and store a bit redundant (wakeup/hibernate)                   ?
  **/
 
 #include <inttypes.h>  // uintX_t stuff
@@ -523,11 +524,18 @@ private:
             file.write((char *) &(it->first), sizeof(TKEY));
             file.write((char *) &(std::get<0>(it->second)), sizeof(TVALUE));
             file.write((char *) &(std::get<2>(it->second)), sizeof(uint64_t));
+            file.write((char *) &(std::get<3>(it->second)), sizeof(TKEY));
             // stored vector?
             length = std::get<1>(it->second).size();
             file.write((char *) &length, sizeof(Id));
             for (Id j=0; j<length; ++j) {
                 file.write((char *) &(std::get<1>(it->second)[j]), sizeof(TKEY));
+            }
+            // stored sibling?
+            length = std::get<4>(it->second).size();
+            file.write((char *) &length, sizeof(Id));
+            for (Id j=0; j<length; ++j) {
+                file.write((char *) &(std::get<4>(it->second)[j]), sizeof(TKEY));
             }
         }
         file.close();
@@ -665,11 +673,12 @@ private:
      */
     void loadFromFile (Fid fid, TKEY key) {
         Ram temp;
-        Id length;
+        Id lengthVec;
         TKEY loadedKey;
         TKEY loadedKey2;
-        uint64_t loadedPrio;
         TVALUE loadedValue;
+        uint64_t loadedPrio;
+        TKEY leftmost;
         
         bool result = false;
         
@@ -679,16 +688,24 @@ private:
         
         for (Id c = 0; c < EACHFILE; ++c) {
             std::vector<TKEY> vecdata(0);
+            std::vector<TKEY> sibling(0);
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedValue, sizeof(TVALUE));
             file.read((char *) &loadedPrio, sizeof(uint64_t));
+            file.read((char *) &leftmost, sizeof(TKEY));
             // stored vector?
-            file.read((char *) &length, sizeof(Id));
-            for (Id j=0; j<length; ++j) {
+            file.read((char *) &lengthVec, sizeof(Id));
+            for (Id j=0; j<lengthVec; ++j) {
                 file.read((char *) &loadedKey2, sizeof(TKEY));
                 vecdata.push_back(loadedKey2);
             }
-            temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio);
+            // stored sibling?
+            file.read((char *) &lengthVec, sizeof(Id));
+            for (Id j=0; j<lengthVec; ++j) {
+                file.read((char *) &loadedKey2, sizeof(TKEY));
+                sibling.push_back(loadedKey2);
+            }
+            temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio, leftmost, sibling);
 
             if (loadedKey == key) {
                 result = true;
@@ -810,12 +827,19 @@ private:
             file.write((char *) &(it->first), sizeof(TKEY));
             file.write((char *) &(std::get<0>(it->second)), sizeof(TVALUE));
             file.write((char *) &(std::get<2>(it->second)), sizeof(uint64_t));
+            file.write((char *) &(std::get<3>(it->second)), sizeof(TKEY));
             
             // store vector?
-            Id length = std::get<1>(it->second).size();
-            file.write((char *) &length, sizeof(Id));
-            for (Id j=0; j<length; ++j) {
+            Id lengthVec = std::get<1>(it->second).size();
+            file.write((char *) &lengthVec, sizeof(Id));
+            for (Id j=0; j<lengthVec; ++j) {
                 file.write((char *) &(std::get<1>(it->second)[j]), sizeof(TKEY));
+            }
+            // stored sibling?
+            lengthVec = std::get<4>(it->second).size();
+            file.write((char *) &lengthVec, sizeof(Id));
+            for (Id j=0; j<lengthVec; ++j) {
+                file.write((char *) &(std::get<4>(it->second)[j]), sizeof(TKEY));
             }
             
             // remember key in bloom mask

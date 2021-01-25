@@ -31,14 +31,15 @@
 *
 * next TODOs
 * ----------
-* 0) Define as default prio infiniti!                                                  OK
-* 1) RAM Data is tuple and not pair.                                                   OK
-* 2) update prio method                                                                OK
-* 3.1) Make a config parameter in template to define a nice to have prio limit in RAM. OK
-* 3.2) use additional config parameter in swapping methods.                            
-* 4) Make a top element additionaly to RAM and HDD storage.                            
+* 0) Define as default prio infiniti!                                                        OK
+* 1) RAM Data is tuple and not pair.                                                         OK
+* 2) update prio method                                                                      OK
+* 3.1) Make a config parameter in template to define a nice to have prio limit in RAM.       OK
+* 3.2) use additional config parameter in swapping methods.                                      
+* 4) Make a top element additionaly to RAM and HDD storage. (do not forget hibernate/wakeup)     
 * 5.1) Add additional data leftmost.                                                   OK
 * 5.2) Add additional data vector sibling.                                             OK
+* 5.3) change leftmost to "parent", because makes more sense                           OK
 * 6) implement merge()                                                                 
 * 7) implement mergePair()                                                             
 * 8) place merge() and mergePair() at right place.                                     
@@ -115,7 +116,7 @@ public:
     };
     
 private:
-//                     nodedata          neighbors      prio  leftmost            sibling
+//                     nodedata          neighbors      prio    parent            sibling
     typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t,     TKEY, std::vector<TKEY> > InternalData;
 
     typedef uint32_t                                 Id;
@@ -267,9 +268,9 @@ public:
             _ramList[key] = std::make_tuple(
                 value,
                 refs,
-                std::get<2>(_ramList[key].second),
-                std::get<3>(_ramList[key].second),
-                std::get<4>(_ramList[key].second)
+                PKUH_INFINITI,
+                key,
+                std::vector<TKEY>(0)
             );
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
@@ -435,7 +436,7 @@ private:
         TKEY loadedKey2;
         TVALUE loadedValue;
         uint64_t loadedPrio;
-        TKEY leftmost;
+        TKEY parent;
         std::ifstream file;
 
         snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
@@ -449,7 +450,7 @@ private:
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedValue, sizeof(TVALUE));
             file.read((char *) &loadedPrio, sizeof(uint64_t));
-            file.read((char *) &leftmost, sizeof(TKEY));
+            file.read((char *) &parent, sizeof(TKEY));
             // stored vector?
             file.read((char *) &lengthVec, sizeof(Id));
             for (Id j=0; j<lengthVec; ++j) {
@@ -462,7 +463,7 @@ private:
                 file.read((char *) &loadedKey2, sizeof(TKEY));
                 sibling.push_back(loadedKey2);
             }
-            _ramList[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio, leftmost, sibling);
+            _ramList[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio, parent, sibling);
         }
         file.close();
 
@@ -678,7 +679,7 @@ private:
         TKEY loadedKey2;
         TVALUE loadedValue;
         uint64_t loadedPrio;
-        TKEY leftmost;
+        TKEY parent;
         
         bool result = false;
         
@@ -692,7 +693,7 @@ private:
             file.read((char *) &loadedKey, sizeof(TKEY));
             file.read((char *) &loadedValue, sizeof(TVALUE));
             file.read((char *) &loadedPrio, sizeof(uint64_t));
-            file.read((char *) &leftmost, sizeof(TKEY));
+            file.read((char *) &parent, sizeof(TKEY));
             // stored vector?
             file.read((char *) &lengthVec, sizeof(Id));
             for (Id j=0; j<lengthVec; ++j) {
@@ -705,7 +706,7 @@ private:
                 file.read((char *) &loadedKey2, sizeof(TKEY));
                 sibling.push_back(loadedKey2);
             }
-            temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio, leftmost, sibling);
+            temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio, parent, sibling);
 
             if (loadedKey == key) {
                 result = true;

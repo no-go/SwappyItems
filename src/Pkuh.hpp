@@ -35,16 +35,19 @@
 * 1) RAM Data is tuple and not pair.                                                         OK
 * 2) update prio method                                                                      OK
 * 3.1) Make a config parameter in template to define a nice to have prio limit in RAM.       OK
-* 3.2) use additional config parameter in swapping methods.                                      
-* 4) Make a top element additionaly to RAM and HDD storage. (do not forget hibernate/wakeup)     
 * 5.1) Add additional data leftmost.                                                   OK
 * 5.2) Add additional data vector sibling.                                             OK
 * 5.3) change leftmost to "parent", because makes more sense                           OK
+*
+* 4) Make a top element additionaly to RAM and HDD storage. (do not forget hibernate/wakeup)     OK
+* 
 * 6) implement merge()                                                                 
 * 7) implement mergePair()                                                             
 * 8) place merge() and mergePair() at right place.                                     
 * 9) implement pop(void)                                                               
 * 10) imlement top(void)                                                               
+* 3.2) use additional config parameter in swapping methods.                            
+* 
 * 11) Test via example. e.g. minimum spanning tree.                                    
 * 12) make more statistics.                                                            OK
 * 13) refactoring: load and store a bit redundant (wakeup/hibernate)                   ?
@@ -56,9 +59,6 @@
 #include <stdexcept>   // std::out_of_range
 #include <cstdlib>     // srand, rand, exit
 #include <limits>      // min max of int... etc
-
-constexpr auto PKUH_INFINITI = std::numeric_limits<std::uint64_t>::max();
-
 #include <vector>         // store file information
 #include <set>            // a set of candidate files
 #include <unordered_set>  // a set of keys
@@ -90,7 +90,7 @@ template <
 class Pkuh {
 
 public:
-//                     nodedata          neighbors      prio
+//                     nodedata          neighbors      prio -----------------------------START TYPES
     typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t> Data;
     
     struct statistic_s {
@@ -119,6 +119,8 @@ private:
 //                     nodedata          neighbors      prio    parent            sibling
     typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t,     TKEY, std::vector<TKEY> > InternalData;
 
+    TKEY _KEYMAX;
+
     typedef uint32_t                                 Id;
     typedef uint32_t                                Fid; // File id
 
@@ -141,6 +143,8 @@ private:
     typedef std::vector<Detail>                    Buckets;
     typedef std::deque<Qentry>                       Order;
 
+// ----------------------------------------------------------------------------------------END TYPES
+
     // the item store in RAM
     Ram _ramList;
     TKEY _ramMinimum;
@@ -148,6 +152,10 @@ private:
         
     // a queue for the keys
     Order _mru;
+    
+    // The actual key and the Data of the Priority Queue Head
+    TKEY         _headKey;
+    InternalData _headData;
 
     // for each filenr we store min/max value and a bloom mask to filter
     Buckets _buckets;
@@ -194,8 +202,8 @@ public:
             _ramList[key] = std::make_tuple(
                 value,
                 std::vector<TKEY>(0),
-                PKUH_INFINITI,
-                key,
+                _PRIOMAX,
+                key,                      // inital it is its own parent
                 std::vector<TKEY>(0)
             );
             // update min/max of RAM
@@ -268,8 +276,8 @@ public:
             _ramList[key] = std::make_tuple(
                 value,
                 refs,
-                PKUH_INFINITI,
-                key,
+                _PRIOMAX,
+                key,                      // inital it is its own parent
                 std::vector<TKEY>(0)
             );
             // update min/max of RAM
@@ -363,6 +371,14 @@ public:
      * @param swappyId parameter identifies the instance
      */
     Pkuh (int swappyId) {
+        _KEYMAX = std::numeric_limits<std::uint64_t>::max();
+        _PRIOMAX = std::numeric_limits<std::>::max();
+        
+        _headKey = _KEYMAX;                       // initial is max key the "empty"
+        std::get<1>(_headData) = std::vector<TKEY>(0);  // empty Vector (in userspace)
+        std::get<2>(_headData) = _PRIOMAX;              // maximal possible prio (in a min heap)
+        std::get<3>(_headData) = _KEYMAX;               // head node on empty heap has itself as parent
+        std::get<4>(_headData) = std::vector<TKEY>(0);  // empty Vector of sibling (not userspace)
         
         statistic.size   = 0;
         statistic.fileKB = 0;
@@ -443,6 +459,24 @@ private:
         file.open(filename, std::ios::in | std::ios::binary);
         Id length;
         Id lengthVec;
+
+        // read head
+        file.read((char *) &_headKey, sizeof(TKEY));
+        file.read((char *) &(std::get<0>(_headData)), sizeof(TVALUE));
+        file.read((char *) &(std::get<2>(_headData)), sizeof(uint64_t));
+        file.read((char *) &(std::get<3>(_headData)), sizeof(TKEY));
+        // head stored vector?
+        file.read((char *) &lengthVec, sizeof(Id));
+        for (Id j=0; j<lengthVec; ++j) {
+            file.read((char *) &(std::get<1>(_headData)[j]), sizeof(TKEY));
+        }
+        // head stored sibling?
+        file.read((char *) &lengthVec, sizeof(Id));
+        for (Id j=0; j<lengthVec; ++j) {
+            file.read((char *) &(std::get<4>(_headData)[j]), sizeof(TKEY));
+        }
+        
+        // read ramlist
         file.read((char *) &length, sizeof(Id));
         for (Id c = 0; c < length; ++c) {
             std::vector<TKEY> vecdata(0);
@@ -519,7 +553,28 @@ private:
 
         snprintf(filename, 512, "%s/hibernate.ramlist", _swappypath);
         std::ofstream file(filename, std::ios::out | std::ios::binary);
-        Id length = _ramList.size();
+        Id length;
+
+        // store head
+        file.write((char *) &_headKey, sizeof(TKEY));
+        file.write((char *) &(std::get<0>(_headData)), sizeof(TVALUE));
+        file.write((char *) &(std::get<2>(_headData)), sizeof(uint64_t));
+        file.write((char *) &(std::get<3>(_headData)), sizeof(TKEY));
+        // store head vector?
+        length = std::get<1>(_headData).size();
+        file.write((char *) &length, sizeof(Id));
+        for (Id j=0; j<length; ++j) {
+            file.write((char *) &(std::get<1>(_headData)[j]), sizeof(TKEY));
+        }
+        // store head sibling?
+        length = std::get<4>(_headData).size();
+        file.write((char *) &length, sizeof(Id));
+        for (Id j=0; j<length; ++j) {
+            file.write((char *) &(std::get<4>(_headData)[j]), sizeof(TKEY));
+        }
+
+        // store ramlist
+        length = _ramList.size();
         file.write((char *) &length, sizeof(Id));
         for (auto it = _ramList.begin(); it != _ramList.end(); ++it) {
             file.write((char *) &(it->first), sizeof(TKEY));

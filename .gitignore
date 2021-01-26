@@ -6,6 +6,7 @@
 *.o
 *.exe
 a.out
+src/a.out
 
 pkuh*/*.bucket
 temp*/*.bucket

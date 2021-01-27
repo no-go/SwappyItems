@@ -82,6 +82,8 @@ public:
 
                 // collect siblings from removed element
                 for (auto n : elm.siblings) {
+                    // assing to a valid parent
+                    n.parent = elm.parent;
                     tomerge.push_back(n);
                 }
                 // tomerge has the keys from all elements, where parent key

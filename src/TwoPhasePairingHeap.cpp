@@ -59,14 +59,12 @@ public:
     }
     
     void del (uint64_t key) {
-        if (_data.size() > 0) {
-            /// @todo was, wenn es der head ist!!!!??
+        if (_data.size() == 1) {
             
+            if (key == _headKey) _data.erase(key);
             
-            
-            
-            
-            
+        } else if (_data.size() > 1) {
+
             Element elm; // = remember the datas from old element
             if (get(key, elm)) {
                 _data.erase(key);
@@ -107,15 +105,23 @@ public:
                     }
                 }
                 // build a single tree (2. phase)
-                uint64_t champion = winners[0];
-                for (int i=1; i < winners.size(); ++i) {
-                    if (_data[winners[i]].prio < _data[champion].prio) {
-                        _data[winners[i]].siblings.push_back(champion);
-                        _data[champion].parent = winners[i];
-                        champion = winners[i];
-                    } else {
-                        _data[champion].siblings.push_back(tomerge[i]);
-                        _data[winners[i]].parent = champion;
+                if (winners.size() > 0) {
+                    uint64_t champion = winners[0];
+                    for (int i=1; i < winners.size(); ++i) {
+                        if (_data[winners[i]].prio < _data[champion].prio) {
+                            _data[winners[i]].siblings.push_back(champion);
+                            _data[champion].parent = winners[i];
+                            champion = winners[i];
+                        } else {
+                            _data[champion].siblings.push_back(tomerge[i]);
+                            _data[winners[i]].parent = champion;
+                        }
+                    }
+                    
+                    // may set a new head
+                    if (key == _headKey) {
+                        _headKey               = champion; // the winner of all winners
+                        _data[_headKey].parent = _headKey; // no parent = link to its self!
                     }
                 }
             }
@@ -126,27 +132,73 @@ public:
     /**
      * @return true, if it is new and not just an update
      */
-    bool set (uint64_t key, Element element) {
+    bool set (uint64_t key, Element & element) {
         try {
             _data.at(key);
             if (_data[key].prio == element.prio) {
                 _data[key] = element;
             } else {
-                /// @todo still exist and the prio changed!
+                /// still exist and the prio changed!
                 
-                // key is the head
-                // yes
-                    // new prio is smaller?
-                    // yes = fine. nothing to do                
-                    // no = .......
-
-                // key is the head
-                // no
-                    // prio is lower than head?
-                    // yes = it is the new head!
+                if (key == _headKey) {
+                    // key is the head -----------------------------
                     
-                    // prio is lower than head?
-                    // no = ....
+                    // new prio is bigger?
+                    if (_data[key].prio < element.prio) {
+                        /// @todo yes
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        _data[key] = element;
+                    } else {
+                        // no = fine. nothing to do
+                        _data[key] = element;
+                    }
+                    
+                } else {
+                    // key is NOT the head -------------------------
+
+                    // prio is lower than head
+                    if (_data[_headKey].prio > element.prio) {
+                        
+                        // remove key from siblings of parent
+                        vector<uint64_t> newsib;
+                        for (auto n : _data[element.parent].siblings) {
+                            if (n != key) newsib.push_back(n);
+                        }
+                        _data[element.parent].siblings = newsib;
+                        _data[_headKey].parent         = key;    // old head gets a parent!
+                        element.parent                 = key;    // no parent = link to its self!
+                        _data[key].siblings.push_back(_headKey); // next new head gets a sibling (the old parent)
+                        _headKey   = key;
+                        _data[key] = element;
+                        
+                    } else {
+                        // new prio is NOT lower than head
+                        
+                        // new prio is bigger than before?
+                        if (_data[key].prio < element.prio) {
+                            /// @todo
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+                            _data[key] = element;
+                        } else {
+                            // no = fine. nothing to do
+                            _data[key] = element;
+                        }
+                    }
+                }
                 
             }
             return false;

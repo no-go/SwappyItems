@@ -145,7 +145,7 @@ public:
                     
                     // new prio is bigger?
                     if (_data[key].prio < element.prio) {
-                        /// @todo yes
+                        /// @todo prio of siblings may be smaller, now!
                         
                         
                         
@@ -184,7 +184,7 @@ public:
                         
                         // new prio is bigger than before?
                         if (_data[key].prio < element.prio) {
-                            /// @todo
+                            /// @todo prio of siblings may be smaller, now!
                             
                             
                             
@@ -194,7 +194,16 @@ public:
                             
                             _data[key] = element;
                         } else {
-                            // no = fine. nothing to do
+                            // is parent still smaller? -> nothing to do
+                            if (_data[element.parent].prio > _data[key].prio) {
+                                /// @todo no = NOT fine! something to do
+                                
+                                
+                                
+                                
+                                
+                            }
+                            
                             _data[key] = element;
                         }
                     }

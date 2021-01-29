@@ -71,17 +71,24 @@ public:
                 
                 vector<uint64_t> tomerge;
                 vector<uint64_t> winners;
+                uint64_t champion;
                 
-                // remove key from siblings of parent
-                for (auto n : _data[elm.parent].siblings) {
-                    if (n != key) tomerge.push_back(n);
+                if (key != _headKey) {
+                    // remove key from siblings of parent
+                    for (auto n : _data[elm.parent].siblings) {
+                        if (n != key) tomerge.push_back(n);
+                    }
+                    _data[elm.parent].siblings = tomerge;
                 }
-                _data[elm.parent].siblings = tomerge;
 
                 // collect siblings from removed element
                 for (auto n : elm.siblings) {
                     // assing to a valid parent
-                    n.parent = elm.parent;
+                    if (key != _headKey) {
+                        _data[n].parent = elm.parent;
+                    } else {
+                        _data[n].parent = n;
+                    }
                     tomerge.push_back(n);
                 }
                 // tomerge has the keys from all elements, where parent key
@@ -106,7 +113,7 @@ public:
                 }
                 // build a single tree (2. phase)
                 if (winners.size() > 0) {
-                    uint64_t champion = winners[0];
+                    champion = winners[0];
                     for (int i=1; i < winners.size(); ++i) {
                         if (_data[winners[i]].prio < _data[champion].prio) {
                             _data[winners[i]].siblings.push_back(champion);
@@ -145,26 +152,64 @@ public:
                     
                     // new prio is bigger?
                     if (_data[key].prio < element.prio) {
-                        /// @todo prio of siblings may be smaller, now!
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                         _data[key] = element;
+                        // prio of siblings may be smaller, now!
+                        
+                        vector<uint64_t> tomerge;
+                        vector<uint64_t> winners;
+                        uint64_t champion = _headKey;
+                        
+                        tomerge.push_back(key);
+                        
+                        // make siblings to possible heads
+                        for (auto n : _data[key].siblings) {
+                            _data[n].parent = n;
+                            tomerge.push_back(n);
+                        }
+                        
+                        // phase 1
+                        for (int i=0; i < tomerge.size(); i+=2) {
+                            if ((i+1) >= tomerge.size()) {
+                                // a single element ...
+                                winners.push_back(tomerge[i]);
+                            } else {
+                                if (_data[tomerge[i]].prio < _data[tomerge[i+1]].prio) {
+                                    winners.push_back(tomerge[i]);
+                                    _data[tomerge[i+1]].parent = tomerge[i];
+                                    _data[tomerge[i]].siblings.push_back(tomerge[i+1]);
+                                } else {
+                                    winners.push_back(tomerge[i+1]);
+                                    _data[tomerge[i]].parent = tomerge[i+1];
+                                    _data[tomerge[i+1]].siblings.push_back(tomerge[i]);
+                                }
+                            }
+                        }
+                        // build a single tree (2. phase)
+                        if (winners.size() > 0) {
+                            champion = winners[0];
+                            for (int i=1; i < winners.size(); ++i) {
+                                if (_data[winners[i]].prio < _data[champion].prio) {
+                                    _data[winners[i]].siblings.push_back(champion);
+                                    _data[champion].parent = winners[i];
+                                    champion = winners[i];
+                                } else {
+                                    _data[champion].siblings.push_back(tomerge[i]);
+                                    _data[winners[i]].parent = champion;
+                                }
+                            }
+                        }
+                        _headKey               = champion; // the winner of all winners
+                        _data[_headKey].parent = _headKey; // no parent = link to its self!
+
                     } else {
-                        // no = fine. nothing to do
+                        // no = fine. nothing to do. min gets more minimal!
                         _data[key] = element;
                     }
                     
                 } else {
                     // key is NOT the head -------------------------
 
-                    // prio is lower than head
+                    // prio is lower than head -> element will be the new head!
                     if (_data[_headKey].prio > element.prio) {
                         
                         // remove key from siblings of parent
@@ -184,6 +229,7 @@ public:
                         
                         // new prio is bigger than before?
                         if (_data[key].prio < element.prio) {
+                            _data[key] = element;
                             /// @todo prio of siblings may be smaller, now!
                             
                             
@@ -192,26 +238,39 @@ public:
                             
                             
                             
-                            _data[key] = element;
+                            
+                            
+                            
+                            
+                            
+
                         } else {
-                            // is parent still smaller? -> nothing to do
                             if (_data[element.parent].prio > _data[key].prio) {
+                                _data[key] = element;
                                 /// @todo no = NOT fine! something to do
                                 
                                 
                                 
                                 
                                 
+                                
+                                
+                                
+                                
+                                
+                            } else {
+                                // is parent still smaller? -> nothing to do
+                                _data[key] = element;
                             }
-                            
-                            _data[key] = element;
                         }
                     }
                 }
                 
             }
             return false;
+            
         } catch (const out_of_range & oor) {
+            
             _data[key]          = element;
             _data[key].siblings = vector<uint64_t>(0);
             if (empty) {

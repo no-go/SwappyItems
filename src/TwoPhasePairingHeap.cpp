@@ -91,6 +91,7 @@ public:
                     }
                     tomerge.push_back(n);
                 }
+                
                 // tomerge has the keys from all elements, where parent key
                 // may or must change!
                 
@@ -166,6 +167,8 @@ public:
                             _data[n].parent = n;
                             tomerge.push_back(n);
                         }
+                        //remove siblings from head
+                        _data[key].siblings = vector<uint64_t>(0);
                         
                         // phase 1
                         for (int i=0; i < tomerge.size(); i+=2) {
@@ -227,36 +230,100 @@ public:
                     } else {
                         // new prio is NOT lower than head
                         
-                        // new prio is bigger than before?
+                        // new prio is bigger then before?
                         if (_data[key].prio < element.prio) {
+                            // heap up to parent is still valid, because parent must be still smaller then element
                             _data[key] = element;
-                            /// @todo prio of siblings may be smaller, now!
                             
+                            // prio of siblings may be smaller, now!
                             
+                            vector<uint64_t> tomerge;
+                            vector<uint64_t> winners;
+                            uint64_t champion = key;
+
+                            // remove key from siblings of parent, because we search a new champion!
+                            vector<uint64_t> newsib;
+                            for (auto n : _data[element.parent].siblings) {
+                                if (n != key) newsib.push_back(n);
+                            }
+                            _data[element.parent].siblings = newsib;
+
+                            // make element siblings to possible subheads
+                            for (auto n : _data[key].siblings) {
+                                _data[n].parent = element.parent;
+                                tomerge.push_back(n);
+                            }
+                            //remove siblings from element
+                            _data[key].siblings = vector<uint64_t>(0);
                             
+                            // and add old subhead, too
+                            tomerge.push_back(key);
                             
-                            
-                            
-                            
-                            
-                            
-                            
-                            
-                            
+                            // phase 1
+                            for (int i=0; i < tomerge.size(); i+=2) {
+                                if ((i+1) >= tomerge.size()) {
+                                    // a single element ...
+                                    winners.push_back(tomerge[i]);
+                                } else {
+                                    if (_data[tomerge[i]].prio < _data[tomerge[i+1]].prio) {
+                                        winners.push_back(tomerge[i]);
+                                        _data[tomerge[i+1]].parent = tomerge[i];
+                                        _data[tomerge[i]].siblings.push_back(tomerge[i+1]);
+                                    } else {
+                                        winners.push_back(tomerge[i+1]);
+                                        _data[tomerge[i]].parent = tomerge[i+1];
+                                        _data[tomerge[i+1]].siblings.push_back(tomerge[i]);
+                                    }
+                                }
+                            }
+                            // build a single tree (2. phase)
+                            if (winners.size() > 0) {
+                                champion = winners[0];
+                                for (int i=1; i < winners.size(); ++i) {
+                                    if (_data[winners[i]].prio < _data[champion].prio) {
+                                        _data[winners[i]].siblings.push_back(champion);
+                                        _data[champion].parent = winners[i];
+                                        champion = winners[i];
+                                    } else {
+                                        _data[champion].siblings.push_back(tomerge[i]);
+                                        _data[winners[i]].parent = champion;
+                                    }
+                                }
+                            }
+                            // we have a new sub tree now and champion is the key with smallest prio
+                            // we add the champion as new sibling to the parent of the changed element
+                            _data[champion].parent = element.parent;
+                            _data[element.parent].siblings.push_back(champion);
 
                         } else {
-                            if (_data[element.parent].prio > _data[key].prio) {
+                            if (_data[element.parent].prio > element.prio) {
                                 _data[key] = element;
-                                /// @todo no = NOT fine! something to do
+                                // new prio is not lower then head
+                                // new prio gets smaller then before
+                                // new prio is smaller then parent !!!!
+                                // => remove key from siblings of parent
+                                // => link siblings to parent
+                                // => push key to siblings of head
+                                // => do 2 phases on siblings of head (?)
                                 
+                                // remove key from siblings of parent
+                                vector<uint64_t> newsib;
+                                for (auto n : _data[element.parent].siblings) {
+                                    if (n != key) newsib.push_back(n);
+                                }
+                                _data[element.parent].siblings = newsib;
+                            
+                                // link siblings to parent
+                                for (auto n : _data[key].siblings) {
+                                    _data[n].parent = element.parent;
+                                }
                                 
+                                //remove siblings from element
+                                _data[key].siblings = vector<uint64_t>(0);
                                 
-                                
-                                
-                                
-                                
-                                
-                                
+                                // add it to head siblings
+                                _data[_headKey].siblings.push_back(key);
+                                _data[key].parent = _headKey;
                                 
                             } else {
                                 // is parent still smaller? -> nothing to do

@@ -17,6 +17,18 @@ Main difference to other key-value stores:
 Go to the [Documentation of SwappyItems](https://no-go.github.io/SwappyItems/)
 or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyItems/).
 
+## ToDo
+
+- implement a larger code version with Priority Queue (for a minimal spanning
+  tree use-case) = `Pkuh.hpp` in the future
+- make number of items in swapped files variable with additional focus on real
+  RAM usage, and ...
+- Because the `vector<key>` data can be very big, SwappyItems should additionally
+  swap data from RAM to DISK, if to many items *and* vector elements are in RAM.
+- Implement a bucket based Priority Queue. Idea: onion-like with two SwappyItems stores. Use `key` as
+  a `prio` bucket and `vector<key>` with all keys with same `prio`. These keys are the keys from the
+  2nd SwappyItems Store, where the original data items is stored.
+
 ## API basics
 
 ### (constructor)

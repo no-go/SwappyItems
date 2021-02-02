@@ -5,14 +5,12 @@
 #include <stdexcept>   // std::out_of_range
 #include <cstdlib>     // srand, rand, exit
 
-// g++ TwoPhasePairingHeap.cpp -Wall
-
 using namespace std;
 
 struct Element {
     int                  data;
     uint64_t             prio;
-    // private in the future:
+private:
     uint64_t           parent;
     vector<uint64_t> siblings;
     friend class TwoPhasePairingHeap;
@@ -70,10 +68,11 @@ public:
     /**
      * @return false, if it does not exist
      */
-    bool top (Element & result) {
+    bool top (uint64_t & resultkey, Element & result) {
         if (empty) {
             return false;
         } else {
+            resultkey = _headKey;
             return get(_headKey, result);
         }
     }
@@ -172,6 +171,8 @@ public:
 
 int main(int argc, char** argv) {
     TwoPhasePairingHeap pq;
+    bool exi;
+    uint64_t k;
     
     for (int i = 0; i < 20000; ++i) {
         Element e;
@@ -182,8 +183,19 @@ int main(int argc, char** argv) {
     }
     for (int i = 0; i < 20000; ++i) {
         Element e;
-        bool exi = pq.get(rand()%20000, e);
-        if (exi) printf("%5d Data: %d\n", i, e.data);
+        exi = pq.get(rand()%20000, e);
+        if (exi) printf("%5d prio: %3d data: %12d\n", i, e.prio, e.data);
+    }
+    for (int i = 0; i < 20000; ++i) {
+        Element e;
+        exi = pq.top(k, e);
+        if (exi == false) {
+            i = 20000;
+        } else {
+            printf("%5d %12d %3d\n", i, k, e.prio);
+            if (e.prio == 0) printf("zero prio should not happend!\n");
+            pq.del(k);
+        }
     }
     return 0;
 }

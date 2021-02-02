@@ -85,7 +85,6 @@ namespace filesys = std::experimental::filesystem;
  */
 template <
     class TKEY, class TVALUE,
-    int PRIOLIMIT = 20,
     int EACHFILE = 16384, int OLDIES = 5, int RAMSIZE = 3, int BLOOMBITS = 4, int MASKLENGTH = (2* 4*16384)
 >
 class Pkuh {
@@ -216,10 +215,10 @@ public:
             _mru.push_back(Qentry{key,false});
             _ramList[key] = std::make_tuple(
                 value, 
-                std::get<1>(_ramList[key].second), 
-                std::get<2>(_ramList[key].second),
-                std::get<3>(_ramList[key].second),
-                std::get<4>(_ramList[key].second)
+                std::get<1>(_ramList[key]), 
+                std::get<2>(_ramList[key]),
+                std::get<3>(_ramList[key]),
+                std::get<4>(_ramList[key])
             );
             ++statistic.updates;
             return false;
@@ -290,9 +289,9 @@ public:
             _ramList[key] = std::make_tuple(
                 value,
                 refs,
-                std::get<2>(_ramList[key].second),
-                std::get<3>(_ramList[key].second),
-                std::get<4>(_ramList[key].second)
+                std::get<2>(_ramList[key]),
+                std::get<3>(_ramList[key]),
+                std::get<4>(_ramList[key])
             );
             ++statistic.updates;
             return false;
@@ -321,45 +320,27 @@ public:
      * @return false if it does not exists
      */
     bool update (TKEY key, uint64_t prio) {
-        // is key = top?
-        if (key == _headKey) {
-
-            /**
-             * @todo
-             * - run through sibling and...
-             * - correct sibling and parents via merge and mergePair
-             * - place new top in headKey and headData (and remove from RAM/HDD?)
-             */
-            
+        if ((key == _headKey) && (prio <= std::get<2>(_headData))) {
+            std::get<2>(_headData) = prio;
             ++statistic.priochanges;
             return true;
+        }
+        
+        if (load(key)) {
             
-        } else if (load(key)) {
-            // just update
-            // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
-                [key] (const Qentry & qe) {
-                    return (qe.key == key) && (qe.deleted == false);
-                }
-            );
-            it->deleted = true;
-            _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_tuple(
-                std::get<0>(_ramList[key].second),
-                std::get<1>(_ramList[key].second),
+            InternalData element = std::make_tuple(
+                std::get<0>(_ramList[key]),
+                std::get<1>(_ramList[key]),
                 prio,
-                std::get<3>(_ramList[key].second),
-                std::get<4>(_ramList[key].second)
+                key,                      // inital it is its own parent
+                std::vector<TKEY>(0)
             );
             
-            /**
-             * @todo
-             * - find sibling vector of parent
-             * - run through sibling and...
-             * - correct sibling and parents via merge and mergePair
-             * - place new top in headKey and headData (and remove from RAM/HDD?)
-             */
+            if (std::get<2>(_ramList[key]) == prio) return true;
 
+            del(key);
+            --statistic.deletes;
+            insert(key, element);
             ++statistic.priochanges;
             return true;
         } else {
@@ -440,6 +421,17 @@ public:
         }
     }
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     /**
      * delete a item
      *
@@ -456,6 +448,28 @@ public:
              * - correct sibling and parents via merge and mergePair
              * - place new top in headKey and headData (and remove from RAM/HDD?)
              */
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             
             --statistic.size;
             ++statistic.deletes;
@@ -480,6 +494,29 @@ public:
              * - place new top in headKey and headData (and remove from RAM/HDD?)
              */
             
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             --statistic.size;
             ++statistic.deletes;
             
@@ -489,6 +526,22 @@ public:
             return false;
         }
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     /**
      * get a struct with many statistic values
@@ -554,10 +607,10 @@ public:
         snprintf(
             _swappypath, 512,
             "%s%d-"
-            "%d-%d-%d-%d-%d-%d",
+            "%d-%d-%d-%d-%d",
             _prefix,
             swappyId,
-            PRIOLIMIT, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH
+            EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH
         );
         
         if (filesys::exists(_swappypath)) {
@@ -587,12 +640,78 @@ public:
         hibernate();
     }
 
+
+
+
+// ------------------------------------------------------------------------------------
+
+
 private:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * join a NEW (!!) Element to the top or replace it
+     * 
+     */
+    void insert (TKEY key, InternalData element) {
+        if (_data.size() == 0) {
+            _headKey = key;
+            _data[key] = element;
+            _data[key].parent = key;
+            empty = false;            
+        } else {
+            _data[key] = element;
+            if (_data[key].prio < _data[_headKey].prio) {
+                _data[key].parent = key;
+                _data[key].siblings.push_back(_headKey);
+                _data[_headKey].parent = key;
+                _headKey = key;
+            } else {
+                _data[key].parent = _headKey;
+                _data[_headKey].siblings.push_back(key);                
+            }
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     /**
      * load all hibernate content into RAM
      * 
-     * @todo return on fail
+     * @todo return false on fail
      */
     bool wakeup (void) {
         char filename[512];
@@ -694,7 +813,8 @@ private:
     /**
      * stores all RAM content into file(s)
      * 
-     * strg+c -> make a regular delete to do a hibernate!
+     * dear programmer, catch a strg+c and make a regular delete of SwappyItems
+     * in your code to do a hibernate!
      */
     void hibernate (void) {
         char filename[512];

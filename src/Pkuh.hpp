@@ -324,18 +324,18 @@ public:
                 return true;
             
             } else {
-                
+                // after delete we will insert the head like a normal new element
                 InternalData element = std::make_tuple(
                     std::get<0>(_headData),
                     std::get<1>(_headData),
                     prio,
-                    _headKey,
-                    std::get<4>(_headData)
+                    key,                    // inital it is its own parent
+                    std::vector<TKEY>(0)
                 );
                 
-                del(_headKey);
+                del(_headKey);         // size--
                 --statistic.deletes;
-                insert(key, element);
+                insert(key, element);  // size++
                 ++statistic.priochanges;
                 return true;
             }
@@ -353,9 +353,9 @@ public:
                 std::vector<TKEY>(0)
             );
             
-            del(key);
+            del(key);             // size--
             --statistic.deletes;
-            insert(key, element);
+            insert(key, element); // size++
             ++statistic.priochanges;
             return true;
         } else {

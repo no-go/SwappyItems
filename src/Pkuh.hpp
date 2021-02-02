@@ -187,6 +187,8 @@ public:
                 std::vector<TKEY>(0)
             );
             ++statistic.size;
+            if (_headKey > _ramMaximum) _ramMaximum = _headKey;
+            if (_headKey < _ramMinimum) _ramMinimum = _headKey;
             return true;
             
         } else if (key == _headKey) {
@@ -211,17 +213,13 @@ public:
                     return (qe.key == key) && (qe.deleted == false);
                 }
             );
+            
             it->deleted = true;
             _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_tuple(
-                value, 
-                std::get<1>(_ramList[key]), 
-                std::get<2>(_ramList[key]),
-                std::get<3>(_ramList[key]),
-                std::get<4>(_ramList[key])
-            );
+            std::get<0>(_ramList[key]) = value;
             ++statistic.updates;
             return false;
+            
         } else {
             // key is new
             maySwap();
@@ -260,6 +258,8 @@ public:
                 std::vector<TKEY>(0)
             );
             ++statistic.size;
+            if (_headKey > _ramMaximum) _ramMaximum = _headKey;
+            if (_headKey < _ramMinimum) _ramMinimum = _headKey;
             return true;
             
         } else if (key == _headKey) {
@@ -286,13 +286,8 @@ public:
             );
             it->deleted = true;
             _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_tuple(
-                value,
-                refs,
-                std::get<2>(_ramList[key]),
-                std::get<3>(_ramList[key]),
-                std::get<4>(_ramList[key])
-            );
+            std::get<0>(_ramList[key] = value;
+            std::get<1>(_ramList[key] = refs;
             ++statistic.updates;
             return false;
         } else {
@@ -320,13 +315,35 @@ public:
      * @return false if it does not exists
      */
     bool update (TKEY key, uint64_t prio) {
-        if ((key == _headKey) && (prio <= std::get<2>(_headData))) {
-            std::get<2>(_headData) = prio;
-            ++statistic.priochanges;
-            return true;
+        
+        if (key == _headKey) {
+            
+            if (prio <= std::get<2>(_headData)) {
+                std::get<2>(_headData) = prio;
+                ++statistic.priochanges;
+                return true;
+            
+            } else {
+                
+                InternalData element = std::make_tuple(
+                    std::get<0>(_headData),
+                    std::get<1>(_headData),
+                    prio,
+                    _headKey,
+                    std::get<4>(_headData)
+                );
+                
+                del(_headKey);
+                --statistic.deletes;
+                insert(key, element);
+                ++statistic.priochanges;
+                return true;
+            }
         }
         
         if (load(key)) {
+            
+            if (std::get<2>(_ramList[key]) == prio) return true;
             
             InternalData element = std::make_tuple(
                 std::get<0>(_ramList[key]),
@@ -336,8 +353,6 @@ public:
                 std::vector<TKEY>(0)
             );
             
-            if (std::get<2>(_ramList[key]) == prio) return true;
-
             del(key);
             --statistic.deletes;
             insert(key, element);
@@ -423,13 +438,7 @@ public:
     
     
     
-    
-    
-    
-    
-    
-    
-    
+      
     
     
     /**
@@ -448,16 +457,6 @@ public:
              * - correct sibling and parents via merge and mergePair
              * - place new top in headKey and headData (and remove from RAM/HDD?)
              */
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
             
             
             
@@ -526,20 +525,7 @@ public:
             return false;
         }
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
     
     
@@ -641,73 +627,78 @@ public:
     }
 
 
-
-
 // ------------------------------------------------------------------------------------
 
 
 private:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
-     * join a NEW (!!) Element to the top or replace it
+     * join a NEW (!!) Element to the head or replace head
      * 
      */
-    void insert (TKEY key, InternalData element) {
-        if (_data.size() == 0) {
+    void insert (TKEY & key, InternalData & element) {
+        if (_headKey != _KEYMAX) {
+            // Pkuh is empty, because _headKey is not set!
             _headKey = key;
-            _data[key] = element;
-            _data[key].parent = key;
-            empty = false;            
+            _headData = std::make_tuple(
+                std::get<0>(element),     // user data
+                std::get<1>(element),     // user data (vector of keys)
+                std::get<2>(element),     // user data prio
+                key,                      // inital it is its own parent
+                std::vector<TKEY>(0)      // no siblings
+            );
+            
+            
         } else {
-            _data[key] = element;
-            if (_data[key].prio < _data[_headKey].prio) {
-                _data[key].parent = key;
-                _data[key].siblings.push_back(_headKey);
-                _data[_headKey].parent = key;
+
+            if (std::get<2>(element) < std::get<2>(_headData)) {
+                // element prio is smaller => new head!
+                
+                // move old head to RAM list
+                _mru.push_back(Qentry{_headKey,false});
+                _ramList[_headKey] = std::make_tuple(
+                    std::get<0>(_headData),   // user data
+                    std::get<1>(_headData),   // user data (vector of keys)
+                    std::get<2>(_headData),   // user data prio
+                    key,                      // head gets the new key as parent
+                    std::get<4>(_headData)    // siblings
+                );
+                
+                // old head is sibling of new head
+                std::get<4>(element).push_back(_headKey);
+                
                 _headKey = key;
+                _headData = std::make_tuple(
+                    std::get<0>(element),     // user data
+                    std::get<1>(element),     // user data (vector of keys)
+                    std::get<2>(element),     // user data prio
+                    key,                      // inital it is its own parent
+                    std::get<4>(element)      // old head is sibling
+                );
+                
             } else {
-                _data[key].parent = _headKey;
-                _data[_headKey].siblings.push_back(key);                
+                // move it to RAM list
+                _mru.push_back(Qentry{key,false});
+                _ramList[key] = std::make_tuple(
+                    std::get<0>(element),   // user data
+                    std::get<1>(element),   // user data (vector of keys)
+                    std::get<2>(element),   // user data prio
+                    _headKey,               // head is parent
+                    std::vector<TKEY>(0)    // no siblings
+                );
+                // add to siblings of head
+                std::get<4>(_headData).push_back(key);
             }
         }
+
+        ++statistic.size;
+        // update min/max of RAM
+        if (key > _ramMaximum) _ramMaximum = key;
+        if (key < _ramMinimum) _ramMinimum = key;
+        if (_headKey > _ramMaximum) _ramMaximum = _headKey;
+        if (_headKey < _ramMinimum) _ramMinimum = _headKey;
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
     /**
      * load all hibernate content into RAM
      * 
@@ -1199,6 +1190,11 @@ private:
         //                    v------------ the max
         _ramMaximum = result.second->first;
         
+        // do not forget the head key (if it is set and not _KEYMAX)
+        if (_headKey != _KEYMAX) {
+            if (_headKey > _ramMaximum) _ramMaximum = _headKey;
+            if (_headKey < _ramMinimum) _ramMinimum = _headKey;        
+        }
     }
 
 };

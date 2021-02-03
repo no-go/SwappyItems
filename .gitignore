@@ -11,3 +11,7 @@ src/a.out
 pkuh*/*.bucket
 temp*/*.bucket
 temp*/hibernate.*
+
+examples/TwoPhasePairPrioQ/.dep.inc
+examples/TwoPhasePairPrioQ/build
+

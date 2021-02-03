@@ -4,55 +4,24 @@
 /**
  * This Code is like SwappyItems, but additionaly (ALL TO DO!!)
  * 
- * - pop(void) gets and removes Element with MIN prio
- * - top(void) gets Element with MIN prio
+ * - every Element should have a prio value (uint64_t)
+ * - pop() gets and removes Element with MIN prio
+ * - top() gets Element with MIN prio
  * - update(..) change prio
  * 
- * - every Element needs a prio value (uint64_t)
- * - a prio config: above (100+X)% of actual MIN prio should be swapped
- *   to HDD.
  * 
- * Backround:
- * - 2 phase pairing Heap with 2 private methods:
- *   - merge(heap1 key, heap2 key)
- *   - mergePair(vector of subheap keys) e.g. sibling nodes are subheaps
- * - additional to Element(key, prio, value, vector of keys) is stored
- *   in the background:
- *   - a 2nd (key, prio) info of a "leftmost node"
+ * Backround (private variables):
+ * - 2 phase pairing Heap
+ * - additional to Element(key, value, vector of keys, prio) is stored:
+ *   - a parent key
  *   - a 2nd vector of keys to "sibling nodes"
- * - private: store Element and additional date (see above) of the Top Element always in RAM
- * - maybe a additional heap check after xy inserts or before a swapp event
- *
- * Erster entwurf soll:
+ * - a head key and its data (outside of _ramList and files on DISK)
  * 
-* Das RAM nach HDD swappen soll ausserdem eine modifikation erfahren, damit erstmal elemente 
-* vor dem auslagern übersprungen werden, deren prio einen bestimmten prozentualen wert nicht 
-* überschreiten. wird dann jedoch nicht genug ausgelagert, sind wieder alte elemente dran.
-*
-* next TODOs
-* ----------
-* 0) Define as default prio infiniti!                                                        OK
-* 1) RAM Data is tuple and not pair.                                                         OK
-* 2) update prio method                                                                      OK
-* 3.1) Make a config parameter in template to define a nice to have prio limit in RAM.       OK
-* 5.1) Add additional data leftmost.                                                         OK
-* 5.2) Add additional data vector sibling.                                                   OK
-* 5.3) change leftmost to "parent", because makes more sense                                 OK
-* 4) Make a top element additionaly to RAM and HDD storage. (do not forget hibernate/wakeup) OK
-* 9) implement pop(void)                                                                     OK
-* 10) imlement top(void)                                                                     OK
-* 
-* 6) implement merge()                                                                 
-* 7) implement mergePair()                                                             
-* 8) place merge() and mergePair() at right place!!!                                   
-*    TODO added in del() and update() because only these methods (+pop) change PRIO content (= change heap min property)
-* 
-* 3.2) use additional config parameter in swapping methods.                            
-* 
-* 11) Test via example. e.g. minimum spanning tree.                                    
-* 12) make more statistics.                                                            OK
-* 13) refactoring: load and store a bit redundant (wakeup/hibernate)                   ?
- **/
+ * Interesting:
+ * - most recently used elements are still in RAM
+ * - elements with less access in PRIO updates may Swap to DISK
+ *   -> deep heap content leaves the RAM
+ */
 
 #include <inttypes.h>  // uintX_t stuff
 #include <iostream>    // sizeof and ios namespace
@@ -150,7 +119,7 @@ private:
     TKEY _ramMinimum;
     TKEY _ramMaximum;
         
-    // a queue for the keys
+    // a queue for the keys (most recently used)
     Order _mru;
     
     // The actual key and the Data of the Priority Queue Head
@@ -353,11 +322,11 @@ public:
                 std::vector<TKEY>(0)
             );
             
-            del(key);             // size--
+            bool noUglyBug = del(key);   // size--
             --statistic.deletes;
-            insert(key, element); // size++
+            insert(key, element);        // size++
             ++statistic.priochanges;
-            return true;
+            return noUglyBug;
         } else {
             return false;
         }
@@ -439,6 +408,10 @@ public:
     
     
       
+      
+      
+      
+      
     
     
     /**
@@ -448,33 +421,25 @@ public:
      * @return false if item not exists
      */
     bool del (const TKEY & key) {
+        InternalData element; // = remember the datas from old element
+        
+        std::vector<TKEY> siblings;
+        std::vector<TKEY> newsiblings;
+        std::vector<TKEY> winners;
+        TKEY parent;
+        TKEY champion;
+        uint64_t prio1;
+        uint64_t prio2;
+
         // is key = top?
         if (key == _headKey) {
+            
+            element = _headData;
 
-            /**
-             * @todo
-             * - run through sibling and...
-             * - correct sibling and parents via merge and mergePair
-             * - place new top in headKey and headData (and remove from RAM/HDD?)
-             */
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            --statistic.size;
-            ++statistic.deletes;
-            
-            return true;
-        } else if (load(key)) {
+        } else {
+            // not exists?
+            if (load(key) == false) return false;
+
             // reverse search should be faster
             auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
                 [key] (const Qentry & qe) {
@@ -483,51 +448,110 @@ public:
             );
             it->deleted = true;
             // we really have to delete it in ram, because load() search key initialy in ram!
+            element = _ramList[key];
             _ramList.erase(key);
-
-            /**
-             * @todo
-             * - find sibling vector of parent
-             * - run through sibling and...
-             * - correct sibling and parents via merge and mergePair
-             * - place new top in headKey and headData (and remove from RAM/HDD?)
-             */
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            --statistic.size;
-            ++statistic.deletes;
-            
-            if (key == _ramMaximum || key == _ramMinimum) ramMinMax();
-            return true;
-        } else {
-            return false;
         }
-    }
 
-    
-    
+        if (key != _headKey) {
+            // remove key from siblings of parent
+            
+            parent = std::get<3>(element);
+            if (load(parent) == false) {
+                /// @todo Processing error! uglyBug + Parent not exist!!!!!
+                return false;
+            }
+            siblings = std::get<4>(_ramList[parent]);
+            for (auto n : siblings) {
+                if (n != key) newsiblings.push_back(n);
+            }
+            std::get<4>(_ramList[parent]) = newsiblings;
+        }
+
+        
+        // build pairs (1. phase) --------------------------------------
+        siblings = std::get<4>(element);
+        for (int i=0; i < siblings.size(); i+=2) {
+            if ((i+1) >= siblings.size()) {
+                // a single element ...
+                winners.push_back(siblings[i]);
+            } else {
+                if (load(siblings[i]) == false) {
+                    /// @todo Processing error! uglyBug = sibling i not exist!!!!!
+                    return false;
+                }
+                if (load(siblings[i+1]) == false) {
+                    /// @todo Processing error! uglyBug = sibling i+1 not exist!!!!!
+                    return false;
+                }
+                prio1 = std::get<2>(_ramList[siblings[i]]);
+                prio2 = std::get<2>(_ramList[siblings[i+1]]);
+                
+                if (prio1 < prio2) {
+                    winners.push_back(siblings[i]);
+                    std::get<3>(_ramList[siblings[i+1]]) = siblings[i];
+                    std::get<4>(_ramList[siblings[i]]).push_back(siblings[i+1]);
+                } else {
+                    winners.push_back(siblings[i+1]);
+                    std::get<3>(_ramList[siblings[i]]) = siblings[i+1];
+                    std::get<4>(_ramList[siblings[i+1]]).push_back(siblings[i]);
+                }
+            }
+        }
+
+        // build a single tree (2. phase) -----------------------------------
+        if (winners.size() > 0) {
+            champion = winners[0];
+            for (int i=1; i < winners.size(); ++i) {
+                prio1 = std::get<2>(_ramList[winners[i]]);
+                prio2 = std::get<2>(_ramList[champion]);
+                
+                if (prio1 < prio2) {
+                    std::get<4>(_ramList[winners[i]]).push_back(champion);
+                    std::get<3>(_ramList[champion]) = winners[i];
+                    champion = winners[i]; // we got a new minimal champion
+                } else {
+                    std::get<4>(_ramList[champion]).push_back(winners[i]);
+                    std::get<3>(_ramList[winners[i]]) = champion;
+                }
+            }
+            
+            // link champion to parent of deleted element
+            
+            // .. which may be a new head
+            if (key == _headKey) {
+                _headKey  = champion;              // the winner of all winners
+                _headData = _ramList[champion];
+                std::get<3>(_headData) = _headKey; // no parent = link to its self!
+                
+                // remove new head from the _ramList
+                auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
+                    [champion] (const Qentry & qe) {
+                        return (qe.key == champion) && (qe.deleted == false);
+                    }
+                );
+                it->deleted = true;
+                _ramList.erase(champion);
+            
+            } else {
+                // the champion has to be linked to the old parent
+                std::get<3>(_ramList[champion]) = parent;
+                
+                // add champion to the parent siblings
+                if (parent == _headKey) {
+                    // if parent is the head, we have to access _headData instead of _ramList
+                    std::get<4>(_headData).push_back(champion);
+                } else {
+                    std::get<4>(_ramList[parent]).push_back(champion);
+                }
+            }
+        }
+
+        --statistic.size;
+        ++statistic.deletes;
+        
+        if (key == _ramMaximum || key == _ramMinimum) ramMinMax();
+        return true;
+    }
     
     /**
      * get a struct with many statistic values

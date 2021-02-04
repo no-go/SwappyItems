@@ -4,6 +4,7 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>TwoPhasePairingHeap.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -42,6 +43,8 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/twophasepairprioq.exe</output>
         </linkerTool>
       </compileType>
+      <item path="TwoPhasePairingHeap.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
@@ -69,6 +72,8 @@
           <output>${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/twophasepairprioq.exe</output>
         </linkerTool>
       </compileType>
+      <item path="TwoPhasePairingHeap.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>

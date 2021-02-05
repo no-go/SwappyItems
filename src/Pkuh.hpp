@@ -255,8 +255,8 @@ public:
             );
             it->deleted = true;
             _mru.push_back(Qentry{key,false});
-            std::get<0>(_ramList[key] = value;
-            std::get<1>(_ramList[key] = refs;
+            std::get<0>(_ramList[key]) = value;
+            std::get<1>(_ramList[key]) = refs;
             ++statistic.updates;
             return false;
         } else {
@@ -405,15 +405,6 @@ public:
         }
     }
     
-    
-    
-      
-      
-      
-      
-      
-    
-    
     /**
      * delete a item
      *
@@ -434,7 +425,13 @@ public:
         // is key = top?
         if (key == _headKey) {
             
-            element = _headData;
+            element = std::make_tuple(
+                std::get<0>(_headData),   // user data
+                std::get<1>(_headData),   // user data (vector of keys)
+                std::get<2>(_headData),   // user data prio
+                std::get<3>(_headData),   // parent
+                std::get<4>(_headData)    // siblings
+            );
 
         } else {
             // not exists?
@@ -448,7 +445,13 @@ public:
             );
             it->deleted = true;
             // we really have to delete it in ram, because load() search key initialy in ram!
-            element = _ramList[key];
+            element = std::make_tuple(
+                std::get<0>(_ramList[key]),   // user data
+                std::get<1>(_ramList[key]),   // user data (vector of keys)
+                std::get<2>(_ramList[key]),   // user data prio
+                std::get<3>(_ramList[key]),   // parent
+                std::get<4>(_ramList[key])    // siblings
+            );
             _ramList.erase(key);
         }
 
@@ -466,7 +469,6 @@ public:
             }
             std::get<4>(_ramList[parent]) = newsiblings;
         }
-
         
         // build pairs (1. phase) --------------------------------------
         siblings = std::get<4>(element);
@@ -520,8 +522,13 @@ public:
             // .. which may be a new head
             if (key == _headKey) {
                 _headKey  = champion;              // the winner of all winners
-                _headData = _ramList[champion];
-                std::get<3>(_headData) = _headKey; // no parent = link to its self!
+                _headData = std::make_tuple(
+                    std::get<0>(_ramList[champion]),   // user data
+                    std::get<1>(_ramList[champion]),   // user data (vector of keys)
+                    std::get<2>(_ramList[champion]),   // user data prio
+                    _headKey,                          // no parent = link to its self!
+                    std::get<4>(_ramList[champion])    // siblings
+                );
                 
                 // remove new head from the _ramList
                 auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 

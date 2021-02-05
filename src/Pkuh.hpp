@@ -59,7 +59,8 @@ template <
 class Pkuh {
 
 public:
-//                     nodedata          neighbors      prio -----------------------------START TYPES
+    // only for get, top, pop !
+    //                 nodedata          neighbors      prio -----------------------------START TYPES
     typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t> Data;
     
     struct statistic_s {
@@ -88,7 +89,8 @@ private:
 //                     nodedata          neighbors      prio    parent            sibling
     typedef std::tuple<  TVALUE, std::vector<TKEY>, uint64_t,     TKEY, std::vector<TKEY> > InternalData;
 
-    TKEY _KEYMAX;
+    TKEY      _KEYMAX;
+    uint64_t _PRIOMAX;
 
     typedef uint32_t                                 Id;
     typedef uint32_t                                Fid; // File id
@@ -472,7 +474,7 @@ public:
         
         // build pairs (1. phase) --------------------------------------
         siblings = std::get<4>(element);
-        for (int i=0; i < siblings.size(); i+=2) {
+        for (Id i=0; i < siblings.size(); i+=2) {
             if ((i+1) >= siblings.size()) {
                 // a single element ...
                 winners.push_back(siblings[i]);
@@ -503,7 +505,7 @@ public:
         // build a single tree (2. phase) -----------------------------------
         if (winners.size() > 0) {
             champion = winners[0];
-            for (int i=1; i < winners.size(); ++i) {
+            for (Id i=1; i < winners.size(); ++i) {
                 prio1 = std::get<2>(_ramList[winners[i]]);
                 prio2 = std::get<2>(_ramList[champion]);
                 
@@ -590,7 +592,7 @@ public:
      */
     Pkuh (int swappyId) {
         _KEYMAX = std::numeric_limits<std::uint64_t>::max();
-        _PRIOMAX = std::numeric_limits<std::>::max();
+        _PRIOMAX = std::numeric_limits<std::uint64_t>::max();
         
         _headKey = _KEYMAX;                       // initial is max key the "empty"
         std::get<1>(_headData) = std::vector<TKEY>(0);  // empty Vector (in userspace)

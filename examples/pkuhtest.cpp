@@ -1,69 +1,42 @@
-#include <cstdio>
-#include <inttypes.h>
-#include <vector>
-#include <cstring>
+#include <cstdio>      // printf
+#include <cstdlib>     // srand, rand, exit
+#include <inttypes.h>  // uintX_t stuff
+#include <tuple>
 #include "Pkuh.hpp"
 
-// Pkuh ist nun anders! dieser code wird nicht mehr tun!
+using namespace std;
 
-#include "osmpbfreader.hpp"
-using namespace CanalTP;
-
-Pkuh<> * pkuh;
-
-int relevance(const std::string & wt) {
-    if (wt.compare("motorway") == 0) return 1;
-    if (wt.compare("motorway_link") == 0) return 2;
-    if (wt.compare("trunk") == 0) return 1;
-    if (wt.compare("trunk_link") == 0) return 2;
-    if (wt.compare("primary") == 0) return 1;
-    if (wt.compare("primary_link") == 0) return 2;
-    if (wt.compare("secondary") == 0) return 1;
-    if (wt.compare("secondary_link") == 0) return 2;
-    if (wt.compare("unclassified") == 0) return 1;
-    if (wt.compare("tertiary") == 0) return 1;
-    if (wt.compare("tertiary_link") == 0) return 2;
-    if (wt.compare("residential") == 0) return 1;
-    return 0;
-}
-
-struct Routing {
-
-    void way_callback(uint64_t osmid, const Tags &tags, const std::vector<uint64_t> &refs) {
+int main(int argc, char** argv) {
+    Pkuh<uint64_t, double> * pq = new Pkuh<uint64_t, double>(23);
+    bool exi;
+    uint64_t key;
+    
+    for (uint64_t i = 0; i < 2000; ++i) {
+        uint64_t q = rand()%2000;
+        uint64_t r = rand()%2000;
+        if (pq->set(i, 0.01 * rand()) == false) {
+            printf("Update %5ld\n", q);
+        } else {
+            printf("Insert %5ld\n", q);
+        }
+        pq->update(i, 5 + rand()%10);
         
-        if (tags.find("highway") != tags.end()) {
-            int wt = relevance(tags.at("highway"));
-            if (wt == 0) return;
-            
-            for (unsigned i=0; i < refs.size(); ++i) {
-                Pkuh<>::Element * element;
-                element = pkuh->get(refs[i]);
-                if (element == nullptr) {
-                    Pkuh<>::Element e;
-                    e.key = refs[i];
-                    e.prio = 1;
-                    e.successor = e.key;
-                    if (i>0) e.successor = refs[i-1];
-                    pkuh->set(e);
-                } else {
-                    element->prio++;
-                }
+        pq->del(r);
+        printf("Delete %5ld\n", r);
+    }
+
+    printf("\nrun pop() now!\n\n");
+    for (uint64_t i = 0; i < 2000; ++i) {
+        Pkuh<uint64_t, double>::Data e;
+        exi = pq->pop(key, e);
+        if (exi == false) {
+            i = 2000;
+        } else {
+            printf("%5ld prio: %3ld data: %lf\n", key, std::get<2>(e), std::get<0>(e));
+            if (std::get<2>(e) == 0) {
+                printf("zero prio should not happend!\n");
             }
         }
     }
-
-    // today We don't care about
-    void relation_callback(uint64_t /*osmid*/, const Tags &/*tags*/, const References & /*refs*/){}
-    
-    void node_callback(uint64_t /*osmid*/, double /*lon*/, double /*lat*/, const Tags &/*tags*/) {}
-};
-
-int main(int argc, char** argv) {
-    Routing routing;
-    pkuh = new Pkuh();
-    
-    read_osm_pbf(argv[1], routing, true); // ways
-    
     return 0;
 }
-

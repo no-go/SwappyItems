@@ -21,7 +21,8 @@ public:
         vector<uint64_t> siblings;
         friend class TwoPhasePairingHeap;
     };
-    
+
+    uint64_t _headKey;    
     bool empty;
     
     TwoPhasePairingHeap (void) {
@@ -62,7 +63,7 @@ public:
         try {
             _data.at(key);
             if (_data[key].prio == element.prio) {
-                _data[key] = element;
+                _data[key].data = element.data;
             } else {
                 del(key);
                 insert(key, element);
@@ -146,7 +147,6 @@ public:
 private:
     
     unordered_map<uint64_t, Element> _data;
-    uint64_t _headKey;
     
     // key should not exist!!!
     void insert (uint64_t key, Element & element) {
@@ -154,9 +154,12 @@ private:
             _headKey = key;
             _data[key] = element;
             _data[key].parent = key;
+            _data[key].siblings = vector<uint64_t>(0);
             empty = false;            
         } else {
             _data[key] = element;
+            _data[key].siblings = vector<uint64_t>(0);
+            
             if (_data[key].prio < _data[_headKey].prio) {
                 _data[key].parent = key;
                 _data[key].siblings.push_back(_headKey);

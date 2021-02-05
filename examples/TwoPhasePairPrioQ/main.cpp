@@ -6,44 +6,48 @@
 int main(int argc, char** argv) {
     TwoPhasePairingHeap<uint64_t> pq;
     bool exi;
-    uint64_t k;
+    uint64_t key;
     
-    for (int i = 0; i < 200; ++i) {
+    for (uint64_t i = 0; i < 2000; ++i) {
         TwoPhasePairingHeap<uint64_t>::Element e;
         e.data = rand();
         e.prio = 5 + rand()%10;
-        pq.set(rand()%200, e);
-        pq.del(rand()%200);
-    }
-    for (int i = 0; i < 200; ++i) {
-        TwoPhasePairingHeap<uint64_t>::Element e;
-        exi = pq.get(i, e);
-        if (exi) printf("%5d prio: %3d data: %12d\n", i, e.prio, e.data);
-    }
-    printf("\nrun top() now!\n\n");
-    for (int i = 0; i < 200; ++i) {
-        TwoPhasePairingHeap<uint64_t>::Element e;
-        exi = pq.top(k, e);
-        if (exi == false) {
-            i = 200;
+        uint64_t q = rand()%2000;
+        uint64_t r = rand()%2000;
+        if (pq.set(q, e) == false) {
+            printf("Update %5d\n", q);
         } else {
-            printf("%5d prio: %3d data: %12d\n", k, e.prio, e.data);
-            if (e.prio == 0) printf("zero prio should not happend!\n");
-            pq.del(k);
+            printf("Insert %5d\n", q);            
+        }
+        pq.del(r);
+        printf("Delete %5d\n", r);
+    }
+//    for (uint64_t i = 0; i < 2000; ++i) {
+//        TwoPhasePairingHeap<uint64_t>::Element e;
+//        exi = pq.get(i, e);
+//        if (exi) {
+//            if (e.prio == 0) {
+//                printf("%5d prio: %3d data: %12d\n", i, e.prio, e.data);
+//                printf("zero prio should not happend!\n");
+//            }
+//            //pq.del(i);
+//        }
+//    }
+
+    printf("\nrun top() now!\n\n");
+    for (uint64_t i = 0; i < 2000; ++i) {
+        TwoPhasePairingHeap<uint64_t>::Element e;
+        exi = pq.top(key, e);
+        if (exi == false) {
+            i = 2000;
+        } else {
+            printf("%5d prio: %3d data: %12d\n", key, e.prio, e.data);
+            if (e.prio == 0) {
+                printf("zero prio should not happend!\n");
+            }
+            pq.del(key);
         }
     }
     return 0;
 }
-// Index 18 exists 2 times !?
-//
-//run top() now!
-//
-//  103 prio:   5 data:    767066249
-//   47 prio:   5 data:   1010528946
-//   18 prio:   5 data:    333582338
-//   18 prio:   0 data:            0
-//zero prio should not happend!
-//   98 prio:   5 data:     19485054
-//   92 prio:   5 data:    452456682
-//   93 prio:   5 data:    765326717
-//...
+

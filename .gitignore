@@ -15,3 +15,5 @@ temp*/hibernate.*
 examples/TwoPhasePairPrioQ/.dep.inc
 examples/TwoPhasePairPrioQ/build
 
+/examples/PkuhTest/build/
+/examples/PkuhTest/dist/

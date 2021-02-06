@@ -2,7 +2,7 @@
 #include <cstdlib>     // srand, rand, exit
 #include <inttypes.h>  // uintX_t stuff
 #include <tuple>
-#include "Pkuh.hpp"
+#include "../../src/Pkuh.hpp"
 
 using namespace std;
 

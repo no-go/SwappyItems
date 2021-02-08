@@ -53,8 +53,14 @@ namespace filesys = std::experimental::filesystem;
  * @todo still "TKEY = uint64_t" is expected ?
  */
 template <
-    class TKEY, class TVALUE,
-    int EACHFILE = 16384, int OLDIES = 5, int RAMSIZE = 3, int BLOOMBITS = 4, int MASKLENGTH = (2* 4*16384)
+    class TKEY,
+    class TVALUE,
+        
+    int EACHFILE = 16384,
+    int OLDIES = 5,
+    int RAMSIZE = 3,
+    int BLOOMBITS = 4,
+    int MASKLENGTH = (2* 4*16384)
 >
 class Pkuh {
 
@@ -146,69 +152,7 @@ public:
      * @return true if it is new
      */
     bool set (TKEY key, TVALUE value) {
-        if (_headKey != _KEYMAX) {
-            // is top empty? = Priority Queue is empty!
-            
-            _headKey = key;
-            _headData = std::make_tuple(
-                value,
-                std::vector<TKEY>(0),
-                _PRIOMAX,
-                key,                      // inital it is its own parent
-                std::vector<TKEY>(0)
-            );
-            ++statistic.size;
-            if (_headKey > _ramMaximum) _ramMaximum = _headKey;
-            if (_headKey < _ramMinimum) _ramMinimum = _headKey;
-            return true;
-            
-        } else if (key == _headKey) {
-            // is key = top?
-
-            _headData = std::make_tuple(
-                value,
-                std::get<1>(_headData),
-                std::get<2>(_headData),
-                std::get<3>(_headData),
-                std::get<4>(_headData)
-            );
-            
-            ++statistic.updates;
-            return false;
-            
-        } else if (load(key)) {
-            // just update
-            // reverse search should be faster
-            auto it = std::find_if(std::execution::par, _mru.rbegin(), _mru.rend(), 
-                [key] (const Qentry & qe) {
-                    return (qe.key == key) && (qe.deleted == false);
-                }
-            );
-            
-            it->deleted = true;
-            _mru.push_back(Qentry{key,false});
-            std::get<0>(_ramList[key]) = value;
-            ++statistic.updates;
-            return false;
-            
-        } else {
-            // key is new
-            maySwap();
-            ++statistic.size;
-            _mru.push_back(Qentry{key,false});
-            _ramList[key] = std::make_tuple(
-                value,
-                std::vector<TKEY>(0),
-                _PRIOMAX,
-                key,                      // inital it is its own parent
-                std::vector<TKEY>(0)
-            );
-            
-            // update min/max of RAM
-            if (key > _ramMaximum) _ramMaximum = key;
-            if (key < _ramMinimum) _ramMinimum = key;
-            return true;
-        }
+        return set(key, value, std::vector<TKEY>(0));
     }
     
     /**
@@ -217,8 +161,8 @@ public:
      * @return true if it is new
      */
     bool set (TKEY key, TVALUE value, std::vector<TKEY> refs) {
-        if (_headKey != _KEYMAX) {
-            // is top empty? = Priority Queue is empty!
+        if (_headKey == _KEYMAX) {
+            // is head empty? = Priority Queue is empty!
             
             _headKey = key;
             _headData = std::make_tuple(
@@ -270,9 +214,11 @@ public:
                 value,
                 refs,
                 _PRIOMAX,
-                key,                      // inital it is its own parent
+                _headKey,
                 std::vector<TKEY>(0)
             );
+            std::get<4>(_headData).push_back(key);
+            
             // update min/max of RAM
             if (key > _ramMaximum) _ramMaximum = key;
             if (key < _ramMinimum) _ramMinimum = key;
@@ -395,15 +341,15 @@ public:
      * @return false, if top not exists
      */
     bool pop (TKEY & resultkey, Data & result) {
-        if (_headKey != _KEYMAX) {
+        if (_headKey == _KEYMAX) {
+            return false;
+        } else {
             resultkey = _headKey;
             std::get<0>(result) = std::get<0>(_headData);
             std::get<1>(result) = std::get<1>(_headData);
             std::get<2>(result) = std::get<2>(_headData);
             del(resultkey);
             return true;
-        } else {
-            return false;
         }
     }
     
@@ -434,6 +380,22 @@ public:
                 std::get<3>(_headData),   // parent
                 std::get<4>(_headData)    // siblings
             );
+            
+            if (std::get<4>(_headData).size() == 0) {
+                // empty now!!
+                statistic.size = 0;
+                _headKey = _KEYMAX;                             // initial is max key the "empty"
+                std::get<1>(_headData) = std::vector<TKEY>(0);  // empty Vector (in userspace)
+                std::get<2>(_headData) = _PRIOMAX;              // maximal possible prio (in a min heap)
+                std::get<3>(_headData) = _KEYMAX;               // head node on empty heap has itself as parent
+                std::get<4>(_headData) = std::vector<TKEY>(0);  // empty Vector of sibling (not userspace)
+
+                statistic.size   = 0;
+
+                _ramMinimum = std::numeric_limits<TKEY>::max();
+                _ramMaximum = std::numeric_limits<TKEY>::min();              
+                return true;
+            }
 
         } else {
             // not exists?
@@ -461,15 +423,25 @@ public:
             // remove key from siblings of parent
             
             parent = std::get<3>(element);
-            if (load(parent) == false) {
-                /// @todo Processing error! uglyBug + Parent not exist!!!!!
-                return false;
+            // but if parent is head, then we need to update siblings from _headData!
+            if (parent == _headKey) {
+                siblings = std::get<4>(_headData);
+                for (auto n : siblings) {
+                    if (n != key) newsiblings.push_back(n);
+                }
+                std::get<4>(_headData) = newsiblings;
+
+            } else {
+                if (load(parent) == false) {
+                    /// @todo Processing error! uglyBug + Parent not exist!!!!!
+                    return false;
+                }
+                siblings = std::get<4>(_ramList[parent]);
+                for (auto n : siblings) {
+                    if (n != key) newsiblings.push_back(n);
+                }
+                std::get<4>(_ramList[parent]) = newsiblings;                
             }
-            siblings = std::get<4>(_ramList[parent]);
-            for (auto n : siblings) {
-                if (n != key) newsiblings.push_back(n);
-            }
-            std::get<4>(_ramList[parent]) = newsiblings;
         }
         
         // build pairs (1. phase) --------------------------------------
@@ -669,7 +641,7 @@ private:
      * 
      */
     void insert (TKEY & key, InternalData & element) {
-        if (_headKey != _KEYMAX) {
+        if (_headKey == _KEYMAX) {
             // Pkuh is empty, because _headKey is not set!
             _headKey = key;
             _headData = std::make_tuple(
@@ -1214,14 +1186,16 @@ private:
      * updates the min and max value from the ram keys
      */
     void ramMinMax(void) {
-        auto result = std::minmax_element(std::execution::par, _ramList.begin(), _ramList.end(), [](auto lhs, auto rhs) {
-            return (lhs.first < rhs.first); // compare the keys
-        });
-        //                    .------------ the min
-        //                    v    v------- the key of the unordered_map entry
-        _ramMinimum = result.first->first;
-        //                    v------------ the max
-        _ramMaximum = result.second->first;
+        if (_ramList.size() > 0) {
+            auto result = std::minmax_element(std::execution::par, _ramList.begin(), _ramList.end(), [](auto lhs, auto rhs) {
+                return (lhs.first < rhs.first); // compare the keys
+            });
+            //                    .------------ the min
+            //                    v    v------- the key of the unordered_map entry
+            _ramMinimum = result.first->first;
+            //                    v------------ the max
+            _ramMaximum = result.second->first;            
+        }
         
         // do not forget the head key (if it is set and not _KEYMAX)
         if (_headKey != _KEYMAX) {

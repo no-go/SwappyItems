@@ -71,6 +71,7 @@
           <developmentMode>5</developmentMode>
           <standard>12</standard>
           <commandlineTool>g++</commandlineTool>
+          <commandLine>-mtune=native</commandLine>
           <warningLevel>2</warningLevel>
         </ccTool>
         <fortranCompilerTool>

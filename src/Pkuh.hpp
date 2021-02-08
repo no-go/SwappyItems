@@ -1,28 +1,6 @@
 #ifndef __P_KUH_HPP__
 #define __P_KUH_HPP__ 1
 
-/**
- * This Code is like SwappyItems, but additionaly (ALL TO DO!!)
- * 
- * - every Element should have a prio value (uint64_t)
- * - pop() gets and removes Element with MIN prio
- * - top() gets Element with MIN prio
- * - update(..) change prio
- * 
- * 
- * Backround (private variables):
- * - 2 phase pairing Heap
- * - additional to Element(key, value, vector of keys, prio) is stored:
- *   - a parent key
- *   - a 2nd vector of keys to "sibling nodes"
- * - a head key and its data (outside of _ramList and files on DISK)
- * 
- * Interesting:
- * - most recently used elements are still in RAM
- * - elements with less access in PRIO updates may Swap to DISK
- *   -> deep heap content leaves the RAM
- */
-
 #include <inttypes.h>  // uintX_t stuff
 #include <iostream>    // sizeof and ios namespace
 #include <algorithm>   // find, minmax
@@ -50,7 +28,38 @@ namespace filesys = std::experimental::filesystem;
 #include <tuple>
 
 /**
- * @todo still "TKEY = uint64_t" is expected ?
+ * This Code is like SwappyItems, but additionaly...
+ * 
+ * - every Item should have a prio value (uint64_t)
+ * - pop() gets and removes Item with MIN prio
+ * - top() gets Item with MIN prio
+ * - update() change prio of EXISTING Item
+ * - each() and apply() are removed, because prio changes in it occurs to much heap rebuilding
+ * 
+ * CODE HAS STILL BUGS!
+ * 
+ * ## Details
+ * 
+ * - 2 phase pairing heap
+ * - the heap magic is in `update()`, `del()` and the private methode `insert()`
+ * - additional to a Item(key, value, vector of keys, prio) is stored (private):
+ *   - a parent key
+ *   - a 2nd vector of keys to "sibling nodes"
+ * - a head key and its data (outside of _ramList and files on DISK)
+ * 
+ * ## Interesting
+ * 
+ * - most recently used elements are still in RAM
+ * - elements with less access in PRIO updates may Swap to DISK (= deep heap content leaves the RAM!)
+ * 
+ * @tparam TKEY is the type for the key, which identifies the Item.
+ * @tparam TVALUE is the type for the value, which has the data of the Item.
+ * 
+ * @tparam EACHFILE is number of Items in each swap file.
+ * @tparam OLDIES is number of files, if a swap occurs.
+ * @tparam RAMSIZE if _ramList has more than RAMSIZE x OLDIES x EACHFILE Items, a swap occurs.
+ * @tparam BLOOMBITS is the number of fingerprint bits for a key, which are set in a MASK for each file.
+ * @tparam MASKLENGTH is the MASK size of a file, where the fingerprint bits are set.
  */
 template <
     class TKEY,
@@ -156,7 +165,7 @@ public:
     }
     
     /**
-     * set (create or update)
+     * set (create or update) with additional vector of keys
      *
      * @return true if it is new
      */
@@ -317,8 +326,8 @@ public:
     /**
      * get the top item
      *
-     * @param resultkey is the reference, where you get a copy of the key value
-     * @param result the reference, where you get a copy of the stored data
+     * @param resultkey has the key of the head
+     * @param result has the reference, where you get a copy of the stored data
      * @return false, if top not exists
      */
     bool top (TKEY & resultkey, Data & result) {
@@ -334,10 +343,10 @@ public:
     }
     
     /**
-     * get and remove the top item
+     * get and delete the top item
      *
-     * @param resultkey is the reference, where you get a copy of the key value
-     * @param result the reference, where you get a copy of the stored data
+     * @param resultkey has the key of the head
+     * @param result has the reference, where you get a copy of the stored data
      * @return false, if top not exists
      */
     bool pop (TKEY & resultkey, Data & result) {
@@ -637,7 +646,7 @@ public:
 
 private:
     /**
-     * join a NEW (!!) Element to the head or replace head
+     * join a NEW (!!) Item to the head or replace the head
      * 
      */
     void insert (TKEY & key, InternalData & element) {
@@ -809,7 +818,7 @@ private:
     /**
      * stores all RAM content into file(s)
      * 
-     * dear programmer, catch a strg+c and make a regular delete of SwappyItems
+     * dear programmer, catch a strg+c and make a regular delete of Pkuh
      * in your code to do a hibernate!
      */
     void hibernate (void) {

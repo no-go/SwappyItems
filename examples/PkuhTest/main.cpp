@@ -6,6 +6,10 @@
 
 using namespace std;
 
+/** @example main.cpp
+ * This is a netbeans8.2 (2018 build) example, how to use the priority queue in the PKuh class.
+ * In the future I will do Dijkstra Stuff with it. */
+ 
 int main(int argc, char** argv) {
     Pkuh<uint64_t, double> * pq = new Pkuh<uint64_t, double>(23);
     bool exi;
@@ -36,6 +40,9 @@ int main(int argc, char** argv) {
             }
         }
     }
+    
+    // result: after 60min and 12 files, pop makes "30378 key:  2570 prio:   5 data: 8897924.210000" same lines and is killed!!!
+    
     delete(pq);
     return 0;
 }

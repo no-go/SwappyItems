@@ -13,6 +13,9 @@ Main difference to other key-value stores:
 - not focused on multible disks or networking
 - flat: no need of a fat framework
 - no additional libs!
+- not all keys are stored in RAM: SwappyItems uses min/max and bloomfilter to search keys in files
+- modern c++17 build-in multicore usage
+- modern c++11 lambda expression API
 
 Go to the [Documentation of SwappyItems](https://no-go.github.io/SwappyItems/)
 or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyItems/).
@@ -25,7 +28,8 @@ or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyI
   RAM usage, and ...
 - Because the `vector<key>` data can be very big, SwappyItems should additionally
   swap data from RAM to DISK, if to many items *and* vector elements are in RAM.
-- Implement a bucket based Priority Queue. Idea: onion-like with two SwappyItems stores. Use `key` as
+- Implement a bucket based Priority Queue or building parallel processing winner trees in `Pkuh` heap.
+  Idea for buckets: onion-like with two SwappyItems stores. Use `key` as
   a `prio` bucket and `vector<key>` with all keys with same `prio`. These keys are the keys from the
   2nd SwappyItems Store, where the original data items is stored.
 

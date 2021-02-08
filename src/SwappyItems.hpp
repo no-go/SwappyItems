@@ -23,13 +23,24 @@
 #include <experimental/filesystem>     // check and create directories
 namespace filesys = std::experimental::filesystem;
 
-#include <execution> // c++17 and you need  -ltbb
+#include <execution> // c++17 and you need -ltbb
 #include <mutex> // for mutex
 #include <thread> // you need -lpthread
 
 
 /**
- * @todo still "TKEY = uint64_t" is expected ?
+ * The SwappyItems Store is a flexible c++17 multicore single disk key-value storage. If the data 
+ * in RAM gets large, it behaves similar to your system swap, but with more parameters and it 
+ * swaps only the data - not the program code!
+ * 
+ * @tparam TKEY is the type for the key, which identifies the Item.
+ * @tparam TVALUE is the type for the value, which has the data of the Item.
+ * 
+ * @tparam EACHFILE is number of Items in each swap file.
+ * @tparam OLDIES is number of files, if a swap occurs.
+ * @tparam RAMSIZE if _ramList has more than RAMSIZE x OLDIES x EACHFILE Items, a swap occurs.
+ * @tparam BLOOMBITS is the number of fingerprint bits for a key, which are set in a MASK for each file.
+ * @tparam MASKLENGTH is the MASK size of a file, where the fingerprint bits are set.
  */
 template <
     class TKEY, class TVALUE,

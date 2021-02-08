@@ -35,7 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/main.o
+	${OBJECTDIR}/PkuhTest_main.o
 
 
 # C Compiler Flags
@@ -62,10 +62,10 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/pkuhtest: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/pkuhtest ${OBJECTFILES} ${LDLIBSOPTIONS} -lpthread -ltbb -lstdc++fs -lm
 
-${OBJECTDIR}/main.o: main.cpp
+${OBJECTDIR}/PkuhTest_main.o: PkuhTest_main.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -Wall -std=c++17 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+	$(COMPILE.cc) -g -Wall -std=c++17 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/PkuhTest_main.o PkuhTest_main.cpp
 
 # Subprojects
 .build-subprojects:

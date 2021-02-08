@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>The SwappyItems Key-Values Store: examples/PkuhTest/main.cpp File Reference</title>
+<title>The SwappyItems Key-Values Store: examples/PkuhTest/PkuhTest_main.cpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -45,7 +45,7 @@ $(function() {
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">main.cpp File Reference</div>  </div>
+<div class="title">PkuhTest_main.cpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;cstdio&gt;</code><br />
@@ -56,7 +56,7 @@ $(function() {
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="PkuhTest_2main_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> (int argc, char **argv)</td></tr>
+<tr class="memitem:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="PkuhTest__main_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> (int argc, char **argv)</td></tr>
 <tr class="separator:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
@@ -85,7 +85,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="main_8cpp-example.html#a0">main.cpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="PkuhTest_main_8cpp-example.html#a0">PkuhTest_main.cpp</a>.</dd>
 </dl>
 <div class="fragment"><div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;                                {</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <a class="code" href="classPkuh.html">Pkuh&lt;uint64_t, double&gt;</a> * pq = <span class="keyword">new</span> <a class="code" href="classPkuh.html">Pkuh&lt;uint64_t, double&gt;</a>(23);</div>
@@ -95,13 +95,13 @@ Functions</h2></td></tr>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keywordflow">for</span> (uint64_t i = 0; i &lt; 500000; ++i) {</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        uint64_t r = rand()%500000;</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        <span class="keywordflow">if</span> (pq-&gt;<a class="code" href="classPkuh.html#a6b203cd9e8ede91fefe2bb179360ad5e">set</a>(i, 0.01 * rand()) == <span class="keyword">false</span>) {</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;            <span class="comment">//printf(&quot;Update %5ld\n&quot;, i);</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;            printf(<span class="stringliteral">&quot;Update %5ld\n&quot;</span>, i);</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;            <span class="comment">//printf(&quot;Insert %5ld (size %ld)\n&quot;, i, ++key);</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;            printf(<span class="stringliteral">&quot;Insert %5ld (size %ld)\n&quot;</span>, i, ++key);</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        }</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        pq-&gt;<a class="code" href="classPkuh.html#a36fdf28d1ee65d16cf4269a9e80dd380">update</a>(i, 5 + rand()%1000);</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <span class="keywordflow">if</span> (pq-&gt;<a class="code" href="classPkuh.html#a8c430a4089f67a59703d4bcf4aa6b685">del</a>(r)) ;<span class="comment">//printf(&quot; Delete %5ld (size %ld)\n&quot;, r, --key);</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <span class="keywordflow">if</span> (pq-&gt;<a class="code" href="classPkuh.html#a8c430a4089f67a59703d4bcf4aa6b685">del</a>(r)) printf(<span class="stringliteral">&quot; Delete %5ld (size %ld)\n&quot;</span>, r, --key);</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    }</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    printf(<span class="stringliteral">&quot;\nrun pop() now!\n\n&quot;</span>);</div>
@@ -118,7 +118,7 @@ Functions</h2></td></tr>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        }</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    }</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="comment">// result: after 60min and 12 files, pop makes &quot;30378 key:  2570 prio:   5 data: 8897924.210000&quot; same lines and is killed!!!</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="comment">// result without print: after 60min and 12 files, pop makes &quot;30378 key:  2570 prio:   5 data: 8897924.210000&quot; same lines and is killed!!!</span></div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    </div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">delete</span>(pq);</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">return</span> 0;</div>

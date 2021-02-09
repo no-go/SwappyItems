@@ -20,7 +20,7 @@ Main difference to other key-value stores:
 Go to the [Documentation of SwappyItems](https://no-go.github.io/SwappyItems/)
 or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyItems/).
 
-## ToDo
+## ToDo (nice to have)
 
 - implement a larger code version with Priority Queue (for a minimal spanning
   tree use-case) = `Pkuh.hpp` in the future
@@ -32,6 +32,9 @@ or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyI
   Idea for buckets: onion-like with two SwappyItems stores. Use `key` as
   a `prio` bucket and `vector<key>` with all keys with same `prio`. These keys are the keys from the
   2nd SwappyItems Store, where the original data items is stored.
+- split writing into files (a swap event makes some sorted file buckets) in multiple threads
+- do prefetching in `pkuh.hpp` for *next to actual min prio* Items
+- minimal spanning tree example code
 
 ## API basics
 

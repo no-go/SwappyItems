@@ -1147,7 +1147,13 @@ private:
             Qentry qe = _mru.front();
             _mru.pop_front();
             if (qe.deleted == false) {
-                temp[qe.key] = _ramList[qe.key];
+                temp[qe.key] = std::make_tuple(
+                    std::get<0>(_ramList[qe.key]),   // user data
+                    std::get<1>(_ramList[qe.key]),   // user data (vector of keys)
+                    std::get<2>(_ramList[qe.key]),   // user data prio
+                    std::get<3>(_ramList[qe.key]),   // parent
+                    std::get<4>(_ramList[qe.key])    // siblings
+                );              
                 _ramList.erase(qe.key);
                 ++pos; // we only count undeleted stuff!
             }

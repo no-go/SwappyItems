@@ -55,11 +55,11 @@ namespace filesys = std::experimental::filesystem;
  * @tparam TKEY is the type for the key, which identifies the Item.
  * @tparam TVALUE is the type for the value, which has the data of the Item.
  * 
- * @tparam EACHFILE is number of Items in each swap file.
+ * @tparam EACHFILE is number of Items in each swap file. Please choose a 2^n number like 65536 or 2048
  * @tparam OLDIES is number of files, if a swap occurs.
  * @tparam RAMSIZE if _ramList has more than RAMSIZE x OLDIES x EACHFILE Items, a swap occurs.
- * @tparam BLOOMBITS is the number of fingerprint bits for a key, which are set in a MASK for each file.
- * @tparam MASKLENGTH is the MASK size of a file, where the fingerprint bits are set.
+ * @tparam BLOOMBITS is the number of fingerprint bits for a key, which are set in a MASK for each file. Stupid value: 1 Bit at MASKLENGTH = EACHFILE; possible but not very meaningful: 4 Bits at MASKLENGTH = 4x EACHFILE
+ * @tparam MASKLENGTH is the MASK size of a file, where the fingerprint bits are set. A good choice to get 50% filling: 2x BLOOMBITS x EACHFILE
  */
 template <
     class TKEY,
@@ -1085,7 +1085,7 @@ private:
     void maySwap (bool reload = false) {
         Id needed = reload? EACHFILE : 0;
         Id pos;
-
+        
         // no need to swap files?
         if ( (_ramList.size() + needed) < (RAMSIZE * EACHFILE * OLDIES) ) {
             // cleanup queue instead?
@@ -1110,6 +1110,9 @@ private:
 
         // remove old items from front and move them into temp
         for (pos = 0; pos < (EACHFILE*OLDIES); ) {
+            /// @todo does this really happend?! or is it a programming bug (because it happend)
+            //if (_mru.size() == 0) break;
+            
             Qentry qe = _mru.front();
             _mru.pop_front();
             if (qe.deleted == false) {

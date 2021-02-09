@@ -96,6 +96,10 @@ public:
         uint64_t swaps = 0;
         uint64_t fileLoads = 0;
         
+        uint64_t deep1 = 0;
+        uint64_t deep2 = 0;
+        uint64_t deep3 = 0;
+        
         TKEY maxKey;
         TKEY minKey;
     };
@@ -399,8 +403,6 @@ public:
                 std::get<3>(_headData) = _KEYMAX;               // head node on empty heap has itself as parent
                 std::get<4>(_headData) = std::vector<TKEY>(0);  // empty Vector of sibling (not userspace)
 
-                statistic.size   = 0;
-
                 _ramMinimum = std::numeric_limits<TKEY>::max();
                 _ramMaximum = std::numeric_limits<TKEY>::min();              
                 return true;
@@ -546,7 +548,7 @@ public:
     /**
      * get a struct with many statistic values
      */
-    struct statistic_s getStatistic (void) {
+    struct statistic_s getStatistic (bool withDeep = false) {
         statistic.fileKB = (_buckets.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
         statistic.queue = _mru.size();
 
@@ -561,6 +563,31 @@ public:
         });
         if (_ramMinimum < statistic.minKey) statistic.minKey = _ramMinimum;
         if (_ramMaximum > statistic.maxKey) statistic.maxKey = _ramMaximum;
+        
+        if (withDeep) {
+            // this loads items into ram and thus it makes changes to other statistics!
+            if (_headKey == _KEYMAX) {
+                // heap is empty
+                statistic.deep1 = 0;
+                statistic.deep2 = 0;
+                statistic.deep3 = 0;
+            } else {
+                statistic.deep3 = 0;
+                std::vector<TKEY> tmp1;
+                auto tmp2 = std::get<4>(_headData);
+                statistic.deep1 = tmp2.size();
+                for (auto n : tmp2) {
+                    load(n); /// @todo should exists = never false !?
+                    tmp1.insert(tmp1.end(), std::get<4>(_ramList[n]).begin(), std::get<4>(_ramList[n]).end());
+                }
+                statistic.deep2 = tmp1.size();
+                for (auto n : tmp1) {
+                    load(n); /// @todo should exists = never false !?
+                    statistic.deep3 += std::get<4>(_ramList[n]).size();
+                }
+
+            }
+        }
         
         return statistic;
     }
@@ -595,6 +622,10 @@ public:
 
         statistic.swaps = 0;
         statistic.fileLoads = 0;
+        
+        statistic.deep1 = 0;
+        statistic.deep2 = 0;
+        statistic.deep3 = 0;
         
         _ramMinimum = std::numeric_limits<TKEY>::max();
         _ramMaximum = std::numeric_limits<TKEY>::min();

@@ -11,11 +11,11 @@ using namespace std;
 typedef Pkuh<
         uint64_t,
         double, 
-        (ITEMLIMIT/1024), 
+        (ITEMLIMIT/2), 
         5, 
         3, 
         4, 
-        2*4*(ITEMLIMIT/1024)
+        2*4*(ITEMLIMIT/2)
 > PriQueue;
 
 /** @example PkuhTest_main.cpp
@@ -24,6 +24,7 @@ typedef Pkuh<
  
 int main(int argc, char** argv) {
     PriQueue * pq;
+    PriQueue::statistic_s st;
     pq = new PriQueue(23);
     bool exi;
     uint64_t key = 0;
@@ -32,16 +33,25 @@ int main(int argc, char** argv) {
         int d = rand()%5;
         uint64_t q = rand()%ITEMLIMIT;
         if (pq->set(q, 0.01 * rand()) == false) {
-            ;//printf("Update %5ld\n", q);
+            printf("u");//printf("Update %5lu\n", q);
         } else {
             ++key;
-            //printf("Insert %5ld (size %ld)\n", q, key);
+            printf("i");//printf("Insert %5lu (size %lu)\n", q, key);
         }
         pq->update(q, 5 + rand()%1000);
         
         if (d == 0) {
             pq->del(q);
-            //printf(" Delete %5ld (size %ld)\n", q, --key);
+            printf(" Delete %5lu (size %lu)\n", q, --key);
+        }
+        if (0 == (i%1000)) {
+            st = pq->getStatistic(true);
+            
+            printf("\nsize %5lu, deep3 %5lu, deep2 %5lu, deep1 %5lu\n",
+                st.size, st.deep3, st.deep2, st.deep1
+            );
+            
+            
         }
     }
 
@@ -52,7 +62,7 @@ int main(int argc, char** argv) {
         if (exi == false) {
             i = ITEMLIMIT;
         } else {
-            printf("%5ld key: %5ld prio: %3ld data: %lf\n", i+1, key, std::get<2>(e), std::get<0>(e));
+            printf("%5lu key: %5lu prio: %3lu data: %lf\n", i+1, key, std::get<2>(e), std::get<0>(e));
         }
     }
     

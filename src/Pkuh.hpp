@@ -443,6 +443,7 @@ public:
                 std::get<4>(_headData) = newsiblings;
 
             } else {
+                /// @todo BUG - to much load and swapping!!!!
                 if (load(parent) == false) {
                     /// @todo Processing error! uglyBug + Parent not exist!!!!!
                     return false;
@@ -462,10 +463,12 @@ public:
                 // a single element ...
                 winners.push_back(siblings[i]);
             } else {
+                /// @todo BUG - to much load and swapping!!!!
                 if (load(siblings[i]) == false) {
                     /// @todo Processing error! uglyBug = sibling i not exist!!!!!
                     return false;
                 }
+                /// @todo BUG - to much load and swapping!!!!
                 if (load(siblings[i+1]) == false) {
                     /// @todo Processing error! uglyBug = sibling i+1 not exist!!!!!
                     return false;
@@ -577,11 +580,13 @@ public:
                 auto tmp2 = std::get<4>(_headData);
                 statistic.deep1 = tmp2.size();
                 for (auto n : tmp2) {
+                    /// @todo BUG - to much load and swapping!!!!
                     load(n); /// @todo should exists = never false !?
                     tmp1.insert(tmp1.end(), std::get<4>(_ramList[n]).begin(), std::get<4>(_ramList[n]).end());
                 }
                 statistic.deep2 = tmp1.size();
                 for (auto n : tmp1) {
+                    /// @todo BUG - to much load and swapping!!!!
                     load(n); /// @todo should exists = never false !?
                     statistic.deep3 += std::get<4>(_ramList[n]).size();
                 }

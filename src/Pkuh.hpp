@@ -1078,7 +1078,13 @@ private:
             
             // ... and load the stuff
             for (auto key_val : temp) {
-                _ramList[key_val.first] = key_val.second;
+                _ramList[key_val.first] = std::make_tuple(
+                    std::get<0>(key_val.second),   // user data
+                    std::get<1>(key_val.second),   // user data (vector of keys)
+                    std::get<2>(key_val.second),   // user data prio
+                    std::get<3>(key_val.second),   // parent
+                    std::get<4>(key_val.second)    // siblings
+                );
                 _mru.push_back(Qentry{key_val.first,false});
             }
             // update ram min/max

@@ -6,16 +6,16 @@
 
 using namespace std;
 
-#define ITEMLIMIT 65536
+#define ITEMLIMIT 16384
 
 typedef Pkuh<
         uint64_t,
         double, 
-        (ITEMLIMIT/2), 
+        (ITEMLIMIT/256), 
         8, 
         3, 
         4, 
-        2*4*(ITEMLIMIT/2)
+        2*4*(ITEMLIMIT/256)
 > PriQueue;
 
 /** @example PkuhTest_main.cpp

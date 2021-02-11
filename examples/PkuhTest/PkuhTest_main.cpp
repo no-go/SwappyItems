@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define ITEMLIMIT 32
+#define ITEMLIMIT 64
 
 typedef Pkuh<
         uint64_t,
@@ -33,10 +33,10 @@ int main(int argc, char** argv) {
         int d = rand()%50;
         uint64_t q = rand()%ITEMLIMIT;
         if (pq->set(q, 0.01 * rand()) == false) {
-            printf("u");//printf("Update %5lu\n", q);
+            printf("Update %5lu\n", q);
         } else {
             ++key;
-            printf("i");//printf("Insert %5lu (size %lu)\n", q, key);
+            printf("Insert %5lu (size %lu)\n", q, key);
         }
         pq->update(q, 5 + rand()%10);
         
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
             printf(" Delete %5lu (size %lu)\n", q, --key);
         }
     }
-
+/*
     printf("\nrun pop() now!\n\n");
     for (uint64_t i = 0; i < ITEMLIMIT; ++i) {
         PriQueue::Data e;
@@ -56,6 +56,9 @@ int main(int argc, char** argv) {
             printf("%5lu key: %5lu prio: %3lu data: %lf\n", i+1, key, std::get<2>(e), std::get<0>(e));
         }
     }
+ */
+    
+    /// @todo print heap and file content!
     
     delete(pq);
     return 0;

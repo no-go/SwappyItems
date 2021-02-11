@@ -14,6 +14,8 @@
 #include <deque>          // for key order (mru)
 #include <map>            // for store keys in a sorted way
 
+#include <cstdio>      // printf FOR DEBUG!!
+
 // we need it for PRId32 in snprintf
 #define __STDC_FORMAT_MACROS
 
@@ -710,6 +712,10 @@ private:
         if (key < _ramMinimum) _ramMinimum = key;
         if (_headKey > _ramMaximum) _ramMaximum = _headKey;
         if (_headKey < _ramMinimum) _ramMinimum = _headKey;
+
+        // printf FOR DEBUG!!
+        std::printf("insert/update on:\n");
+        printItem(key, element);
     }
 
 
@@ -1022,6 +1028,9 @@ private:
         char filename[512];
         snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, fid);
         std::ifstream file(filename, std::ios::in | std::ios::binary);
+ 
+        // printf FOR DEBUG!!
+        std::printf("load from %s\n", filename);
         
         for (Id c = 0; c < EACHFILE; ++c) {
             std::vector<TKEY> vecdata(0);
@@ -1044,6 +1053,9 @@ private:
             }
             temp[loadedKey] = std::make_tuple(loadedValue, vecdata, loadedPrio, parent, sibling);
 
+            // printf FOR DEBUG!!
+            printItem(loadedKey, temp[loadedKey]);
+            
             if (loadedKey == key) {
                 result = true;
                 mu_FsearchSuccess.lock();
@@ -1239,6 +1251,18 @@ private:
             if (_headKey > _ramMaximum) _ramMaximum = _headKey;
             if (_headKey < _ramMinimum) _ramMinimum = _headKey;        
         }
+    }
+    
+    // printf FOR DEBUG!!
+    void printItem(const TKEY & key, const InternalData & element) {
+        std::printf("key      : %12lu\n", (uint64_t) key);
+        std::printf(" parent  : %12lu\n", std::get<2>(element));
+        std::printf(" prio    : %12lu\n", std::get<3>(element));
+        std::printf(" siblings: ");
+        for (auto n : std::get<4>(element)) {
+            std::printf("%12lu ", n);
+        }
+        std::printf("\n");
     }
 
 };

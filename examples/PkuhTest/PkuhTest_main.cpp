@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
             printf(" Delete %5lu (size %lu)\n", q, --key);
         }
     }
-/*
+
     printf("\nrun pop() now!\n\n");
     for (uint64_t i = 0; i < ITEMLIMIT; ++i) {
         PriQueue::Data e;
@@ -56,7 +56,6 @@ int main(int argc, char** argv) {
             printf("%5lu key: %5lu prio: %3lu data: %lf\n", i+1, key, std::get<2>(e), std::get<0>(e));
         }
     }
- */
     
     /// @todo print heap and file content!
     

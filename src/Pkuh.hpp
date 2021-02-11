@@ -56,7 +56,7 @@ namespace filesys = std::experimental::filesystem;
  * @tparam TVALUE is the type for the value, which has the data of the Item.
  * 
  * @tparam EACHFILE is number of Items in each swap file. Please choose a 2^n number like 65536 or 2048
- * @tparam OLDIES is number of files, if a swap occurs.
+ * @tparam OLDIES is number of files, if a swap occurs. Please choose a 2n number above 6
  * @tparam RAMSIZE if _ramList has more than RAMSIZE x OLDIES x EACHFILE Items, a swap occurs.
  * @tparam BLOOMBITS is the number of fingerprint bits for a key, which are set in a MASK for each file. Stupid value: 1 Bit at MASKLENGTH = EACHFILE; possible but not very meaningful: 4 Bits at MASKLENGTH = 4x EACHFILE
  * @tparam MASKLENGTH is the MASK size of a file, where the fingerprint bits are set. A good choice to get 50% filling: 2x BLOOMBITS x EACHFILE
@@ -66,7 +66,7 @@ template <
     class TVALUE,
         
     int EACHFILE = 16384,
-    int OLDIES = 5,
+    int OLDIES = 8,
     int RAMSIZE = 3,
     int BLOOMBITS = 4,
     int MASKLENGTH = (2* 4*16384)
@@ -95,10 +95,6 @@ public:
 
         uint64_t swaps = 0;
         uint64_t fileLoads = 0;
-        
-        uint64_t deep1 = 0;
-        uint64_t deep2 = 0;
-        uint64_t deep3 = 0;
         
         TKEY maxKey;
         TKEY minKey;
@@ -241,7 +237,8 @@ public:
 
     /**
      * update prio
-     *
+     * 
+     * @todo please refactor redundant code here!
      * @return false if it does not exists
      */
     bool update (TKEY key, uint64_t prio) {
@@ -263,11 +260,11 @@ public:
                     std::vector<TKEY>(0)
                 );
                 
-                del(_headKey);         // size--
+                bool noUglyBug = del(_headKey);         // size--
                 --statistic.deletes;
                 insert(key, element);  // size++
                 ++statistic.priochanges;
-                return true;
+                return noUglyBug;
             }
         }
         
@@ -296,6 +293,7 @@ public:
     /**
      * get a item
      *
+     * @todo please refactor redundant code here!
      * @param key the unique key
      * @param result the reference, where you get a copy of the stored data
      * @return false, if key not exists
@@ -354,16 +352,9 @@ public:
      * @return false, if top not exists
      */
     bool pop (TKEY & resultkey, Data & result) {
-        if (_headKey == _KEYMAX) {
-            return false;
-        } else {
-            resultkey = _headKey;
-            std::get<0>(result) = std::get<0>(_headData);
-            std::get<1>(result) = std::get<1>(_headData);
-            std::get<2>(result) = std::get<2>(_headData);
-            del(resultkey);
-            return true;
-        }
+        bool back = top(resultkey, result);
+        if (back) del(resultkey);
+        return back;
     }
     
     /**
@@ -443,8 +434,8 @@ public:
                 std::get<4>(_headData) = newsiblings;
 
             } else {
-                /// @todo BUG - to much load and swapping!!!!
-                if (load(parent) == false) {
+                /// @todo maybe to much load and swapping
+                if (load(parent, true) == false) {
                     /// @todo Processing error! uglyBug + Parent not exist!!!!!
                     return false;
                 }
@@ -463,13 +454,13 @@ public:
                 // a single element ...
                 winners.push_back(siblings[i]);
             } else {
-                /// @todo BUG - to much load and swapping!!!!
-                if (load(siblings[i]) == false) {
+                /// @todo maybe to much load and swapping
+                if (load(siblings[i], true) == false) {
                     /// @todo Processing error! uglyBug = sibling i not exist!!!!!
                     return false;
                 }
-                /// @todo BUG - to much load and swapping!!!!
-                if (load(siblings[i+1]) == false) {
+                /// @todo maybe to much load and swapping
+                if (load(siblings[i+1], true) == false) {
                     /// @todo Processing error! uglyBug = sibling i+1 not exist!!!!!
                     return false;
                 }
@@ -551,7 +542,7 @@ public:
     /**
      * get a struct with many statistic values
      */
-    struct statistic_s getStatistic (bool withDeep = false) {
+    struct statistic_s getStatistic (void) {
         statistic.fileKB = (_buckets.size() * EACHFILE * (sizeof(TKEY) + sizeof(TVALUE))/1000);
         statistic.queue = _mru.size();
 
@@ -566,33 +557,6 @@ public:
         });
         if (_ramMinimum < statistic.minKey) statistic.minKey = _ramMinimum;
         if (_ramMaximum > statistic.maxKey) statistic.maxKey = _ramMaximum;
-        
-        if (withDeep) {
-            // this loads items into ram and thus it makes changes to other statistics!
-            if (_headKey == _KEYMAX) {
-                // heap is empty
-                statistic.deep1 = 0;
-                statistic.deep2 = 0;
-                statistic.deep3 = 0;
-            } else {
-                statistic.deep3 = 0;
-                std::vector<TKEY> tmp1;
-                auto tmp2 = std::get<4>(_headData);
-                statistic.deep1 = tmp2.size();
-                for (auto n : tmp2) {
-                    /// @todo BUG - to much load and swapping!!!!
-                    load(n); /// @todo should exists = never false !?
-                    tmp1.insert(tmp1.end(), std::get<4>(_ramList[n]).begin(), std::get<4>(_ramList[n]).end());
-                }
-                statistic.deep2 = tmp1.size();
-                for (auto n : tmp1) {
-                    /// @todo BUG - to much load and swapping!!!!
-                    load(n); /// @todo should exists = never false !?
-                    statistic.deep3 += std::get<4>(_ramList[n]).size();
-                }
-
-            }
-        }
         
         return statistic;
     }
@@ -627,10 +591,6 @@ public:
 
         statistic.swaps = 0;
         statistic.fileLoads = 0;
-        
-        statistic.deep1 = 0;
-        statistic.deep2 = 0;
-        statistic.deep3 = 0;
         
         _ramMinimum = std::numeric_limits<TKEY>::max();
         _ramMaximum = std::numeric_limits<TKEY>::min();
@@ -676,7 +636,6 @@ public:
         hibernate();
     }
 
-
 // ------------------------------------------------------------------------------------
 
 
@@ -684,8 +643,13 @@ private:
     /**
      * join a NEW (!!) Item to the head or replace the head
      * 
+     * @param key the unique key
+     * @param element the new element with internal tuple
      */
     void insert (TKEY & key, InternalData & element) {
+        
+        /// @todo do 2 phases if sibling size > OLDIES/2
+        
         if (_headKey == _KEYMAX) {
             // Pkuh is empty, because _headKey is not set!
             _headKey = key;
@@ -953,23 +917,29 @@ private:
     /**
      * try to load a key/value into ramList
      *
+     * @param key the unique key, we want in the RAM
+     * @param noReloadSwap set it to true and a reload from _
+     *        a file will not force a swap of old stuff
      * @return false, if key not exists
      */
-    bool load (const TKEY & key) {
+    bool load (const TKEY & key, bool noReloadSwap = false) {
         try {
             _ramList.at(key);
             return true;
         } catch (const std::out_of_range & oor) {
-            return loadFromFiles(key);
+            return loadFromFiles(key, noReloadSwap);
         }
     }
 
     /**
      * search a key in all (maybe) relevant files and load it to ram
      *
+     * @param key the unique key we want to find in the files, because it is not in RAM
+     * @param noReloadSwap set it to true and a reload from _
+     *        a file will not force a swap of old stuff
      * @return false, if not exists
      */
-    bool loadFromFiles (const TKEY & key) {
+    bool loadFromFiles (const TKEY & key, bool noReloadSwap = false) {
         std::vector<Fid> candidates;
         std::mutex m;
         Fingerprint fp = getFingerprint(key);
@@ -1009,7 +979,7 @@ private:
             // start workers
             std::vector<std::thread *> workers;
             for (unsigned i = 0; i < candidates.size(); ++i) {
-                workers.push_back( new std::thread(&Pkuh::loadFromFile, this, candidates[i], key) );
+                workers.push_back( new std::thread(&Pkuh::loadFromFile, this, candidates[i], key, noReloadSwap) );
             }
             // wait for workers
             for (auto w : workers) if (w->joinable()) w->join();
@@ -1034,9 +1004,11 @@ private:
      *
      * @param fid the index of the file (and its bitmask id)
      * @param key the key we are searching for
-     * @ return true, if key is loaded into ram
+     * @param noReloadSwap set it to true and a reload from _
+     *        a file will not force a swap of old stuff
+     * @ return true, if key is loaded into RAM
      */
-    void loadFromFile (Fid fid, TKEY key) {
+    void loadFromFile (Fid fid, TKEY key, bool noReloadSwap = false) {
         Ram temp;
         Id lengthVec;
         TKEY loadedKey;
@@ -1096,8 +1068,13 @@ private:
             _buckets[fid].minimum = 0;
             _buckets[fid].maximum = 0;
 
-            // we try to make place for the filecontent in RAM ...
-            maySwap(true);
+            /**
+             * we try to make place for the filecontent in RAM ... = a reloadSwap!
+             * noReloadSwap is an optional load() parameter. we use it for loading
+             * sibling data additional into _ramList. this blows the RAM a bit up
+             * and not replace other parent data from RAM, which may be old.
+             */
+            if (noReloadSwap == false) maySwap(true);
             
             // ... and load the stuff
             for (auto key_val : temp) {

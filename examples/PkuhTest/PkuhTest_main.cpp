@@ -12,7 +12,7 @@ typedef Pkuh<
         uint64_t,
         double, 
         (ITEMLIMIT/2), 
-        5, 
+        8, 
         3, 
         4, 
         2*4*(ITEMLIMIT/2)
@@ -45,13 +45,9 @@ int main(int argc, char** argv) {
             printf(" Delete %5lu (size %lu)\n", q, --key);
         }
         if (0 == (i%1000)) {
-            st = pq->getStatistic(true);
+            st = pq->getStatistic();
             
-            printf("\nsize %5lu, deep3 %5lu, deep2 %5lu, deep1 %5lu\n",
-                st.size, st.deep3, st.deep2, st.deep1
-            );
-            
-            
+            printf("\nsize %5lu\n",st.size);
         }
     }
 

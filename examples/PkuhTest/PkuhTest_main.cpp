@@ -6,16 +6,16 @@
 
 using namespace std;
 
-#define ITEMLIMIT 16384
+#define ITEMLIMIT 32
 
 typedef Pkuh<
         uint64_t,
         double, 
-        (ITEMLIMIT/256), 
-        8, 
-        3, 
+        2, // items each file
+        2, // files each swap 
+        3, // size of RAM until full and do a swap
         4, 
-        2*4*(ITEMLIMIT/256)
+        2*4*(ITEMLIMIT/4)
 > PriQueue;
 
 /** @example PkuhTest_main.cpp
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     uint64_t key = 0;
     
     for (uint64_t i = 0; i < ITEMLIMIT; ++i) {
-        int d = rand()%5;
+        int d = rand()%50;
         uint64_t q = rand()%ITEMLIMIT;
         if (pq->set(q, 0.01 * rand()) == false) {
             printf("u");//printf("Update %5lu\n", q);
@@ -38,16 +38,11 @@ int main(int argc, char** argv) {
             ++key;
             printf("i");//printf("Insert %5lu (size %lu)\n", q, key);
         }
-        pq->update(q, 5 + rand()%1000);
+        pq->update(q, 5 + rand()%10);
         
         if (d == 0) {
             pq->del(q);
             printf(" Delete %5lu (size %lu)\n", q, --key);
-        }
-        if (0 == (i%1000)) {
-            st = pq->getStatistic();
-            
-            printf("\nsize %5lu\n",st.size);
         }
     }
 

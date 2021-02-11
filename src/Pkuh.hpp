@@ -250,6 +250,8 @@ public:
             if (prio <= std::get<2>(_headData)) {
                 std::get<2>(_headData) = prio;
                 ++statistic.priochanges;
+                // printf FOR DEBUG!!
+                printItem(_headKey, _headData);
                 return true;
             
             } else {
@@ -1138,7 +1140,7 @@ private:
         bool success;
         
         ++statistic.swaps;
-
+        
         // remove old items from front and move them into temp
         for (pos = 0; pos < (EACHFILE*OLDIES); ) {
             /// @todo does this really happend?! or is it a programming bug (because it happend)
@@ -1187,6 +1189,10 @@ private:
 
                 char filename[512];
                 snprintf(filename, 512, "%s/%" PRId32 ".bucket", _swappypath, pos);
+
+                // printf FOR DEBUG!!
+                std::printf("swap to %s\n", filename);
+        
                 file.open(filename, std::ios::out | std::ios::binary);
                 detail.minimum = it->first;
                 detail.bloomMask = std::vector<bool>(MASKLENGTH, false);
@@ -1217,6 +1223,9 @@ private:
                 detail.bloomMask[b] = true;
             }
 
+            // printf FOR DEBUG!!
+            printItem(it->first, it->second);
+            
             ++written;
             
             // close ----------------------------------
@@ -1256,8 +1265,8 @@ private:
     // printf FOR DEBUG!!
     void printItem(const TKEY & key, const InternalData & element) {
         std::printf("key      : %12lu\n", (uint64_t) key);
-        std::printf(" parent  : %12lu\n", std::get<2>(element));
-        std::printf(" prio    : %12lu\n", std::get<3>(element));
+        std::printf(" prio    : %12lu\n", std::get<2>(element));
+        std::printf(" parent  : %12lu\n", std::get<3>(element));
         std::printf(" siblings: ");
         for (auto n : std::get<4>(element)) {
             std::printf("%12lu ", n);

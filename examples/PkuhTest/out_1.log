@@ -1,0 +1,30 @@
+Insert     6 (size 1)
+key      :            6
+ prio    :           10
+ parent  :            6
+ siblings: 
+Insert    63 (size 2)
+insert/update on:
+key      :           63
+ prio    :            8
+ parent  :           63
+ siblings:            6 
+Insert    36 (size 3)
+insert/update on:
+key      :           36
+ prio    :            6
+ parent  :           36
+ siblings:           63 
+Insert    49 (size 4)
+insert/update on:
+key      :           49
+ prio    :            8
+ parent  :           49
+ siblings: 
+
+run pop() now!
+
+    1 key:    36 prio:   6 data: 19014822.570000
+    2 key:    49 prio:   8 data: 19818442.830000
+    3 key:    63 prio:   8 data: 17146369.150000
+    4 key:     6 prio:  10 data: 8469308.860000

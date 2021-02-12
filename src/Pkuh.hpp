@@ -450,6 +450,12 @@ public:
                 std::get<4>(_ramList[parent]) = newsiblings;                
             }
         }
+
+        // printf FOR DEBUG!!
+        std::printf("del() this element:\n");
+        printItem(key, element);
+        std::printf("del() this element is the new parent:\n");
+        printItem(parent, _ramList[parent]);
         
         // build pairs (1. phase) --------------------------------------
         siblings = std::get<4>(element);
@@ -498,6 +504,9 @@ public:
                     std::get<4>(_ramList[champion]).push_back(winners[i]);
                     std::get<3>(_ramList[winners[i]]) = champion;
                 }
+                // printf FOR DEBUG!!
+                std::printf("del() new champion:\n");
+                printItem(champion, _ramList[champion]);
             }
             
             // link champion to parent of deleted element
@@ -521,7 +530,11 @@ public:
                 );
                 it->deleted = true;
                 _ramList.erase(champion);
-            
+                
+                // printf FOR DEBUG!!
+                std::printf("del() champion is new head:\n");
+                printItem(_headKey, _headData);
+                
             } else {
                 // the champion has to be linked to the old parent
                 std::get<3>(_ramList[champion]) = parent;
@@ -530,8 +543,14 @@ public:
                 if (parent == _headKey) {
                     // if parent is the head, we have to access _headData instead of _ramList
                     std::get<4>(_headData).push_back(champion);
+                    // printf FOR DEBUG!!
+                    std::printf("del() champion linked to old parent (head):\n");
+                    printItem(_headKey, _headData);
                 } else {
                     std::get<4>(_ramList[parent]).push_back(champion);
+                    // printf FOR DEBUG!!
+                    std::printf("del() champion linked to old parent:\n");
+                    printItem(parent, _ramList[parent]);
                 }
             }
         }
@@ -1265,7 +1284,7 @@ private:
     // printf FOR DEBUG!!
     void printItem(const TKEY & key, const InternalData & element) {
         std::printf("key      : %12lu\n", (uint64_t) key);
-        std::printf(" prio    : %12lu\n", std::get<2>(element));
+        std::printf(" prio    : %12ld\n", std::get<2>(element));
         std::printf(" parent  : %12lu\n", std::get<3>(element));
         std::printf(" siblings: ");
         for (auto n : std::get<4>(element)) {

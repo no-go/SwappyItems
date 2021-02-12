@@ -4,18 +4,48 @@ key      :            6
  parent  :            6
  siblings: 
 Insert    63 (size 2)
+del() this element:
+key      :           63
+ prio    :           -1
+ parent  :            6
+ siblings: 
+del() this element is the new parent:
+key      :            6
+ prio    :            0
+ parent  :            0
+ siblings: 
 insert/update on:
 key      :           63
  prio    :            8
  parent  :           63
  siblings:            6 
 Insert    36 (size 3)
+del() this element:
+key      :           36
+ prio    :           -1
+ parent  :           63
+ siblings: 
+del() this element is the new parent:
+key      :           63
+ prio    :            0
+ parent  :            0
+ siblings: 
 insert/update on:
 key      :           36
  prio    :            6
  parent  :           36
  siblings:           63 
 Insert    49 (size 4)
+del() this element:
+key      :           49
+ prio    :           -1
+ parent  :           36
+ siblings: 
+del() this element is the new parent:
+key      :           36
+ prio    :            0
+ parent  :            0
+ siblings: 
 insert/update on:
 key      :           49
  prio    :            8
@@ -24,7 +54,53 @@ key      :           49
 
 run pop() now!
 
+del() this element:
+key      :           36
+ prio    :            6
+ parent  :           36
+ siblings:           63           49 
+del() this element is the new parent:
+key      : 140737349698848
+ prio    :            0
+ parent  :            0
+ siblings: 
+del() champion is new head:
+key      :           49
+ prio    :            8
+ parent  :           49
+ siblings:           63 
     1 key:    36 prio:   6 data: 19014822.570000
+del() this element:
+key      :           49
+ prio    :            8
+ parent  :           49
+ siblings:           63 
+del() this element is the new parent:
+key      : 140737349698848
+ prio    :            0
+ parent  :            0
+ siblings: 
+del() champion is new head:
+key      :           63
+ prio    :            8
+ parent  :           63
+ siblings:            6 
     2 key:    49 prio:   8 data: 19818442.830000
+del() this element:
+key      :           63
+ prio    :            8
+ parent  :           63
+ siblings:            6 
+del() this element is the new parent:
+key      : 140737349698848
+ prio    :            0
+ parent  :            0
+ siblings: 
+del() champion is new head:
+key      :            6
+ prio    :           10
+ parent  :            6
+ siblings: 
     3 key:    63 prio:   8 data: 17146369.150000
     4 key:     6 prio:  10 data: 8469308.860000
+

@@ -356,8 +356,10 @@ public:
      * @return false, if top not exists
      */
     bool pop (TKEY & resultkey, Data & result) {
-        bool back = top(resultkey, result);
-        if (back) del(resultkey);
+        TKEY back2;
+        bool back = top(back2, result);
+        if (back) del(back2);
+        resultkey = back2;
         return back;
     }
     
@@ -454,8 +456,10 @@ public:
         // printf FOR DEBUG!!
         std::printf("del() this element:\n");
         printItem(key, element);
-        std::printf("del() this element is the new parent:\n");
-        printItem(parent, _ramList[parent]);
+        //std::printf("del() this element is the new parent:\n");
+        // there was a bug: the access to _ramList[parent] will create this element (empty)
+        // if parent is not set, because key is the headkey.
+        //printItem(parent, _ramList[parent]);
         
         // build pairs (1. phase) --------------------------------------
         siblings = std::get<4>(element);
@@ -1283,14 +1287,16 @@ private:
     
     // printf FOR DEBUG!!
     void printItem(const TKEY & key, const InternalData & element) {
-        std::printf("key      : %12lu\n", (uint64_t) key);
-        std::printf(" prio    : %12ld\n", std::get<2>(element));
-        std::printf(" parent  : %12lu\n", std::get<3>(element));
+        /*
+        std::printf("key      : %12" PRIu64 "\n", (uint64_t) key);
+        std::printf(" prio    : %12" PRIu64 "\n", std::get<2>(element));
+        std::printf(" parent  : %12" PRIu64 "\n", std::get<3>(element));
         std::printf(" siblings: ");
         for (auto n : std::get<4>(element)) {
-            std::printf("%12lu ", n);
+            std::printf("%12" PRIu64 " ", n);
         }
         std::printf("\n");
+        */
     }
 
 };

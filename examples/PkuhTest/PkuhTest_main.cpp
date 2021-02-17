@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     for (uint64_t i = 0; i < ITEMLIMIT; ++i) {
         int d = 1;
         //d = rand()%50;
-        uint64_t q = rand()%ITEMLIMIT;
+        uint64_t q = 1+ rand()%ITEMLIMIT;
         //uint64_t q = keys[i];
         
         if (pq->set(q, 0.01 * rand()) == false) {

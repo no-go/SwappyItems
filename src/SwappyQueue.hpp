@@ -48,7 +48,7 @@ public:
      * @return false, if it does not exist
      */
     bool get (TKEY key, Item & result) {
-        Heap::Data * p;
+        typename Heap::Data * p;
         p = _data->get(key);
         if (p == nullptr) return false;
         result = p->first;
@@ -71,7 +71,7 @@ public:
      * @return true, if it is new and not just an update
      */
     bool set (TKEY key, Item & item) {
-        Heap::Data * p = _data->get(key);
+        typename Heap::Data * p = _data->get(key);
         
         if (p == nullptr) {
             insert(key, item);
@@ -88,25 +88,26 @@ public:
     }
     
     void del (TKEY key) {
-        Heap::statistic_s s = _data->getStatistic();
+        typename Heap::statistic_s s = _data->getStatistic();
         if (s.size == 0) return;
         
         if (s.size == 1) {
             if (key == _headKey) {
-                _data->del(__headKey);
+                _data->del(_headKey);
                 empty = true;
             }
             return;
         }
         
         if (s.size > 1) {
-
-            Heap::Data * itemPair = _data->get(key); // = remember the datas from old element
+            typename Heap::Data * dummy1Pair;
+            typename Heap::Data * dummy2Pair = _data->get(key); 
             
-            if (itemPair == nullptr) return;
+            if (dummy2Pair == nullptr) return;
 
-            Item item = itemPair->first;
-            std::vector<TKEY> siblings(itemPair->second);
+            // = remember the datas from old element
+            Item item = dummy2Pair->first;
+            std::vector<TKEY> siblings(dummy2Pair->second);
             
             _data->del(key);
 
@@ -115,58 +116,68 @@ public:
             TKEY champion;
 
             if (key != _headKey) {
-                Heap::Data * parentPair = _data->get(item.parent);
+                dummy1Pair = _data->get(item.parent);
                 // remove key from siblings of parent
-                for (auto n : parentPair->second) {
+                for (auto n : dummy1Pair->second) {
                     if (n != key) newsiblings.push_back(n);
                 }
-                _data->set(item.parent, parentPair->first, newsiblings);
+                _data->set(item.parent, dummy1Pair->first, newsiblings);
             }
 
-            /// @todo recode to swappyItems!!   -------------------------------------------v
-    
             // build pairs (1. phase)
             for (uint64_t i=0; i < siblings.size(); i+=2) {
                 if ((i+1) >= siblings.size()) {
                     // a single element ...
                     winners.push_back(siblings[i]);
                 } else {
-                    if (_data[siblings[i]].prio < _data[siblings[i+1]].prio) {
+                    dummy1Pair = _data->get(siblings[i]);
+                    dummy2Pair = _data->get(siblings[i+1]);
+                    if (dummy1Pair->first.prio < dummy2Pair->first.prio) {
                         winners.push_back(siblings[i]);
-                        _data[siblings[i+1]].parent = siblings[i];
-                        _data[siblings[i]].siblings.push_back(siblings[i+1]);
+                        dummy2Pair->first.parent = siblings[i];
+                        dummy1Pair->second.push_back(siblings[i+1]);
+                        //_data->set(...); // hey, we use pointers. the data in _ramList should be accessable and changed!
                     } else {
                         winners.push_back(siblings[i+1]);
-                        _data[siblings[i]].parent = siblings[i+1];
-                        _data[siblings[i+1]].siblings.push_back(siblings[i]);
+                        dummy1Pair->first.parent = siblings[i+1];
+                        dummy2Pair->second.push_back(siblings[i]);
+                        //_data->set(...); // hey, we use pointers. the data in _ramList should be accessable and changed!
                     }
                 }
             }
+    
             // build a single tree (2. phase)
             if (winners.size() > 0) {
                 champion = winners[0];
+                dummy1Pair = _data->get(champion);
+                
                 for (uint64_t i=1; i < winners.size(); ++i) {
-                    if (_data[winners[i]].prio < _data[champion].prio) {
-                        _data[winners[i]].siblings.push_back(champion);
-                        _data[champion].parent = winners[i];
+                    dummy2Pair = _data->get(winners[i]);
+                    if (dummy2Pair->first.prio < dummy1Pair->first.prio) {
+                        // we found a new head/champion
+                        dummy2Pair->second.push_back(champion);
+                        dummy1Pair->first.parent = winners[i];
                         champion = winners[i];
+                        dummy1Pair = dummy2Pair;
                     } else {
-                        _data[champion].siblings.push_back(winners[i]);
-                        _data[winners[i]].parent = champion;
+                        dummy1Pair->second.push_back(winners[i]);
+                        dummy2Pair->first.parent = champion;
                     }
                 }
 
                 // may set a new head
                 if (key == _headKey) {
-                    _headKey               = champion; // the winner of all winners
-                    _data[_headKey].parent = _headKey; // no parent = link to its self!
+                    _headKey = champion;                 // the winner of all winners
+                    dummy1Pair = _data->get(_headKey);
+                    dummy1Pair->first.parent = _headKey; // no parent = link to its self!
                 } else {
-                    _data[champion].parent = element.parent;
-                    _data[element.parent].siblings.push_back(champion);
+                    dummy1Pair = _data->get(champion);
+                    dummy1Pair->first.parent = item.parent;
+                    dummy2Pair = _data->get(item.parent);
+                    dummy2Pair->second.push_back(champion);
                 }
             }
-            
-            /// @todo recode to swappyItems!!   -------------------------------------------A
+
         }
     }
     
@@ -175,14 +186,14 @@ private:
     // key should not exist!!!
     /// @todo force a 2 pahse, if head siblings are to many (e.g. EACHFILE/2)
     void insert (TKEY key, Item & item) {
-        Heap::statistic_s s = _data->getStatistic();
+        typename Heap::statistic_s s = _data->getStatistic();
         if (s.size == 0) {
             _headKey = key;
             item.parent = key;
             _data->set(key, item, std::vector<TKEY>(0));
             empty = false;            
         } else {
-            Heap::Data * headpair = _data->get(_headKey);
+            typename Heap::Data * headpair = _data->get(_headKey);
             
             if (item.prio < headpair->first.prio) {
                 item.parent = key;

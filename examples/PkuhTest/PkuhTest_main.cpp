@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
         d = rand()%50;
         uint64_t q = rand()%ITEMLIMIT;
         
-        SwKuh::Element e;
+        SwKuh::Item e;
         e.data = 0.01 * rand();
         e.prio = 5 + rand()%1000;
         if (pq->set(q, e) == false) {
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 
     printf("\nrun pop() now!\n\n");
     for (uint64_t i = 0; i < ITEMLIMIT; ++i) {
-        SwKuh::Element e;
+        SwKuh::Item e;
         exi = pq->top(key, e);
         if (exi == false) {
             i = ITEMLIMIT;

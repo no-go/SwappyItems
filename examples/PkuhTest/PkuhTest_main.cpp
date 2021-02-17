@@ -12,7 +12,7 @@ using namespace std;
  * This is a netbeans8.2 (2018 build) example, how to use the priority queue in the Pkuh class.
  * In the future I will do Dijkstra Stuff with it. */
 
-typedef SwappyQueue<double> SwKuh;
+typedef SwappyQueue<uint64_t, double> SwKuh;
 
 int main(int argc, char** argv) {
     SwKuh * pq;

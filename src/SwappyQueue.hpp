@@ -1,15 +1,19 @@
-#ifndef TWOPHASEPAIRINGHEAP_HPP
-#define TWOPHASEPAIRINGHEAP_HPP
+/* 
+ * File:   SwappyQueue.hpp
+ * Author: tux
+ *
+ * Created on 17. Februar 2021, 14:34
+ */
+#ifndef SWAPPYQUEUE_HPP
+#define SWAPPYQUEUE_HPP
 
 #include <vector>
 #include <inttypes.h>  // uintX_t stuff
 #include <unordered_map>
 #include <stdexcept>   // std::out_of_range
 
-using namespace std;
-
 template <class TVALUE>
-class TwoPhasePairingHeap {
+class SwappyQueue {
     
 public:
 
@@ -18,18 +22,18 @@ public:
         uint64_t             prio;
     private:
         uint64_t           parent;
-        vector<uint64_t> siblings;
-        friend class TwoPhasePairingHeap;
+        std::vector<uint64_t> siblings;
+        friend class SwappyQueue;
     };
 
     uint64_t _headKey;    
     bool empty;
     
-    TwoPhasePairingHeap (void) {
+    SwappyQueue (void) {
         empty = true;
     }
     
-    ~TwoPhasePairingHeap (void) {}
+    ~SwappyQueue (void) {}
     
     /**
      * @return false, if it does not exist
@@ -39,7 +43,7 @@ public:
             _data.at(key);
             result = _data[key];
             return true;
-        } catch (const out_of_range & oor) {
+        } catch (const std::out_of_range & oor) {
             return false;
         }
     }
@@ -70,7 +74,7 @@ public:
             }
             return false;
             
-        } catch (const out_of_range & oor) {            
+        } catch (const std::out_of_range & oor) {            
             insert(key, element);
             return true;
         }
@@ -87,8 +91,8 @@ public:
             if (get(key, element)) {
                 _data.erase(key);
                 
-                vector<uint64_t> newsiblings;
-                vector<uint64_t> winners;
+                std::vector<uint64_t> newsiblings;
+                std::vector<uint64_t> winners;
                 uint64_t champion;
                 
                 if (key != _headKey) {
@@ -100,7 +104,7 @@ public:
                 }
                                 
                 // build pairs (1. phase)
-                for (int i=0; i < element.siblings.size(); i+=2) {
+                for (uint64_t i=0; i < element.siblings.size(); i+=2) {
                     if ((i+1) >= element.siblings.size()) {
                         // a single element ...
                         winners.push_back(element.siblings[i]);
@@ -119,7 +123,7 @@ public:
                 // build a single tree (2. phase)
                 if (winners.size() > 0) {
                     champion = winners[0];
-                    for (int i=1; i < winners.size(); ++i) {
+                    for (uint64_t i=1; i < winners.size(); ++i) {
                         if (_data[winners[i]].prio < _data[champion].prio) {
                             _data[winners[i]].siblings.push_back(champion);
                             _data[champion].parent = winners[i];
@@ -146,7 +150,7 @@ public:
     
 private:
     
-    unordered_map<uint64_t, Element> _data;
+    std::unordered_map<uint64_t, Element> _data;
     
     // key should not exist!!!
     void insert (uint64_t key, Element & element) {
@@ -154,11 +158,11 @@ private:
             _headKey = key;
             _data[key] = element;
             _data[key].parent = key;
-            _data[key].siblings = vector<uint64_t>(0);
+            _data[key].siblings = std::vector<uint64_t>(0);
             empty = false;            
         } else {
             _data[key] = element;
-            _data[key].siblings = vector<uint64_t>(0);
+            _data[key].siblings = std::vector<uint64_t>(0);
             
             if (_data[key].prio < _data[_headKey].prio) {
                 _data[key].parent = key;
@@ -173,5 +177,7 @@ private:
     }
 };
 
-#endif /* TWOPHASEPAIRINGHEAP_HPP */
+
+
+#endif
 

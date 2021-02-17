@@ -546,7 +546,7 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true, if exists </dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000017">Todo:</a></b></dt><dd>a better way to set the filepointer to the next key-value pair! </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000023">Todo:</a></b></dt><dd>a better way to set the filepointer to the next key-value pair! </dd></dl>
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="SearchOnHibernateData_8cpp-example.html#a15">SearchOnHibernateData.cpp</a>.</dd>
 </dl>
 <div class="fragment"><div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;                                                                              {</div>
@@ -808,7 +808,7 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>if it is false, the loop did not break </dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000016">Todo:</a></b></dt><dd>foreach multithread possible? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000022">Todo:</a></b></dt><dd>foreach multithread possible? </dd></dl>
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="SearchOnHibernateData_8cpp-example.html#a16">SearchOnHibernateData.cpp</a>, and <a class="el" href="osm2graph_8cpp-example.html#a29">osm2graph.cpp</a>.</dd>
 </dl>
 <div class="fragment"><div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;                                                                 {</div>
@@ -1367,7 +1367,7 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
 </table>
 </div><div class="memdoc">
 <p>return the biggest key </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000014">Todo:</a></b></dt><dd>makes multithread sense here? maybe collect mins from threads and get min of them? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000020">Todo:</a></b></dt><dd>makes multithread sense here? maybe collect mins from threads and get min of them? </dd></dl>
 <div class="fragment"><div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                    {</div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        TKEY val = std::numeric_limits&lt;TKEY&gt;::min();</div>
 <div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        std::for_each (<a class="code" href="classSwappyItems.html#aa310fce675750d4f531af3420cbd23b0">_buckets</a>.begin(), <a class="code" href="classSwappyItems.html#aa310fce675750d4f531af3420cbd23b0">_buckets</a>.end(), [&amp;](Detail finfo) {</div>
@@ -1546,7 +1546,7 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
 </table>
 </div><div class="memdoc">
 <p>return the smallest key </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000013">Todo:</a></b></dt><dd>makes multithread sense here? maybe collect mins from threads and get min of them? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000019">Todo:</a></b></dt><dd>makes multithread sense here? maybe collect mins from threads and get min of them? </dd></dl>
 <div class="fragment"><div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                    {</div>
 <div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        TKEY val = std::numeric_limits&lt;TKEY&gt;::max();</div>
 <div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;        std::for_each (<a class="code" href="classSwappyItems.html#aa310fce675750d4f531af3420cbd23b0">_buckets</a>.begin(), <a class="code" href="classSwappyItems.html#aa310fce675750d4f531af3420cbd23b0">_buckets</a>.end(), [&amp;](Detail finfo) {</div>
@@ -1767,7 +1767,7 @@ template&lt;class TKEY , class TVALUE , int EACHFILE = 16384, int OLDIES = 5, in
 </table>
 </div><div class="memdoc">
 <p>load all hibernate content into RAM</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000015">Todo:</a></b></dt><dd>return on fail </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000021">Todo:</a></b></dt><dd>return on fail </dd></dl>
 <div class="fragment"><div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                       {</div>
 <div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        <span class="keywordtype">char</span> filename[512];</div>
 <div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        TKEY loadedKey;</div>

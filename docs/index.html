@@ -58,12 +58,15 @@ $(function() {
 </ul>
 <p>Go to the <a href="https://no-go.github.io/SwappyItems/">Documentation of SwappyItems</a> or take a look to the <a href="https://github.com/no-go/SwappyItems/">SwappyItems Source Code</a>.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
-ToDo</h1>
+ToDo (nice to have)</h1>
 <ul>
 <li>implement a larger code version with Priority Queue (for a minimal spanning tree use-case) = <code><a class="el" href="Pkuh_8hpp.html">Pkuh.hpp</a></code> in the future</li>
 <li>make number of items in swapped files variable with additional focus on real RAM usage, and ...</li>
 <li>Because the <code>vector&lt;key&gt;</code> data can be very big, <a class="el" href="classSwappyItems.html">SwappyItems</a> should additionally swap data from RAM to DISK, if to many items <em>and</em> vector elements are in RAM.</li>
 <li>Implement a bucket based Priority Queue or building parallel processing winner trees in <code><a class="el" href="classPkuh.html">Pkuh</a></code> heap. Idea for buckets: onion-like with two <a class="el" href="classSwappyItems.html">SwappyItems</a> stores. Use <code>key</code> as a <code>prio</code> bucket and <code>vector&lt;key&gt;</code> with all keys with same <code>prio</code>. These keys are the keys from the 2nd <a class="el" href="classSwappyItems.html">SwappyItems</a> Store, where the original data items is stored.</li>
+<li>split writing into files (a swap event makes some sorted file buckets) in multiple threads</li>
+<li>do prefetching in <code>pkuh.hpp</code> for <em>next to actual min prio</em> Items</li>
+<li>minimal spanning tree example code</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md2"></a>
 API basics</h1>

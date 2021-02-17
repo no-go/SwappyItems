@@ -65,7 +65,7 @@ $(function() {
 <li>del()
 : <a class="el" href="classPkuh.html#a8c430a4089f67a59703d4bcf4aa6b685">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 , <a class="el" href="classSwappyItems.html#ae4668e9e4f738075d6a1c299eecb6f07">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
-, <a class="el" href="classTwoPhasePairingHeap.html#ad6501f5bb9adf4418f3292f90738b613">TwoPhasePairingHeap&lt; TVALUE &gt;</a>
+, <a class="el" href="classSwappyQueue.html#af3785944c03eef43dd21d4c001a7c151">SwappyQueue&lt; TVALUE &gt;</a>
 </li>
 </ul>
 
@@ -92,7 +92,7 @@ $(function() {
 : <a class="el" href="structBmp.html#a561b520b0770a56a3a854d2a2525c03c">Bmp</a>
 , <a class="el" href="classPkuh.html#aeffdc28680f8e93b95c0ac929c93c348">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 , <a class="el" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
-, <a class="el" href="classTwoPhasePairingHeap.html#afd3c37ede79d00f132fcb69e872e62bd">TwoPhasePairingHeap&lt; TVALUE &gt;</a>
+, <a class="el" href="classSwappyQueue.html#a86d6dbf09deb66cdf1100c05e466dba0">SwappyQueue&lt; TVALUE &gt;</a>
 </li>
 <li>getFingerprint()
 : <a class="el" href="classPkuh.html#a2c0be3919dedbfda4a0f1f1543318c8e">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
@@ -122,22 +122,22 @@ $(function() {
 </li>
 <li>insert()
 : <a class="el" href="classPkuh.html#a4dd14e2bc09a1bef213db3e44bcb0da8">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
-, <a class="el" href="classTwoPhasePairingHeap.html#af4ef96f23d9fd0edfce15172da0e9c1b">TwoPhasePairingHeap&lt; TVALUE &gt;</a>
+, <a class="el" href="classSwappyQueue.html#a35ad68f90dcff838c9912999f129f113">SwappyQueue&lt; TVALUE &gt;</a>
 </li>
 </ul>
 
 
 <h3><a id="index_l"></a>- l -</h3><ul>
 <li>load()
-: <a class="el" href="classPkuh.html#aac2a827da472feff519988ee9f4fdc3a">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
+: <a class="el" href="classPkuh.html#a82c39b0f0485870009520149ea227ce6">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 , <a class="el" href="classSwappyItems.html#ae290796b6aba78f75dfe572672d99e96">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 </li>
 <li>loadFromFile()
-: <a class="el" href="classPkuh.html#a0555dc5705d060334a6de99c42f66df8">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
+: <a class="el" href="classPkuh.html#af414a731d29938b63e7ed146c728801d">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 , <a class="el" href="classSwappyItems.html#a2cb3c3649429319d3236203a73f6b7de">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 </li>
 <li>loadFromFiles()
-: <a class="el" href="classPkuh.html#ad7d1b136e5ccd790dd7d32c881c723a4">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
+: <a class="el" href="classPkuh.html#a5efc802b85aee1862f119d608eefaea7">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 , <a class="el" href="classSwappyItems.html#aba9fefd507bb9cf5daf4e7a7aa0e30a8">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 </li>
 </ul>
@@ -192,6 +192,9 @@ $(function() {
 <li>pos()
 : <a class="el" href="structBmp.html#aeefe054aa93d3a6e1bdb3ba168fa3492">Bmp</a>
 </li>
+<li>printItem()
+: <a class="el" href="classPkuh.html#a0d114fb8d4e2c1af7089098c7a1f59da">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
+</li>
 </ul>
 
 
@@ -225,10 +228,13 @@ $(function() {
 <li>set()
 : <a class="el" href="classPkuh.html#a6b203cd9e8ede91fefe2bb179360ad5e">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 , <a class="el" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
-, <a class="el" href="classTwoPhasePairingHeap.html#a2ea20a21ed320c4d53cad881f9db0656">TwoPhasePairingHeap&lt; TVALUE &gt;</a>
+, <a class="el" href="classSwappyQueue.html#a221e6a334d6e3c2a5064d1e54f7242dd">SwappyQueue&lt; TVALUE &gt;</a>
 </li>
 <li>SwappyItems()
 : <a class="el" href="classSwappyItems.html#a4cac260a1680c1b81004f6e80cd9e29d">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
+</li>
+<li>SwappyQueue()
+: <a class="el" href="classSwappyQueue.html#a52445398b969b88acd4cd90fbc72bc43">SwappyQueue&lt; TVALUE &gt;</a>
 </li>
 </ul>
 
@@ -236,10 +242,7 @@ $(function() {
 <h3><a id="index_t"></a>- t -</h3><ul>
 <li>top()
 : <a class="el" href="classPkuh.html#aa14de5b6e5010b1aa96005abc93b33b6">Pkuh&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
-, <a class="el" href="classTwoPhasePairingHeap.html#adb5d77129713fdca4b09a83d09310166">TwoPhasePairingHeap&lt; TVALUE &gt;</a>
-</li>
-<li>TwoPhasePairingHeap()
-: <a class="el" href="classTwoPhasePairingHeap.html#a2d9d7413b29149d686c2712ca7f2c682">TwoPhasePairingHeap&lt; TVALUE &gt;</a>
+, <a class="el" href="classSwappyQueue.html#ab17900cb699b8a1a2e04d3dd22b44b58">SwappyQueue&lt; TVALUE &gt;</a>
 </li>
 </ul>
 
@@ -284,8 +287,8 @@ $(function() {
 <li>~SwappyItems()
 : <a class="el" href="classSwappyItems.html#ae48f4cb0997d4585b4719dde3f9a9007">SwappyItems&lt; TKEY, TVALUE, EACHFILE, OLDIES, RAMSIZE, BLOOMBITS, MASKLENGTH &gt;</a>
 </li>
-<li>~TwoPhasePairingHeap()
-: <a class="el" href="classTwoPhasePairingHeap.html#a687016e3d096ee6eb9a8e239dbf09f74">TwoPhasePairingHeap&lt; TVALUE &gt;</a>
+<li>~SwappyQueue()
+: <a class="el" href="classSwappyQueue.html#a6662c42a83de64142f4a925f4f12801c">SwappyQueue&lt; TVALUE &gt;</a>
 </li>
 <li>~warn()
 : <a class="el" href="structCanalTP_1_1warn.html#ae0a97d0759d4b1f19f0829e3ae3c06d5">CanalTP::warn</a>

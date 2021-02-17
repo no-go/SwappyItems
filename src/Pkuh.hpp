@@ -37,9 +37,11 @@ namespace filesys = std::experimental::filesystem;
  * - top() gets Item with MIN prio
  * - update() change prio of EXISTING Item
  * - each() and apply() are removed, because prio changes in it occurs to much heap rebuilding
- * 
- * CODE HAS STILL BUGS!
- * 
+ */
+ 
+CODE HAS STILL BUGS! Do not use it
+
+/* 
  * ## Details
  * 
  * - 2 phase pairing heap

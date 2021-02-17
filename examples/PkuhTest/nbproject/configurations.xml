@@ -5,8 +5,8 @@
                    displayName="Header Files"
                    projectFiles="true">
       <logicalFolder name="src" displayName="src" projectFiles="true">
-        <itemPath>../../src/Pkuh.hpp</itemPath>
         <itemPath>../../src/SwappyItems.hpp</itemPath>
+        <itemPath>../../src/SwappyQueue.hpp</itemPath>
       </logicalFolder>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -50,9 +50,9 @@
           <commandLine>-lpthread -ltbb -lstdc++fs -lm</commandLine>
         </linkerTool>
       </compileType>
-      <item path="../../src/Pkuh.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../../src/SwappyItems.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../src/SwappyQueue.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="PkuhTest_main.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -84,9 +84,9 @@
           <commandLine>-lpthread -ltbb -lstdc++fs -lm</commandLine>
         </linkerTool>
       </compileType>
-      <item path="../../src/Pkuh.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="../../src/SwappyItems.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../../src/SwappyQueue.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="PkuhTest_main.cpp" ex="false" tool="1" flavor2="0">
       </item>

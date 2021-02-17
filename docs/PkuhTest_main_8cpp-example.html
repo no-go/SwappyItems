@@ -47,53 +47,50 @@ $(function() {
 <div class="line"><span class="preprocessor">#include &lt;cstdlib&gt;</span>     <span class="comment">// srand, rand, exit</span></div>
 <div class="line"><span class="preprocessor">#include &lt;inttypes.h&gt;</span>  <span class="comment">// uintX_t stuff</span></div>
 <div class="line"><span class="preprocessor">#include &lt;tuple&gt;</span></div>
-<div class="line"><span class="preprocessor">#include &quot;../../src/Pkuh.hpp&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;../../src/SwappyQueue.hpp&quot;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="keyword">using namespace </span>std;</div>
 <div class="line"> </div>
-<div class="line"><span class="preprocessor">#define ITEMLIMIT 65536</span></div>
+<div class="line"><span class="preprocessor">#define ITEMLIMIT 16384</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keyword">typedef</span> <a name="_a0"></a><a class="code" href="classPkuh.html">Pkuh</a>&lt;</div>
-<div class="line">        uint64_t,</div>
-<div class="line">        double, </div>
-<div class="line">        (<a name="a1"></a><a class="code" href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a>/1024), </div>
-<div class="line">        5, </div>
-<div class="line">        3, </div>
-<div class="line">        4, </div>
-<div class="line">        2*4*(<a class="code" href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a>/1024)</div>
-<div class="line">&gt; <a name="a2"></a><a class="code" href="PkuhTest__main_8cpp.html#a770b877ad5c1be8a86e7dc2c1c45f262">PriQueue</a>;</div>
+<div class="line"><span class="keyword">typedef</span> <a name="_a0"></a><a class="code" href="classSwappyQueue.html">SwappyQueue&lt;double&gt;</a> <a name="a1"></a><a class="code" href="PkuhTest__main_8cpp.html#ac92c9a6a19673b5a720237cf228c9c06">SwKuh</a>;</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a name="a3"></a><a class="code" href="PkuhTest__main_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv) {</div>
-<div class="line">    <a class="code" href="classPkuh.html">PriQueue</a> * pq;</div>
-<div class="line">    pq = <span class="keyword">new</span> <a class="code" href="PkuhTest__main_8cpp.html#a770b877ad5c1be8a86e7dc2c1c45f262">PriQueue</a>(23);</div>
+<div class="line"><span class="keywordtype">int</span> <a name="a2"></a><a class="code" href="PkuhTest__main_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>** argv) {</div>
+<div class="line">    <a class="code" href="classSwappyQueue.html">SwKuh</a> * pq;</div>
+<div class="line">    pq = <span class="keyword">new</span> <a class="code" href="PkuhTest__main_8cpp.html#ac92c9a6a19673b5a720237cf228c9c06">SwKuh</a>();</div>
 <div class="line">    <span class="keywordtype">bool</span> exi;</div>
 <div class="line">    uint64_t key = 0;</div>
 <div class="line">    </div>
-<div class="line">    <span class="keywordflow">for</span> (uint64_t i = 0; i &lt; <a class="code" href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a>; ++i) {</div>
-<div class="line">        <span class="keywordtype">int</span> d = rand()%5;</div>
+<div class="line">    <span class="keywordflow">for</span> (uint64_t i = 0; i &lt; <a name="a3"></a><a class="code" href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a>; ++i) {</div>
+<div class="line">        <span class="keywordtype">int</span> d = 1;</div>
+<div class="line">        d = rand()%50;</div>
 <div class="line">        uint64_t q = rand()%<a class="code" href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a>;</div>
-<div class="line">        <span class="keywordflow">if</span> (pq-&gt;<a name="a4"></a><a class="code" href="classPkuh.html#a6b203cd9e8ede91fefe2bb179360ad5e">set</a>(q, 0.01 * rand()) == <span class="keyword">false</span>) {</div>
-<div class="line">            ;<span class="comment">//printf(&quot;Update %5ld\n&quot;, q);</span></div>
+<div class="line">        </div>
+<div class="line">        <a name="_a4"></a><a class="code" href="structSwappyQueue_1_1Element.html">SwKuh::Element</a> e;</div>
+<div class="line">        e.<a name="a5"></a><a class="code" href="structSwappyQueue_1_1Element.html#ae0fb8bbf7773a0cd13ada509fd3fd8a5">data</a> = 0.01 * rand();</div>
+<div class="line">        e.<a name="a6"></a><a class="code" href="structSwappyQueue_1_1Element.html#a0c36397365baffaf082dd6fbe6d1fa74">prio</a> = 5 + rand()%1000;</div>
+<div class="line">        <span class="keywordflow">if</span> (pq-&gt;<a name="a7"></a><a class="code" href="classSwappyQueue.html#a221e6a334d6e3c2a5064d1e54f7242dd">set</a>(q, e) == <span class="keyword">false</span>) {</div>
+<div class="line">            printf(<span class="stringliteral">&quot;Update %6&quot;</span> PRIu64 <span class="stringliteral">&quot;\n&quot;</span>, q);</div>
 <div class="line">        } <span class="keywordflow">else</span> {</div>
 <div class="line">            ++key;</div>
-<div class="line">            <span class="comment">//printf(&quot;Insert %5ld (size %ld)\n&quot;, q, key);</span></div>
+<div class="line">            printf(<span class="stringliteral">&quot;Insert %6&quot;</span> PRIu64 <span class="stringliteral">&quot; (size %&quot;</span> PRIu64 <span class="stringliteral">&quot;)\n&quot;</span>, q, key);</div>
 <div class="line">        }</div>
-<div class="line">        pq-&gt;<a name="a5"></a><a class="code" href="classPkuh.html#a36fdf28d1ee65d16cf4269a9e80dd380">update</a>(q, 5 + rand()%1000);</div>
 <div class="line">        </div>
 <div class="line">        <span class="keywordflow">if</span> (d == 0) {</div>
-<div class="line">            pq-&gt;<a name="a6"></a><a class="code" href="classPkuh.html#a8c430a4089f67a59703d4bcf4aa6b685">del</a>(q);</div>
-<div class="line">            <span class="comment">//printf(&quot; Delete %5ld (size %ld)\n&quot;, q, --key);</span></div>
+<div class="line">            pq-&gt;<a name="a8"></a><a class="code" href="classSwappyQueue.html#af3785944c03eef43dd21d4c001a7c151">del</a>(q);</div>
+<div class="line">            printf(<span class="stringliteral">&quot; Delete %6&quot;</span> PRIu64 <span class="stringliteral">&quot; (size %&quot;</span> PRIu64 <span class="stringliteral">&quot;)\n&quot;</span>, q, --key);</div>
 <div class="line">        }</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    printf(<span class="stringliteral">&quot;\nrun pop() now!\n\n&quot;</span>);</div>
 <div class="line">    <span class="keywordflow">for</span> (uint64_t i = 0; i &lt; <a class="code" href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a>; ++i) {</div>
-<div class="line">        <a class="code" href="classPkuh.html#ae2fe85ea07153d8235a10c5195cbe7f6">PriQueue::Data</a> e;</div>
-<div class="line">        exi = pq-&gt;<a name="a7"></a><a class="code" href="classPkuh.html#aca44562d0c2fa7743e08a4fa38bf520c">pop</a>(key, e);</div>
+<div class="line">        <a class="code" href="structSwappyQueue_1_1Element.html">SwKuh::Element</a> e;</div>
+<div class="line">        exi = pq-&gt;<a name="a9"></a><a class="code" href="classSwappyQueue.html#ab17900cb699b8a1a2e04d3dd22b44b58">top</a>(key, e);</div>
 <div class="line">        <span class="keywordflow">if</span> (exi == <span class="keyword">false</span>) {</div>
 <div class="line">            i = <a class="code" href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a>;</div>
 <div class="line">        } <span class="keywordflow">else</span> {</div>
-<div class="line">            printf(<span class="stringliteral">&quot;%5ld key: %5ld prio: %3ld data: %lf\n&quot;</span>, i+1, key, std::get&lt;2&gt;(e), std::get&lt;0&gt;(e));</div>
+<div class="line">            printf(<span class="stringliteral">&quot;%5lu key: %&quot;</span> PRIu64 <span class="stringliteral">&quot; prio: %&quot;</span> PRIu64 <span class="stringliteral">&quot; data: %lf\n&quot;</span>, i+1, key, e.<a class="code" href="structSwappyQueue_1_1Element.html#a0c36397365baffaf082dd6fbe6d1fa74">prio</a>, e.<a class="code" href="structSwappyQueue_1_1Element.html#ae0fb8bbf7773a0cd13ada509fd3fd8a5">data</a>);</div>
+<div class="line">            pq-&gt;<a class="code" href="classSwappyQueue.html#af3785944c03eef43dd21d4c001a7c151">del</a>(key);</div>
 <div class="line">        }</div>
 <div class="line">    }</div>
 <div class="line">    </div>
@@ -101,14 +98,15 @@ $(function() {
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
 <div class="ttc" id="aPkuhTest__main_8cpp_html_a29eb0c9982c55cb67fe9b61d934e5f3c"><div class="ttname"><a href="PkuhTest__main_8cpp.html#a29eb0c9982c55cb67fe9b61d934e5f3c">ITEMLIMIT</a></div><div class="ttdeci">#define ITEMLIMIT</div><div class="ttdef"><b>Definition:</b> PkuhTest_main.cpp:9</div></div>
-<div class="ttc" id="aPkuhTest__main_8cpp_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="PkuhTest__main_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> PkuhTest_main.cpp:25</div></div>
-<div class="ttc" id="aPkuhTest__main_8cpp_html_a770b877ad5c1be8a86e7dc2c1c45f262"><div class="ttname"><a href="PkuhTest__main_8cpp.html#a770b877ad5c1be8a86e7dc2c1c45f262">PriQueue</a></div><div class="ttdeci">Pkuh&lt; uint64_t, double,(ITEMLIMIT/1024), 5, 3, 4, 2 *4 *(ITEMLIMIT/1024)&gt; PriQueue</div><div class="ttdef"><b>Definition:</b> PkuhTest_main.cpp:19</div></div>
-<div class="ttc" id="aclassPkuh_html"><div class="ttname"><a href="classPkuh.html">Pkuh</a></div><div class="ttdef"><b>Definition:</b> Pkuh.hpp:74</div></div>
-<div class="ttc" id="aclassPkuh_html_a36fdf28d1ee65d16cf4269a9e80dd380"><div class="ttname"><a href="classPkuh.html#a36fdf28d1ee65d16cf4269a9e80dd380">Pkuh::update</a></div><div class="ttdeci">bool update(TKEY key, uint64_t prio)</div><div class="ttdef"><b>Definition:</b> Pkuh.hpp:243</div></div>
-<div class="ttc" id="aclassPkuh_html_a6b203cd9e8ede91fefe2bb179360ad5e"><div class="ttname"><a href="classPkuh.html#a6b203cd9e8ede91fefe2bb179360ad5e">Pkuh::set</a></div><div class="ttdeci">bool set(TKEY key, TVALUE value)</div><div class="ttdef"><b>Definition:</b> Pkuh.hpp:163</div></div>
-<div class="ttc" id="aclassPkuh_html_a8c430a4089f67a59703d4bcf4aa6b685"><div class="ttname"><a href="classPkuh.html#a8c430a4089f67a59703d4bcf4aa6b685">Pkuh::del</a></div><div class="ttdeci">bool del(const TKEY &amp;key)</div><div class="ttdef"><b>Definition:</b> Pkuh.hpp:371</div></div>
-<div class="ttc" id="aclassPkuh_html_aca44562d0c2fa7743e08a4fa38bf520c"><div class="ttname"><a href="classPkuh.html#aca44562d0c2fa7743e08a4fa38bf520c">Pkuh::pop</a></div><div class="ttdeci">bool pop(TKEY &amp;resultkey, Data &amp;result)</div><div class="ttdef"><b>Definition:</b> Pkuh.hpp:352</div></div>
-<div class="ttc" id="aclassPkuh_html_ae2fe85ea07153d8235a10c5195cbe7f6"><div class="ttname"><a href="classPkuh.html#ae2fe85ea07153d8235a10c5195cbe7f6">Pkuh::Data</a></div><div class="ttdeci">std::tuple&lt; TVALUE, std::vector&lt; TKEY &gt;, uint64_t &gt; Data</div><div class="ttdef"><b>Definition:</b> Pkuh.hpp:79</div></div>
+<div class="ttc" id="aPkuhTest__main_8cpp_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="PkuhTest__main_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> PkuhTest_main.cpp:17</div></div>
+<div class="ttc" id="aPkuhTest__main_8cpp_html_ac92c9a6a19673b5a720237cf228c9c06"><div class="ttname"><a href="PkuhTest__main_8cpp.html#ac92c9a6a19673b5a720237cf228c9c06">SwKuh</a></div><div class="ttdeci">SwappyQueue&lt; double &gt; SwKuh</div><div class="ttdef"><b>Definition:</b> PkuhTest_main.cpp:15</div></div>
+<div class="ttc" id="aclassSwappyQueue_html"><div class="ttname"><a href="classSwappyQueue.html">SwappyQueue</a></div><div class="ttdef"><b>Definition:</b> SwappyQueue.hpp:16</div></div>
+<div class="ttc" id="aclassSwappyQueue_html_a221e6a334d6e3c2a5064d1e54f7242dd"><div class="ttname"><a href="classSwappyQueue.html#a221e6a334d6e3c2a5064d1e54f7242dd">SwappyQueue::set</a></div><div class="ttdeci">bool set(uint64_t key, Element &amp;element)</div><div class="ttdef"><b>Definition:</b> SwappyQueue.hpp:66</div></div>
+<div class="ttc" id="aclassSwappyQueue_html_ab17900cb699b8a1a2e04d3dd22b44b58"><div class="ttname"><a href="classSwappyQueue.html#ab17900cb699b8a1a2e04d3dd22b44b58">SwappyQueue::top</a></div><div class="ttdeci">bool top(uint64_t &amp;resultkey, Element &amp;result)</div><div class="ttdef"><b>Definition:</b> SwappyQueue.hpp:54</div></div>
+<div class="ttc" id="aclassSwappyQueue_html_af3785944c03eef43dd21d4c001a7c151"><div class="ttname"><a href="classSwappyQueue.html#af3785944c03eef43dd21d4c001a7c151">SwappyQueue::del</a></div><div class="ttdeci">void del(uint64_t key)</div><div class="ttdef"><b>Definition:</b> SwappyQueue.hpp:83</div></div>
+<div class="ttc" id="astructSwappyQueue_1_1Element_html"><div class="ttname"><a href="structSwappyQueue_1_1Element.html">SwappyQueue::Element</a></div><div class="ttdef"><b>Definition:</b> SwappyQueue.hpp:20</div></div>
+<div class="ttc" id="astructSwappyQueue_1_1Element_html_a0c36397365baffaf082dd6fbe6d1fa74"><div class="ttname"><a href="structSwappyQueue_1_1Element.html#a0c36397365baffaf082dd6fbe6d1fa74">SwappyQueue::Element::prio</a></div><div class="ttdeci">uint64_t prio</div><div class="ttdef"><b>Definition:</b> SwappyQueue.hpp:22</div></div>
+<div class="ttc" id="astructSwappyQueue_1_1Element_html_ae0fb8bbf7773a0cd13ada509fd3fd8a5"><div class="ttname"><a href="structSwappyQueue_1_1Element.html#ae0fb8bbf7773a0cd13ada509fd3fd8a5">SwappyQueue::Element::data</a></div><div class="ttdeci">TVALUE data</div><div class="ttdef"><b>Definition:</b> SwappyQueue.hpp:21</div></div>
 </div><!-- fragment --> </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

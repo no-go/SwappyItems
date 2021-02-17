@@ -22,18 +22,18 @@ or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyI
 
 ## ToDo (nice to have)
 
-- implement a larger code version with Priority Queue (for a minimal spanning
-  tree use-case) = `Pkuh.hpp` in the future
+- implement a larger code version with PriorityQueue (for a minimal spanning
+  tree use-case)
 - make number of items in swapped files variable with additional focus on real
   RAM usage, and ...
 - Because the `vector<key>` data can be very big, SwappyItems should additionally
   swap data from RAM to DISK, if to many items *and* vector elements are in RAM.
-- Implement a bucket based Priority Queue or building parallel processing winner trees in `Pkuh` heap.
+- Implement a bucket based Priority Queue or building parallel processing winner trees in PriorityQueue heap.
   Idea for buckets: onion-like with two SwappyItems stores. Use `key` as
   a `prio` bucket and `vector<key>` with all keys with same `prio`. These keys are the keys from the
   2nd SwappyItems Store, where the original data items is stored.
 - split writing into files (a swap event makes some sorted file buckets) in multiple threads
-- do prefetching in `pkuh.hpp` for *next to actual min prio* Items
+- do prefetching in PriorityQueue for *next to actual min prio* Items
 - minimal spanning tree example code
 
 ## API basics

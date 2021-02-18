@@ -11,7 +11,7 @@ Main difference to other key-value stores:
 - not RAM only, not DISK only
 - very flexible in data: value is not just "String"
 - not focused on multible disks or networking
-- flat: no need of a fat framework
+- flat: no need of a fat framework (just include `SwappyItems.hpp`)
 - no additional libs!
 - not all keys are stored in RAM: SwappyItems uses min/max and bloomfilter to search keys in files
 - modern c++17 build-in multicore usage
@@ -19,6 +19,10 @@ Main difference to other key-value stores:
 
 Go to the [Documentation of SwappyItems](https://no-go.github.io/SwappyItems/)
 or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyItems/).
+
+## Examples
+
+Only the examples (see `Makefile`) need `-lz -losmpbf -lprotobuf` (additional libs) for phrasing OSM data.
 
 ## ToDo (nice to have)
 
@@ -36,7 +40,13 @@ or take a look to the [SwappyItems Source Code](https://github.com/no-go/SwappyI
 - do prefetching in PriorityQueue for *next to actual min prio* Items
 - minimal spanning tree example code
 
-## API basics
+### SwappyQueue
+
+- I try to implement a 2 phase pairing heap on the head of SwappyItems.
+- testing with netbeans8.2 dev (2018) in `examples/SwappyQueueTest/` folder
+- still with bugs :-(
+
+## SwappyItems: API basics
 
 ### (constructor)
 

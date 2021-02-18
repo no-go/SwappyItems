@@ -50,7 +50,7 @@ $(function() {
 <li>not RAM only, not DISK only</li>
 <li>very flexible in data: value is not just "String"</li>
 <li>not focused on multible disks or networking</li>
-<li>flat: no need of a fat framework</li>
+<li>flat: no need of a fat framework (just include <code><a class="el" href="SwappyItems_8hpp.html">SwappyItems.hpp</a></code>)</li>
 <li>no additional libs!</li>
 <li>not all keys are stored in RAM: <a class="el" href="classSwappyItems.html">SwappyItems</a> uses min/max and bloomfilter to search keys in files</li>
 <li>modern c++17 build-in multicore usage</li>
@@ -58,6 +58,9 @@ $(function() {
 </ul>
 <p>Go to the <a href="https://no-go.github.io/SwappyItems/">Documentation of SwappyItems</a> or take a look to the <a href="https://github.com/no-go/SwappyItems/">SwappyItems Source Code</a>.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
+Examples</h1>
+<p>Only the examples (see <code>Makefile</code>) need <code>-lz -losmpbf -lprotobuf</code> (additional libs) for phrasing OSM data.</p>
+<h1><a class="anchor" id="autotoc_md2"></a>
 ToDo (nice to have)</h1>
 <ul>
 <li>implement a larger code version with PriorityQueue (for a minimal spanning tree use-case)</li>
@@ -68,33 +71,40 @@ ToDo (nice to have)</h1>
 <li>do prefetching in PriorityQueue for <em>next to actual min prio</em> Items</li>
 <li>minimal spanning tree example code</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md2"></a>
-API basics</h1>
 <h2><a class="anchor" id="autotoc_md3"></a>
+SwappyQueue</h2>
+<ul>
+<li>I try to implement a 2 phase pairing heap on the head of <a class="el" href="classSwappyItems.html">SwappyItems</a>.</li>
+<li>testing with netbeans8.2 dev (2018) in <code>examples/SwappyQueueTest/</code> folder</li>
+<li>still with bugs :-(</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md4"></a>
+SwappyItems: API basics</h1>
+<h2><a class="anchor" id="autotoc_md5"></a>
 (constructor)</h2>
 <p>It trys to <a class="el" href="classSwappyItems.html#a0cc3bebb177ca89c286544b1391b67de">SwappyItems::wakeup()</a> from hibernate files. The id parameter identifies the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store (important for the DISK/swap path!).</p>
-<h2><a class="anchor" id="autotoc_md4"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 (destructor)</h2>
 <p>Makes a <a class="el" href="classSwappyItems.html#a9f7ae3b8dd873e5dcd5a0fcdc63e5e92">SwappyItems::hibernate()</a> from RAM to DISK.</p>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<h2><a class="anchor" id="autotoc_md7"></a>
 bool = set(key, value)</h2>
 <p>Set or create an item. It returns <code>false</code>, if the item is created (and not overwritten).</p>
-<h2><a class="anchor" id="autotoc_md6"></a>
+<h2><a class="anchor" id="autotoc_md8"></a>
 bool = set(key, value, vector&lt;keys&gt;)</h2>
 <p>Set or create an item. It returns <code>false</code>, if the item is created (and not overwritten). You can add a vector with additional keys in it.</p>
-<h2><a class="anchor" id="autotoc_md7"></a>
+<h2><a class="anchor" id="autotoc_md9"></a>
 pair(value, vector&lt;keys&gt;) * = get(key)</h2>
 <p>Get the value by key. You get a pointer to that data pair. If it does not exist, you get a <code>nullptr</code>.</p>
-<h2><a class="anchor" id="autotoc_md8"></a>
+<h2><a class="anchor" id="autotoc_md10"></a>
 del(key)</h2>
 <p>Delete a item.</p>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md11"></a>
 min() and max()</h2>
 <p>Get the smallest or the biggest key in the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store.</p>
-<h2><a class="anchor" id="autotoc_md10"></a>
+<h2><a class="anchor" id="autotoc_md12"></a>
 getStatistic()</h2>
 <p>You get a <a class="el" href="structSwappyItems_1_1statistic__s.html">SwappyItems::statistic_s</a> with many values (inserts, sizes, deletes, lookup failures, ...) to deploy the <a class="el" href="classSwappyItems.html">SwappyItems</a> Store.</p>
-<h2><a class="anchor" id="autotoc_md11"></a>
+<h2><a class="anchor" id="autotoc_md13"></a>
 bool = each(back, lambda func)</h2>
 <ul>
 <li>iterate through all elements at a fixed state</li>
@@ -103,7 +113,7 @@ bool = each(back, lambda func)</h2>
 <li>gives a reference back to last processed data</li>
 <li>returns <code>false</code> if the loop did not break and iterated through all items</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md12"></a>
+<h2><a class="anchor" id="autotoc_md14"></a>
 bool = apply(back, key, lambda func)</h2>
 <p>It is usable with a lambda function and similar to <a class="el" href="classSwappyItems.html#ab76f2bf942b66c83213a1865e7260385">SwappyItems::get()</a> and <a class="el" href="classSwappyItems.html#af5a792fbb62a2e872a45e46cf072593c">SwappyItems::set()</a>. It does not change the swap data and behavior and thus this access it a bit slow. If you want to get or change data in the same <a class="el" href="classSwappyItems.html">SwappyItems</a> store, where you iter through with <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>, then you must use <a class="el" href="classSwappyItems.html#a8fdb5bac81d5aff26621ef0b625d3967">SwappyItems::apply()</a> in the lambda function of <a class="el" href="classSwappyItems.html#ad435934836fba9541979039ec53d3a2c">SwappyItems::each()</a>. It returns <code>false</code> if the item does not exit. </p>
 </div></div><!-- PageDoc -->

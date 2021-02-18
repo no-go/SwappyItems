@@ -5,6 +5,31 @@
 #include <inttypes.h>  // uintX_t stuff
 #include "SwappyItems.hpp"
 
+/**
+ * @example SwappyQueue.hpp
+ * 
+ * This is a bit buggy example, how to use SwappyItems as priority queue. See also /examples/SwappyQueueTest/ for Testing and usage.
+ * 
+ * ## Details
+ * 
+ * - 2 phase pairing heap
+ * - the heap magic is in `del()` and the private method `insert()`
+ * - still with Bugs!
+ * 
+ * ## Interesting
+ * 
+ * - most recently used elements are still in RAM
+ * - elements with less access or updates may Swap to DISK (= deep heap content leaves the RAM!)
+ * 
+ * @tparam TKEY is the type for the key, which identifies the Item.
+ * @tparam TVALUE is the type for the value, which has the data of the Item.
+ * 
+ * @tparam EACHFILE is number of Items in each swap file. Please choose a 2^n number like 65536 or 2048
+ * @tparam OLDIES is number of files, if a swap occurs. Please choose a 2n number above 6
+ * @tparam RAMSIZE if _ramList has more than RAMSIZE x OLDIES x EACHFILE Items, a swap occurs.
+ * @tparam BLOOMBITS is the number of fingerprint bits for a key, which are set in a MASK for each file. Stupid value: 1 Bit at MASKLENGTH = EACHFILE; possible but not very meaningful: 4 Bits at MASKLENGTH = 4x EACHFILE
+ * @tparam MASKLENGTH is the MASK size of a file, where the fingerprint bits are set. A good choice to get 50% filling: 2x BLOOMBITS x EACHFILE
+ */
 template <
     class TKEY,
     class TVALUE,
@@ -45,6 +70,11 @@ public:
     }
     
     /**
+     * get an item
+     * 
+     * @param key the unique key
+     * @param result has the reference to the item
+     * 
      * @return false, if it does not exist
      */
     bool get (TKEY key, Item & result) {
@@ -56,6 +86,11 @@ public:
     }
     
     /**
+     * get the item with minimal prio
+     * 
+     * @param resultkey reference to the unique key of the head
+     * @param result has the reference to the item
+     * 
      * @return false, if it does not exist
      */
     bool top (TKEY & resultkey, Item & result) {
@@ -68,6 +103,11 @@ public:
     }
    
     /**
+     * insert or update an item
+     * 
+     * @param key the unique key
+     * @param item has the data
+     * 
      * @return true, if it is new and not just an update
      */
     bool set (TKEY key, Item & item) {
@@ -87,6 +127,13 @@ public:
         }
     }
     
+    /**
+     * delete an item
+     *
+     * @param key the unique key
+     * 
+     * @return void
+     */
     void del (TKEY key) {
         typename Heap::statistic_s s = _data->getStatistic();
         if (s.size == 0) return;

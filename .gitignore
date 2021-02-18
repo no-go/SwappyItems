@@ -12,8 +12,5 @@ pkuh*/*.bucket
 temp*/*.bucket
 temp*/hibernate.*
 
-examples/TwoPhasePairPrioQ/.dep.inc
-examples/TwoPhasePairPrioQ/build
-
-/examples/PkuhTest/build/
-/examples/PkuhTest/dist/
+/examples/SwappyQueueTest/build/
+/examples/SwappyQueueTest/dist/
